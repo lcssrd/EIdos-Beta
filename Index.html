@@ -1,0 +1,451 @@
+ <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier Patient Informatisé - M. D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html, body {
+            height: 100%;
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Slightly cooler background */
+        }
+        
+        /* New Tab Styles */
+        .tab-button {
+            padding: 1rem 1.25rem;
+            font-weight: 500;
+            color: #4b5563;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease-in-out;
+            white-space: nowrap;
+        }
+        .tab-button:hover {
+            background-color: #f9fafb;
+            color: #1f2937;
+        }
+        .tab-button.active {
+            font-weight: 600;
+        }
+
+        /* Tab Colors */
+        .tab-button[data-color="blue"].active { border-color: #3b82f6; color: #3b82f6; }
+        .tab-button[data-color="teal"].active { border-color: #14b8a6; color: #14b8a6; }
+        .tab-button[data-color="amber"].active { border-color: #f59e0b; color: #f59e0b; }
+        .tab-button[data-color="rose"].active { border-color: #f43f5e; color: #f43f5e; }
+        .tab-button[data-color="indigo"].active { border-color: #6366f1; color: #6366f1; }
+        .tab-button[data-color="green"].active { border-color: #22c55e; color: #22c55e; }
+        .tab-button[data-color="sky"].active { border-color: #0ea5e9; color: #0ea5e9; }
+        .tab-button[data-color="violet"].active { border-color: #8b5cf6; color: #8b5cf6; }
+        .tab-button[data-color="orange"].active { border-color: #f97316; color: #f97316; }
+
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px; /* Softer radius */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        .card-header {
+            font-size: 1.125rem; /* Slightly smaller header */
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        /* Header Colors */
+        .card-header.header-blue { color: #1e40af; }
+        .card-header.header-teal { color: #0f766e; }
+        .card-header.header-amber { color: #b45309; }
+        .card-header.header-rose { color: #be123c; }
+        .card-header.header-indigo { color: #4338ca; }
+        .card-header.header-green { color: #15803d; }
+        .card-header.header-sky { color: #0369a1; }
+        .card-header.header-violet { color: #6d28d9; }
+        .card-header.header-orange { color: #c2410c; }
+        
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
+        .info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
+        
+        .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
+        .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
+        .timeline-dot.dot-green { background-color: #22c55e; }
+
+        .diagram th, .diagram td { border: 1px solid #e5e7eb; padding: 0.5rem; vertical-align: middle; }
+        .diagram input[type="text"] { width: 100%; border: none; text-align: center; padding: 4px; background-color: transparent; transition: background-color 0.2s; }
+        .diagram input[type="text"]:focus { outline: 2px solid #3b82f6; background-color: #eff6ff; border-radius: 4px; }
+        .diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
+        .diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
+        
+        .continuous-care { background-image: linear-gradient(45deg, #d1fae5 25%, transparent 25%, transparent 50%, #d1fae5 50%, #d1fae5 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
+        .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+
+    <main class="max-w-screen-xl mx-auto">
+        <!-- Header Patient -->
+        <header class="card mb-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Dossier Patient : D, Jean</h1>
+                    <p class="text-gray-500 mt-1 text-base">Né le 15/05/1959 (66 ans)</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 text-sm w-full md:w-auto mt-4 md:mt-0 bg-slate-50 p-4 rounded-lg border">
+                        <div class="text-left"><span class="font-semibold block text-slate-500">IEP</span><span class="text-gray-800 font-medium">3401160</span></div>
+                        <div class="text-left"><span class="font-semibold block text-slate-500">Service</span><span class="text-gray-800 font-medium">Médecine Interne</span></div>
+                        <div class="text-left"><span class="font-semibold block text-slate-500">Chambre</span><span class="text-gray-800 font-medium">101</span></div>
+                        <div class="text-left"><span class="font-semibold block text-slate-500">Médecin</span><span class="text-gray-800 font-medium">Dr. HEART</span></div>
+                    </div>
+                    <button id="fullscreen-btn" onclick="toggleFullScreen()" class="p-2 rounded-full hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <i id="fullscreen-icon" class="fas fa-expand text-xl text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Onglets de Navigation -->
+        <div class="bg-white rounded-lg shadow-sm mb-6 sticky top-4 z-10">
+            <div class="border-b border-gray-200">
+                <nav class="flex flex-wrap -mb-px" aria-label="Tabs">
+                    <button onclick="changeTab(event, 'administratif')" class="tab-button active" data-color="blue"><i class="fas fa-user-circle mr-2 opacity-75"></i>Fiche Administrative</button>
+                    <button onclick="changeTab(event, 'mode-de-vie')" class="tab-button" data-color="teal"><i class="fas fa-home mr-2 opacity-75"></i>Mode de vie</button>
+                    <button onclick="changeTab(event, 'antecedents')" class="tab-button" data-color="amber"><i class="fas fa-history mr-2 opacity-75"></i>Antécédents</button>
+                    <button onclick="changeTab(event, 'observations')" class="tab-button" data-color="rose"><i class="fas fa-notes-medical mr-2 opacity-75"></i>Observations</button>
+                    <button onclick="changeTab(event, 'prescriptions')" class="tab-button" data-color="indigo"><i class="fas fa-pills mr-2 opacity-75"></i>Prescriptions</button>
+                    <button onclick="changeTab(event, 'transmissions')" class="tab-button" data-color="green"><i class="fas fa-exchange-alt mr-2 opacity-75"></i>Transmissions</button>
+                    <button onclick="changeTab(event, 'bilans')" class="tab-button" data-color="sky"><i class="fas fa-flask mr-2 opacity-75"></i>Bilans Biologiques</button>
+                    <button onclick="changeTab(event, 'pancarte')" class="tab-button" data-color="violet"><i class="fas fa-chart-line mr-2 opacity-75"></i>Pancarte</button>
+                    <button onclick="changeTab(event, 'diagramme')" class="tab-button" data-color="orange"><i class="fas fa-calendar-alt mr-2 opacity-75"></i>Diagramme de soins</button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Contenu des Onglets -->
+        <div id="tab-content">
+            <!-- Fiche Administrative -->
+            <div id="administratif" class="content-section active">
+                <div class="card"><h2 class="card-header">Informations Personnelles</h2><div class="info-grid"><div class="info-item"><span class="info-label">Nom</span><span class="info-value">D</span></div><div class="info-item"><span class="info-label">Prénom</span><span class="info-value">Jean</span></div><div class="info-item"><span class="info-label">Date de Naissance</span><span class="info-value">15/05/1959</span></div><div class="info-item"><span class="info-label">Sexe</span><span class="info-value">Masculin</span></div><div class="info-item"><span class="info-label">Adresse</span><span class="info-value">BOIS GUILLAUME</span></div><div class="info-item"><span class="info-label">Lieu de Naissance</span><span class="info-value">PARIS</span></div></div></div>
+                <div class="card"><h2 class="card-header">Contact et Couverture Sociale</h2><div class="info-grid"><div class="info-item"><span class="info-label">Personne à contacter</span><span class="info-value">Mme D (conjointe)</span></div><div class="info-item"><span class="info-label">Téléphone</span><span class="info-value">05 06 07 08 09</span></div><div class="info-item"><span class="info-label">N° Sécurité Sociale</span><span class="info-value">1 59 05 75 323 881</span></div><div class="info-item"><span class="info-label">Caisse</span><span class="info-value">CPAM Rouen</span></div><div class="info-item"><span class="info-label">Mutuelle</span><span class="info-value">Mutuelle MALAKIS</span></div><div class="info-item"><span class="info-label">Mesure de protection</span><span class="info-value">Non</span></div></div></div>
+            </div>
+            <!-- Mode de vie -->
+            <div id="mode-de-vie" class="content-section"><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="card"><h2 class="card-header">Situation Personnelle</h2><div class="info-grid"><div class="info-item"><span class="info-label">Situation familiale</span><span class="info-value">Marié</span></div><div class="info-item"><span class="info-label">Enfants</span><span class="info-value">1 enfant</span></div><div class="info-item"><span class="info-label">Profession</span><span class="info-value">Chauffagiste</span></div><div class="info-item"><span class="info-label">Type d'habitat</span><span class="info-value">Appartement</span></div></div></div><div class="card"><h2 class="card-header">Autonomie avant hospitalisation</h2><div class="info-grid"><div class="info-item"><span class="info-label">Vue / Audition / Dentition</span><span class="info-value">Porte des lunettes</span></div><div class="info-item"><span class="info-label">État cognitif</span><span class="info-value">Pas de problème</span></div><div class="info-item"><span class="info-label">Hygiène / Alimentation / Mobilité</span><span class="info-value">Pas de problème</span></div><div class="info-item"><span class="info-label">Respiration</span><span class="info-value text-red-600 font-semibold">Tabagisme actif</span></div></div></div><div class="card md:col-span-2"><h2 class="card-header">Aides en Place</h2><div class="info-grid"><div class="info-item"><span class="info-label">Aides humaines (IDE, SSIAD)</span><span class="info-value">Aucune</span></div><div class="info-item"><span class="info-label">Aides matérielles (Lit, fauteuil)</span><span class="info-value">Aucune</span></div><div class="info-item"><span class="info-label">APA / GIR</span><span class="info-value">Non / Non évalué</span></div></div></div></div></div>
+            <!-- Antécédents -->
+            <div id="antecedents" class="content-section"><div class="card"><h2 class="card-header">Synthèse des Antécédents</h2><div class="space-y-4 mt-4"><div class="info-item"><span class="info-label">Antécédents Médicaux</span><span class="info-value">Dyslipidémie, Diabète de type 2, HTA depuis 10 ans traitée.</span></div><div class="info-item"><span class="info-label">Antécédents Chirurgicaux</span><span class="info-value">Aucun</span></div><div class="info-item"><span class="info-label">Antécédents Familiaux</span><span class="info-value">Père : diabète de type 2</span></div><div class="info-item"><span class="info-label">Allergies</span><span class="info-value">Aucune connue</span></div><div class="info-item"><span class="info-label">Vaccination</span><span class="info-value">À jour</span></div></div></div><div class="card"><h2 class="card-header">Facteurs de Risque</h2><div class="info-grid"><div class="info-item"><span class="info-label">Tabac et Alcool</span><span class="info-value text-red-600 font-semibold">20 paquets-années</span></div><div class="info-item"><span class="info-label">HTA</span><span class="info-value">Oui</span></div><div class="info-item"><span class="info-label">Diabète type 2</span><span class="info-value">Oui</span></div></div></div></div>
+            <!-- Observations médicales -->
+            <div id="observations" class="content-section"><div class="card"><h2 class="card-header">Synthèse Clinique à l'Admission (12/02/2025)</h2><div class="space-y-4 mt-4"><div class="info-item"><span class="info-label">Motif d'admission</span><span class="info-value">Hyperglycémie sévère avec symptômes de polyurie, polydipsie, fatigue intense.</span></div><div class="info-item"><span class="info-label">Examen Clinique</span><span class="info-value">Fatigue intense, soif et mictions fréquentes.<ul class="list-disc list-inside mt-2 text-gray-700 font-normal"><li>TA : 150/90 mmHg</li><li>FC : 85 bpm</li><li>Température : 37,2°C</li><li>SaO2 : 98% AA</li><li>Glycémie capillaire : 3,5 g/L</li><li>Poids : 120 kg, Taille : 1,75m (IMC = 39,1)</li></ul></span></div><div class="info-item"><span class="info-label">Synthèse Clinique Initiale</span><span class="info-value">Crise d'hyperglycémie sévère sur diabète de type 2 diagnostiqué récemment, obésité, HTA et dyslipidémie.</span></div><div class="info-item"><span class="info-label">Projet Thérapeutique</span><span class="info-value">Protocole d'insuline rapide à la SAP, hydratation IV, poursuite des traitements habituels, surveillance horaire de la glycémie, bilan sanguin quotidien, conseils hygiénodiététiques.</span></div></div></div><div class="card"><h2 class="card-header">Traitement Habituel</h2><div class="info-grid"><div class="info-item"><span class="info-label">Hypolipémiant</span><span class="info-value">Atorvastatine® 10mg - 1cp /jour</span></div><div class="info-item"><span class="info-label">Antihypertenseur</span><span class="info-value">Ramipril® 2.5 mg /jour</span></div></div></div></div>
+            
+            <!-- Prescriptions -->
+            <div id="prescriptions" class="content-section">
+                <div class="card">
+                     <h2 class="card-header">Diagramme de Prescriptions et Soins</h2>
+                     <div class="overflow-x-auto mt-4"><table class="w-full border-collapse text-sm diagram" id="prescription-table"><thead class="bg-gray-100 text-gray-600"><tr><th class="p-2 text-left" rowspan="2">Médicament / Soin</th><th class="p-2" rowspan="2">Posologie</th><th class="p-2" rowspan="2">Voie</th><th class="p-2" rowspan="2">Début</th><th class="p-2" rowspan="2">Fin</th><th class="p-2 text-center" colspan="4">12/02/2025</th><th class="p-2 text-center" colspan="4">13/02/2025</th></tr><tr><th class="p-1 text-center w-10">M</th><th class="p-1 text-center w-10">Mi</th><th class="p-1 text-center w-10">S</th><th class="p-1 text-center w-10">N</th><th class="p-1 text-center w-10">M</th><th class="p-1 text-center w-10">Mi</th><th class="p-1 text-center w-10">S</th><th class="p-1 text-center w-10">N</th></tr></thead><tbody class="text-center"><tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="13">Per-os</td></tr><tr><td class="p-2 text-left">Atorvastatine® 10mg</td><td class="p-2">1 cp</td><td class="p-2">PO</td><td class="p-2">12/02</td><td class="p-2"></td><td><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td><td><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td></tr><tr><td class="p-2 text-left">Ramipril® 2.5 mg</td><td class="p-2">1 cp</td><td class="p-2">PO</td><td class="p-2">12/02</td><td class="p-2"></td><td><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td><td><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td></tr><tr class="font-bold bg-green-50 text-left"><td class="p-2" colspan="13">Injectables</td></tr><tr><td class="p-2 text-left">Sérum Physiologique</td><td class="p-2">1500ml/24h</td><td class="p-2">IV</td><td class="p-2">12/02</td><td class="p-2"></td><td class="p-2 continuous-care" colspan="4"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td></tr><tr><td class="p-2 text-left">Novorapid® à la SAP</td><td class="p-2">Selon protocole</td><td class="p-2">IVSE</td><td class="p-2">12/02</td><td class="p-2"></td><td class="p-2 continuous-care" colspan="4"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td></tr><tr class="font-bold bg-yellow-50 text-left"><td class="p-2" colspan="13">Autres</td></tr><tr><td class="p-2 text-left">Surveillance glycémie</td><td class="p-2">Toutes les heures</td><td class="p-2">N/A</td><td class="p-2">12/02</td><td class="p-2"></td><td class="p-2 continuous-surveillance" colspan="4"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td><td class="p-2"></td></tr><tr><td class="p-2 text-left">Régime diabétique</td><td class="p-2"></td><td class="p-2">N/A</td><td class="p-2">12/02</td><td class="p-2"></td><td><input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td><input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td><input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td class="p-2"></td><td><input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td><input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td><input type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td><td class="p-2"></td></tr></tbody></table></div>
+                </div>
+                <div class="card">
+                    <h2 class="card-header">Ajouter une prescription</h2>
+                    <form id="prescription-form" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+                        <div><label for="med-name" class="block text-sm font-medium text-gray-700">Médicament</label><input type="text" id="med-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label for="med-posologie" class="block text-sm font-medium text-gray-700">Posologie</label><input type="text" id="med-posologie" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label for="med-voie" class="block text-sm font-medium text-gray-700">Voie</label><input type="text" id="med-voie" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div><label for="med-debut" class="block text-sm font-medium text-gray-700">Début</label><input type="date" id="med-debut" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>
+                        <div class="flex justify-end"><button type="button" onclick="addPrescription()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Ajouter</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Transmissions -->
+            <div id="transmissions" class="content-section"><div class="card"><h2 class="card-header">Ajouter une transmission</h2><form id="transmission-form" class="space-y-4"><div><label for="new-transmission-author" class="block text-sm font-medium text-gray-700">Auteur (ex: IDE, Médecin)</label><input type="text" id="new-transmission-author" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Votre rôle"></div><div><label for="new-transmission-text" class="block text-sm font-medium text-gray-700">Transmission</label><textarea id="new-transmission-text" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Saisissez votre note ici..."></textarea></div><div class="flex justify-end"><button type="button" onclick="addTransmission()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Ajouter</button></div></form></div><div class="card"><h2 class="card-header">Historique des Transmissions</h2><div id="transmissions-list" class="space-y-8 mt-4"><div class="timeline-item"><div class="timeline-dot dot-green"></div><div class="flex justify-between items-center mb-1"><h3 class="font-semibold text-gray-800">12/02/2025 - IDE</h3><time class="text-sm font-normal text-gray-400">Soir</time></div><p class="text-gray-600">M.D entré pour hyperglycémie sévère. Il est perfusé avant bras gauche avec une SAP de Novorapid.<br>Glycémie à l'entrée à 3g/L, protocole Novorapide débuté. Surveillance de la glycémie horaire.<br><strong>Constantes :</strong> SpO2: 98% AA, Pouls: 84/min, TA: 15/9 cmHg, Apyrétique.<br>Le 1er bilan sanguin a été prélevé. M.D est très fatigué, urinal mis à disposition, a peu mangé ce soir.</p></div><div class="timeline-item border-transparent"><div class="timeline-dot dot-green"></div><div class="flex justify-between items-center mb-1"><h3 class="font-semibold text-gray-800">13/02/2025 - IDE</h3><time class="text-sm font-normal text-gray-400">Matin</time></div><p class="text-gray-600">M.D a passé une nuit correcte malgré les nombreux réveils. Glycémie à 5h00 = 2,3g/L, à 6h00 = 2,60g/L.</p></div></div></div></div>
+
+            <!-- Bilans Biologiques -->
+            <div id="bilans" class="content-section"><div class="card"><h2 class="card-header">Résultats Biologiques du 12/02/2025</h2><div class="overflow-x-auto"><table class="w-full table-auto mt-4"><thead><tr><th>Analyse</th><th>Résultat</th><th>Valeurs de référence</th></tr></thead><tbody><tr class="font-bold bg-blue-50"><td colspan="3">Numération Formule Sanguine</td></tr><tr><td>Leucocytes</td><td>5 300 /mm³</td><td>4 000 - 10 000</td></tr><tr><td>Hématies</td><td>4.5 millions/mm³</td><td></td></tr><tr><td>Hémoglobine</td><td>12 g/100 ml</td><td></td></tr><tr><td>Hématocrite</td><td>40 %</td><td></td></tr><tr><td>Polynucl. Neutrophiles</td><td>3 500 /mm³</td><td>1 500 - 7 000</td></tr><tr><td>Lymphocytes</td><td>2 560 /mm³</td><td>1 500 - 4 000</td></tr><tr><td>Plaquettes</td><td>350 000 /mm³</td><td>177 000 - 369 000</td></tr><tr class="font-bold bg-blue-50"><td colspan="3">Biochimie</td></tr><tr><td>Albuminémie</td><td>40 g/L</td><td>34 - 54</td></tr></tbody></table></div></div></div>
+
+            <!-- Pancarte -->
+            <div id="pancarte" class="content-section">
+                <div class="card">
+                    <h2 class="card-header">Pancarte de Surveillance</h2>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="w-full border-collapse text-sm text-center diagram" id="pancarte-table">
+                            <thead class="bg-gray-100 text-gray-600">
+                                <tr><th class="p-2 text-left" rowspan="2">Paramètres</th><th class="p-2 text-center" colspan="4">12/02/2025</th><th class="p-2 text-center" colspan="4">13/02/2025</th></tr>
+                                <tr><th class="p-1 text-center w-16">Matin</th><th class="p-1 text-center w-16">Midi</th><th class="p-1 text-center w-16">Soir</th><th class="p-1 text-center w-16">Nuit</th><th class="p-1 text-center w-16">Matin</th><th class="p-1 text-center w-16">Midi</th><th class="p-1 text-center w-16">Soir</th><th class="p-1 text-center w-16">Nuit</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="p-2 text-left font-semibold">Pouls (/min)</td><td><input type="text" value="88" onchange="updatePancarteChart()"></td><td><input type="text" value="82" onchange="updatePancarteChart()"></td><td><input type="text" value="85" onchange="updatePancarteChart()"></td><td><input type="text" value="78" onchange="updatePancarteChart()"></td><td><input type="text" value="76" onchange="updatePancarteChart()"></td><td><input type="text" value="75" onchange="updatePancarteChart()"></td><td><input type="text" value="79" onchange="updatePancarteChart()"></td><td><input type="text" value="74" onchange="updatePancarteChart()"></td></tr>
+                                <tr><td class="p-2 text-left font-semibold">Tension (mmHg)</td><td><input type="text" value="145/88" onchange="updatePancarteChart()"></td><td><input type="text" value="140/85" onchange="updatePancarteChart()"></td><td><input type="text" value="150/90" onchange="updatePancarteChart()"></td><td><input type="text" value="135/80" onchange="updatePancarteChart()"></td><td><input type="text" value="130/78" onchange="updatePancarteChart()"></td><td><input type="text" value="132/80" onchange="updatePancarteChart()"></td><td><input type="text" value="138/82" onchange="updatePancarteChart()"></td><td><input type="text" value="125/75" onchange="updatePancarteChart()"></td></tr>
+                                <tr><td class="p-2 text-left font-semibold">Température (°C)</td><td><input type="text" value="37.0" onchange="updatePancarteChart()"></td><td><input type="text" value="37.1" onchange="updatePancarteChart()"></td><td><input type="text" value="37.2" onchange="updatePancarteChart()"></td><td><input type="text" value="36.8" onchange="updatePancarteChart()"></td><td><input type="text" value="36.9" onchange="updatePancarteChart()"></td><td><input type="text" value="36.7" onchange="updatePancarteChart()"></td><td><input type="text" value="37.0" onchange="updatePancarteChart()"></td><td><input type="text" value="36.6" onchange="updatePancarteChart()"></td></tr>
+                                <tr><td class="p-2 text-left font-semibold">Diurèse</td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                                <tr><td class="p-2 text-left font-semibold">Douleur (EVA /10)</td><td><input type="text" value="0" onchange="updatePancarteChart()"></td><td><input type="text" value="1" onchange="updatePancarteChart()"></td><td><input type="text" value="0" onchange="updatePancarteChart()"></td><td><input type="text" value="0" onchange="updatePancarteChart()"></td><td><input type="text" value="0" onchange="updatePancarteChart()"></td><td><input type="text" value="0" onchange="updatePancarteChart()"></td><td><input type="text" value="0" onchange="updatePancarteChart()"></td><td><input type="text" value="0" onchange="updatePancarteChart()"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="card-header">Graphique des Constantes</h2>
+                    <div class="relative h-96 w-full">
+                        <canvas id="pancarteChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagramme de soins -->
+            <div id="diagramme" class="content-section">
+                 <div class="card">
+                    <h2 class="card-header">Diagramme de Soins</h2>
+                    <div class="overflow-x-auto"><table class="w-full table-auto text-sm text-center diagram">
+                        <thead class="font-semibold bg-gray-100">
+                            <tr><th class="p-2 text-left">Catégorie / Soin</th><th colspan="3" class="border-l">12/02/2025</th><th colspan="3" class="border-l">13/02/2025</th></tr>
+                            <tr><th></th><th class="border-l">M</th><th>S</th><th>N</th><th class="border-l">M</th><th>S</th><th>N</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="7">Alimentation</td></tr>
+                            <tr><td class="text-left p-2">Régime diabétique</td><td class="border-l"><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                            <tr><td class="text-left p-2">Pesée</td><td class="border-l"><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                            <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="7">Confort & Sécurité</td></tr>
+                            <tr><td class="text-left p-2">Effleurages</td><td class="border-l"><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                            <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="7">Locomotion</td></tr>
+                            <tr><td class="text-left p-2">Aide pour les transferts</td><td class="border-l"><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                            <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="7">Élimination</td></tr>
+                            <tr><td class="text-left p-2">Bassin, urinal</td><td class="border-l"><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                            <tr><td class="text-left p-2">Diurèse</td><td class="border-l"><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                        </tbody>
+                    </table></div>
+                 </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let pancarteChartInstance;
+
+        const colorMaps = {
+            header: {
+                blue: 'header-blue', teal: 'header-teal', amber: 'header-amber', rose: 'header-rose',
+                indigo: 'header-indigo', green: 'header-green', sky: 'header-sky',
+                violet: 'header-violet', orange: 'header-orange',
+            },
+            dot: {
+                 green: 'dot-green',
+            }
+        };
+
+        function toggleFullScreen() {
+            const elem = document.documentElement;
+            const icon = document.getElementById('fullscreen-icon');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+                icon.classList.remove('fa-expand');
+                icon.classList.add('fa-compress');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                icon.classList.remove('fa-compress');
+                icon.classList.add('fa-expand');
+            }
+        }
+
+        function changeTab(event, tabId) {
+            const allTabs = document.querySelectorAll('.tab-button');
+            const allContent = document.querySelectorAll('.content-section');
+            const targetContent = document.getElementById(tabId);
+            const clickedTab = event.currentTarget;
+            const color = clickedTab.dataset.color;
+
+            allTabs.forEach(b => b.classList.remove('active'));
+            allContent.forEach(s => s.classList.remove('active'));
+            
+            clickedTab.classList.add('active');
+            targetContent.classList.add('active');
+            
+            const headers = targetContent.querySelectorAll('.card-header');
+            const timelineDots = targetContent.querySelectorAll('.timeline-dot');
+
+            // Reset all headers first
+            document.querySelectorAll('.card-header').forEach(h => {
+                Object.values(colorMaps.header).forEach(colorClass => h.classList.remove(colorClass));
+            });
+
+            // Apply new color to active tab's headers
+            if (colorMaps.header[color]) {
+                headers.forEach(h => h.classList.add(colorMaps.header[color]));
+            }
+            if (colorMaps.dot[color]) {
+                timelineDots.forEach(d => d.classList.add(colorMaps.dot[color]));
+            }
+
+            if (tabId === 'pancarte' && typeof Chart !== 'undefined') {
+                // Use a timeout to ensure the canvas is visible and has dimensions before drawing
+                setTimeout(() => {
+                    updatePancarteChart();
+                }, 0);
+            }
+        }
+        
+        function addTransmission() {
+            const author = document.getElementById('new-transmission-author').value.trim();
+            const text = document.getElementById('new-transmission-text').value.trim();
+            if (!text || !author) return;
+            const now = new Date();
+            const dotColorClass = colorMaps.dot.green || '';
+            const newHTML = `<div class="timeline-item"><div class="timeline-dot ${dotColorClass}"></div><div class="flex justify-between items-center mb-1"><h3 class="font-semibold text-gray-800">${now.toLocaleDateString('fr-FR')} - ${author.toUpperCase()}</h3><time class="text-sm font-normal text-gray-400">${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</time></div><p class="text-gray-600 whitespace-pre-wrap">${text}</p></div>`;
+            document.getElementById('transmissions-list').insertAdjacentHTML('afterbegin', newHTML);
+            document.getElementById('transmission-form').reset();
+        }
+
+        function addPrescription() {
+            const name = document.getElementById('med-name').value;
+            const posologie = document.getElementById('med-posologie').value;
+            const voie = document.getElementById('med-voie').value;
+            const debut = document.getElementById('med-debut').value;
+            if(!name) return;
+            const tableBody = document.querySelector("#prescription-table tbody");
+            const newRow = tableBody.insertRow(tableBody.rows.length - 6); // Insert before 'Autres' category
+            const debutDate = new Date(debut);
+            const formattedDate = debut ? `${String(debutDate.getDate()).padStart(2,'0')}/${String(debutDate.getMonth()+1).padStart(2,'0')}` : '';
+
+            newRow.innerHTML = `<td class="p-2 text-left">${name}</td><td class="p-2">${posologie}</td><td class="p-2">${voie}</td><td class="p-2">${formattedDate}</td><td class="p-2"></td>` + `<td><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"></td>`.repeat(8);
+            document.getElementById('prescription-form').reset();
+        }
+
+        function updatePancarteChart() {
+            const table = document.getElementById('pancarte-table');
+            const headers = Array.from(table.querySelectorAll('thead tr:last-child th')).map(th => th.textContent);
+            const labels = headers.map((h, i) => `12/02 ${h}`).concat(headers.map((h, i) => `13/02 ${h}`));
+            
+            const rows = table.querySelectorAll('tbody tr');
+            const data = {};
+
+            rows.forEach(row => {
+                const param = row.cells[0].textContent.trim();
+                const inputs = Array.from(row.querySelectorAll('input[type="text"]'));
+                if(inputs.length > 0) {
+                    data[param] = inputs.map(input => parseFloat(input.value.split('/')[0]) || null);
+                }
+            });
+
+            const tensionData = Array.from(rows[1].querySelectorAll('input[type="text"]')).map(input => {
+                const parts = input.value.split('/');
+                return {
+                    systolique: parseFloat(parts[0]) || null,
+                    diastolique: parseFloat(parts[1]) || null
+                };
+            });
+            
+            const datasets = [
+                { 
+                    type: 'bar',
+                    label: 'Tension (mmHg)',
+                    data: tensionData.map(t => [t.diastolique, t.systolique]),
+                    backgroundColor: '#3b82f640',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                { 
+                    type: 'line',
+                    label: 'Pouls (/min)', 
+                    data: data['Pouls (/min)'], 
+                    borderColor: '#ef4444', 
+                    backgroundColor: '#ef444420', 
+                    tension: 0.2, 
+                    yAxisID: 'y', 
+                    borderWidth: 2, 
+                    pointBackgroundColor: '#ef4444' 
+                },
+                { 
+                    type: 'line',
+                    label: 'Température (°C)', 
+                    data: data['Température (°C)'], 
+                    borderColor: '#f97316', 
+                    backgroundColor: '#f9731620', 
+                    tension: 0.2, 
+                    yAxisID: 'y1', 
+                    borderWidth: 2, 
+                    pointBackgroundColor: '#f97316' 
+                },
+                { 
+                    type: 'line',
+                    label: 'Douleur (EVA /10)', 
+                    data: data['Douleur (EVA /10)'], 
+                    borderColor: '#8b5cf6', 
+                    backgroundColor: '#8b5cf620', 
+                    tension: 0.2, 
+                    yAxisID: 'y2', 
+                    borderWidth: 2, 
+                    pointBackgroundColor: '#8b5cf6' 
+                }
+            ];
+
+            const ctx = document.getElementById('pancarteChart').getContext('2d');
+            if (pancarteChartInstance) {
+                pancarteChartInstance.destroy();
+            }
+            pancarteChartInstance = new Chart(ctx, {
+                type: 'bar', // Base type is bar to support floating bars
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Pouls / Tension' } },
+                        y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Température (°C)' }, grid: { drawOnChartArea: false } },
+                        y2: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Douleur (EVA)' }, grid: { drawOnChartArea: false }, max: 10, min: 0 }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial active tab and content
+            const initialTab = document.querySelector('.tab-button');
+            const initialContentId = initialTab.getAttribute('onclick').match(/'([^']+)'/)[1];
+            initialTab.classList.add('active');
+            document.getElementById(initialContentId).classList.add('active');
+            
+            // Set initial header color
+            const initialColor = initialTab.dataset.color;
+             if (colorMaps.header[initialColor]) {
+                document.querySelectorAll(`#${initialContentId} .card-header`).forEach(h => {
+                    h.classList.add(colorMaps.header[initialColor]);
+                });
+            }
+
+            document.getElementById('med-debut').valueAsDate = new Date();
+            
+            if (document.getElementById('pancarte').classList.contains('active')) {
+                 setTimeout(() => {
+                    updatePancarteChart();
+                }, 0);
+            }
+        });
+    </script>
+
+</body>
+</html>
+
+
