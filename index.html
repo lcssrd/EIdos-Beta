@@ -79,12 +79,22 @@
         .diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
         .diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
         
-        .diagram input[type="text"] {
+        .diagram input[type="text"], .diagram input[type="number"] {
             width: 100%; border: none; text-align: center; padding: 4px; background-color: transparent;
             transition: background-color 0.2s; color: #1f2937; font-size: 0.75rem;
         }
-        .diagram input[type="text"]:focus {
+        .diagram input[type="text"]:focus, .diagram input[type="number"]:focus {
             outline: 2px solid #3b82f6; background-color: #eff6ff; border-radius: 4px;
+        }
+
+        /* MODIFICATION : Masquer les flèches des champs numériques */
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
         }
 
         .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
@@ -341,8 +351,14 @@
                                         };
                                         for (const param in pancarteData) {
                                             let row = `<tr><td class="p-2 text-left font-semibold">${param}</td>`;
+                                            
+                                            let inputHtml = '<input type="text" value="" onchange="updatePancarteChart()">'; // Default
+                                            if (param === 'Température (°C)') {
+                                                inputHtml = '<input type="number" step="0.1" value="" onchange="updatePancarteChart()">';
+                                            }
+
                                             for(let i=0; i<33; i++) {
-                                                row += `<td class="p-0"><input type="text" value="" onchange="updatePancarteChart()"></td>`;
+                                                row += `<td class="p-0">${inputHtml}</td>`;
                                             }
                                             row += `</tr>`;
                                             document.write(row);
@@ -772,8 +788,22 @@
             if (pancarteChartInstance) pancarteChartInstance.destroy();
             pancarteChartInstance = new Chart(ctx, {
                 type: 'bar', data: { labels, datasets },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left', title: { display: true, text: 'Tension (mmHg)' }, min: 0, max: 200 }, y1: { position: 'right', title: { display: true, text: 'Pouls' }, grid: { drawOnChartArea: false }, min: 0, max: 200 }, y2: { position: 'right', title: { display: true, text: 'Douleur' }, grid: { drawOnChartArea: false }, max: 10, min: 0 }, y3: { position: 'right', title: { display: true, text: 'Température' }, grid: { drawOnChartArea: false }, min: 35, max: 42 }, y4: { position: 'right', title: { display: true, text: 'SpO2' }, grid: { drawOnChartArea: false }, min: 60, max: 100 }},
-                    plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Tension (mmHg)' && ctx.raw?.length === 2 ? `${ctx.dataset.label}: ${ctx.raw[1]}/${ctx.raw[0]}` : `${ctx.dataset.label}: ${ctx.formattedValue}` }}}}
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { position: 'left', title: { display: true, text: 'Tension (mmHg)' }, min: 0, max: 200 }, 
+                        y1: { position: 'right', title: { display: true, text: 'Pouls' }, grid: { drawOnChartArea: false }, min: 0, max: 200 }, 
+                        y2: { position: 'right', title: { display: true, text: 'Douleur' }, grid: { drawOnChartArea: false }, max: 10, min: 0 }, 
+                        y3: { position: 'right', title: { display: true, text: 'Température' }, grid: { drawOnChartArea: false }, min: 36, max: 41, ticks: { stepSize: 0.5 } }, 
+                        // MODIFICATION : Ajuster l'échelle de la SpO2
+                        y4: { position: 'right', title: { display: true, text: 'SpO2' }, grid: { drawOnChartArea: false }, min: 50, max: 100 }
+                    },
+                    plugins: { 
+                        legend: { position: 'bottom' }, 
+                        tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Tension (mmHg)' && ctx.raw?.length === 2 ? `${ctx.dataset.label}: ${ctx.raw[1]}/${ctx.raw[0]}` : `${ctx.dataset.label}: ${ctx.formattedValue}` }}
+                    }
+                }
             });
         }
         
