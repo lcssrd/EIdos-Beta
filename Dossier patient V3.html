@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier Patient Informatisé (Sauvegardable)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html {
+            scroll-behavior: smooth;
+            overflow-y: scroll;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        #patient-header-form .card {
+            padding: 1rem;
+        }
+        .card-header {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        /* Header Colors with Accents */
+        .card-header.header-blue { color: #1e40af; border-bottom-color: #60a5fa; border-bottom-width: 2px; }
+        .card-header.header-teal { color: #0f766e; border-bottom-color: #5eead4; border-bottom-width: 2px; }
+        .card-header.header-rose { color: #be123c; border-bottom-color: #fb7185; border-bottom-width: 2px; }
+        .card-header.header-indigo { color: #4338ca; border-bottom-color: #a5b4fc; border-bottom-width: 2px; }
+        .card-header.header-green { color: #15803d; border-bottom-color: #86efac; border-bottom-width: 2px; }
+        .card-header.header-violet { color: #6d28d9; border-bottom-color: #c4b5fd; border-bottom-width: 2px; }
+        .card-header.header-orange { color: #c2410c; border-bottom-color: #fdba74; border-bottom-width: 2px; }
+        
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s ease-in-out;
+            background-color: #fff;
+        }
+        .info-item:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 1px #4f46e5;
+        }
+        .info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
+        .info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
+        
+        .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
+        .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
+        .timeline-dot.dot-rose { background-color: #f43f5e; }
+        .timeline-dot.dot-green { background-color: #22c55e; }
+
+        .diagram th, .diagram td { border: 1px solid #e5e7eb; padding: 0.5rem; vertical-align: middle; }
+        .diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
+        .diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
+        
+        .diagram input[type="text"] {
+            width: 100%; border: none; text-align: center; padding: 4px; background-color: transparent;
+            transition: background-color 0.2s; color: #1f2937; font-size: 0.75rem;
+        }
+        .diagram input[type="text"]:focus {
+            outline: 2px solid #3b82f6; background-color: #eff6ff; border-radius: 4px;
+        }
+
+        .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
+        
+        .styled-input {
+            background-color: #f9fafb; border: 1px solid #d1d5db; transition: all 0.2s ease-in-out;
+            padding: 0.5rem 0.75rem; border-radius: 0.375rem;
+            width: 100%;
+        }
+        .styled-input:focus {
+            outline: 2px solid #3b82f6; outline-offset: -1px;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); border-color: #3b82f6;
+        }
+        textarea.info-value {
+            resize: none;
+            overflow: hidden;
+        }
+        
+        .styled-input:disabled, textarea.info-value:disabled {
+            background-color: transparent;
+            border-color: transparent;
+            cursor: default;
+            color: #1f2937;
+        }
+
+        .info-item > textarea.info-value, 
+        .info-item > input.info-value,
+        .info-item > textarea.info-value:disabled,
+        .info-item > input.info-value:disabled {
+           background-color: transparent;
+           border-color: transparent;
+           padding: 0;
+           border-radius: 0;
+           box-shadow: none;
+           width: 100%;
+        }
+        .info-item > textarea.info-value:focus,
+        .info-item > input.info-value:focus {
+            outline: none;
+            box-shadow: none;
+            border-color: transparent;
+        }
+        /* Specific fix for date input icon color */
+        .info-item > input[type="date"].info-value::-webkit-calendar-picker-indicator {
+            filter: invert(0.35);
+        }
+        .info-item > input[type="date"].info-value:disabled::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+
+        .preserve-whitespace {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+    <div class="max-w-screen-xl mx-auto">
+        <header class="mb-6 p-4 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-lg flex justify-between items-center">
+            <h1 class="text-xl lg:text-2xl font-bold">Centre hospitalier de l'IFSI</h1>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="exportData()" title="Exporter les données" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <i class="fas fa-file-export text-white"></i>
+                </button>
+                <button type="button" onclick="document.getElementById('import-file').click()" title="Importer les données" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <i class="fas fa-file-import text-white"></i>
+                </button>
+                <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)">
+                <button type="button" onclick="clearData()" title="Effacer toutes les données" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <i class="fas fa-trash text-white"></i>
+                </button>
+                <span class="font-light text-sm mr-4">L. Séraudie - 2025</span>
+                <button type="button" onclick="toggleFullscreen()" title="Plein écran" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <i id="fullscreen-icon" class="fas fa-expand text-white"></i>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Patient Header -->
+            <header id="patient-header-form" class="mb-6">
+                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <!-- Patient Identity Card -->
+                    <div class="lg:col-span-3 card !mb-0 p-4">
+                        <h2 class="text-lg font-semibold text-slate-700 border-b pb-1 mb-3 flex items-center">
+                            <i class="fas fa-user mr-3 text-sky-600"></i>
+                            Identité du Patient
+                        </h2>
+                        <div class="info-grid grid-cols-1 md:grid-cols-3">
+                            <div class="info-item md:col-span-2">
+                                <span class="info-label">Nom, Prénom</span>
+                                <input type="text" id="patient-name" class="info-value text-2xl font-bold">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date de naissance</span>
+                                <input type="text" id="patient-dob" placeholder="(JJ/MM/AAAA)" class="info-value text-gray-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hospital Stay Card -->
+                    <div class="lg:col-span-2 card !mb-0 p-4">
+                        <h2 class="text-lg font-semibold text-slate-700 border-b pb-1 mb-3 flex items-center">
+                            <i class="fas fa-hospital mr-3 text-sky-600"></i>
+                            Informations du Séjour
+                        </h2>
+                        <div class="info-grid grid-cols-2">
+                            <div class="info-item">
+                                <span class="info-label">Service</span>
+                                <input type="text" id="patient-service" class="info-value">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Chambre</span>
+                                <input type="text" id="patient-room" class="info-value">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Médecin</span>
+                                <input type="text" id="patient-doctor" class="info-value">
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date d'entrée</span>
+                                <input type="date" id="patient-entry-date" class="info-value">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Validation Button -->
+                <div class="flex justify-end mt-4">
+                    <button id="lock-header-btn" type="button" onclick="toggleLock('patient-header-form', 'lock-header-btn')" class="inline-flex items-center justify-center py-1 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-sky-600 text-sky-700 hover:bg-sky-600">
+                        <i class="fas fa-check mr-2"></i>
+                        Valider l'en-tête
+                    </button>
+                </div>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <div class="mb-6">
+                 <nav class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2" aria-label="Tabs">
+                    <button type="button" onclick="changeTab(event, 'administratif')" data-color="blue"><i class="fas fa-user-circle mr-2"></i>Administratif</button>
+                    <button type="button" onclick="changeTab(event, 'mode-de-vie')" data-color="teal"><i class="fas fa-home mr-2"></i>Vie & ATCD</button>
+                    <button type="button" onclick="changeTab(event, 'observations')" data-color="rose"><i class="fas fa-notes-medical mr-2"></i>Observations Médicales</button>
+                    <button type="button" onclick="changeTab(event, 'prescriptions')" data-color="indigo"><i class="fas fa-pills mr-2"></i>Prescriptions</button>
+                    <button type="button" onclick="changeTab(event, 'transmissions')" data-color="green"><i class="fas fa-exchange-alt mr-2"></i>Transmissions</button>
+                    <button type="button" onclick="changeTab(event, 'pancarte')" data-color="violet"><i class="fas fa-chart-line mr-2"></i>Pancarte</button>
+                    <button type="button" onclick="changeTab(event, 'diagramme')" data-color="orange"><i class="fas fa-calendar-alt mr-2"></i>Diagramme Soins</button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content">
+                <!-- Administrative Info -->
+                <div id="administratif" class="content-section active">
+                    <div class="card p-6"><h2 class="card-header">Informations Personnelles</h2><div class="info-grid"><div class="info-item"><span class="info-label">Nom</span><textarea id="admin-nom" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Prénom</span><textarea id="admin-prenom" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Date de Naissance</span><textarea id="admin-dob" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Sexe</span><textarea id="admin-sexe" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item col-span-full"><span class="info-label">Adresse</span><textarea id="admin-adresse" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div></div></div>
+                    <div class="card p-6"><h2 class="card-header">Contact</h2><div class="info-grid"><div class="info-item"><span class="info-label">Personne à contacter</span><textarea id="admin-contact" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Téléphone</span><textarea id="admin-telephone" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Médecin traitant</span><textarea id="admin-medecin" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div></div></div>
+                    <div class="card p-6"><h2 class="card-header">Couverture Sociale</h2><div class="info-grid"><div class="info-item"><span class="info-label">N° de Sécurité Sociale</span><textarea id="admin-secu" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Mutuelle</span><textarea id="admin-mutuelle" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">N° Adhérent Mutuelle</span><textarea id="admin-mutuelle-num" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div></div></div>
+                    <div class="flex justify-end">
+                        <button id="lock-admin-btn" type="button" onclick="toggleLock('administratif', 'lock-admin-btn')" class="inline-flex items-center justify-center py-1 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-blue-600 text-blue-700 hover:bg-blue-600">
+                            <i class="fas fa-check mr-2"></i>Valider les données
+                        </button>
+                    </div>
+                </div>
+                <!-- Lifestyle & History -->
+                <div id="mode-de-vie" class="content-section">
+                    <div class="card p-6"><h2 class="card-header">Mode de vie</h2><div class="info-grid"><div class="info-item"><span class="info-label">Situation</span><textarea id="vie-situation" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Habitat</span><textarea id="vie-habitat" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Habitudes</span><textarea id="vie-habitudes" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div></div></div>
+                    <div class="card p-6"><h2 class="card-header">Antécédents (ATCD)</h2><div class="info-grid"><div class="info-item"><span class="info-label">Médicaux</span><textarea id="atcd-medicaux" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Chirurgicaux</span><textarea id="atcd-chirurgicaux" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div><div class="info-item"><span class="info-label">Allergies</span><textarea id="atcd-allergies" class="info-value" rows="1" oninput="autoResize(this)"></textarea></div></div></div>
+                    <div class="flex justify-end">
+                        <button id="lock-vie-btn" type="button" onclick="toggleLock('mode-de-vie', 'lock-vie-btn')" class="inline-flex items-center justify-center py-1 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
+                            <i class="fas fa-check mr-2"></i>Valider les données
+                        </button>
+                    </div>
+                </div>
+                <!-- Medical Observations -->
+                <div id="observations" class="content-section">
+                    <div class="card p-6"><h2 class="card-header">Suivi Médical</h2><div id="observations-list" class="space-y-8 mt-4"></div></div>
+                    <div class="card p-6">
+                        <h2 class="card-header">Ajouter une observation médicale</h2>
+                        <form id="new-observation-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="md:col-span-2"><label for="new-observation-author" class="block text-sm font-medium text-gray-700">Auteur (ex: Dr. REED)</label><input type="text" id="new-observation-author" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                <div><label for="new-observation-date" class="block text-sm font-medium text-gray-700">Date</label><input type="date" id="new-observation-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                            </div>
+                            <div><label for="new-observation-text" class="block text-sm font-medium text-gray-700">Observation</label><textarea id="new-observation-text" rows="4" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></textarea></div>
+                            <div class="flex justify-end"><button type="button" onclick="addObservation()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700">Ajouter</button></div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Prescriptions -->
+                <div id="prescriptions" class="content-section">
+                    <div class="card p-6">
+                         <h2 class="card-header">Prescriptions Médicales</h2>
+                         <div class="overflow-x-auto mt-4">
+                            <table class="w-full border-collapse text-sm diagram" id="prescription-table">
+                                <thead class="bg-gray-100 text-gray-600">
+                                    <tr>
+                                        <th class="p-2 text-left align-bottom" rowspan="2">Médicament</th>
+                                        <th class="p-2 text-left align-bottom" rowspan="2">Posologie</th>
+                                        <th class="p-2 text-left align-bottom" rowspan="2">Voie</th>
+                                        <th class="p-2 text-left align-bottom" rowspan="2">Date de début</th>
+                                        <script>for(let i=1; i<=11; i++) { document.write(`<th class="p-2 text-center" colspan="4">Jour ${i}</th>`);}</script>
+                                    </tr>
+                                    <tr>
+                                        <script>for(let i=0; i<11; i++) { document.write(`<th class="p-1 text-center w-8">M</th><th class="p-1 text-center w-8">Mi</th><th class="p-1 text-center w-8">S</th><th class="p-1 text-center w-8">N</th>`);}</script>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-center" id="prescription-tbody"></tbody>
+                            </table>
+                         </div>
+                    </div>
+                     <div class="card p-6">
+                         <h2 class="card-header">Ajouter une prescription</h2>
+                         <form id="new-prescription-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                             <div>
+                                <label for="med-name" class="block text-sm font-medium text-gray-700">Médicament</label>
+                                <input type="text" id="med-name" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                            </div>
+                             <div>
+                                <label for="med-posologie" class="block text-sm font-medium text-gray-700">Posologie</label>
+                                <input type="text" id="med-posologie" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                            </div>
+                             <div>
+                                <label for="med-voie" class="block text-sm font-medium text-gray-700">Voie</label>
+                                <input type="text" id="med-voie" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="med-start-date" class="block text-sm font-medium text-gray-700">Date de début</label>
+                                <input type="date" id="med-start-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                            </div>
+                             <div class="flex justify-start">
+                                <button type="button" onclick="addPrescription()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Ajouter</button>
+                            </div>
+                         </form>
+                     </div>
+                </div>
+
+                <!-- Transmissions -->
+                <div id="transmissions" class="content-section">
+                    <div class="card p-6"><h2 class="card-header">Transmissions Soignantes</h2><div id="transmissions-list-ide" class="space-y-8 mt-4"></div></div>
+                    <div class="card p-6">
+                        <h2 class="card-header">Ajouter une transmission</h2>
+                        <form id="new-transmission-form-2" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="md:col-span-2"><label for="new-transmission-author-2" class="block text-sm font-medium text-gray-700">Auteur (ex: IDE, AS)</label><input type="text" id="new-transmission-author-2" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                <div><label for="new-transmission-date" class="block text-sm font-medium text-gray-700">Date</label><input type="date" id="new-transmission-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                            </div>
+                            <div><label for="new-transmission-text-2" class="block text-sm font-medium text-gray-700">Transmission Ciblée</label><textarea id="new-transmission-text-2" rows="4" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm" placeholder="Cible :&#10;Données :&#10;Actions :&#10;Résultats :"></textarea></div>
+                            <div class="flex justify-end"><button type="button" onclick="addTransmission()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Ajouter</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Pancarte -->
+                <div id="pancarte" class="content-section">
+                    <div class="card p-6">
+                        <h2 class="card-header">Graphique des Constantes</h2>
+                        <div class="relative h-96 w-full"><canvas id="pancarteChart"></canvas></div>
+                    </div>
+                    <div class="card p-6">
+                        <h2 class="card-header">Tableau de Surveillance (Pancarte)</h2>
+                        <div class="overflow-x-auto mt-4">
+                            <table class="w-full border-collapse text-sm text-center diagram" id="pancarte-table">
+                                <thead class="bg-gray-100 text-gray-600">
+                                    <tr>
+                                        <th class="p-2 text-left" rowspan="2">Paramètres</th>
+                                        <script>for(let i=1; i<=11; i++) { document.write(`<th class="p-2 text-center" colspan="3">Jour ${i}</th>`);}</script>
+                                    </tr>
+                                    <tr><script>for(let i=0; i<11; i++) document.write(`<th class="p-1 w-32">Matin</th><th class="p-1 w-32">Soir</th><th class="p-1 w-32">Nuit</th>`)</script></tr>
+                                </thead>
+                                <tbody>
+                                    <script>
+                                        const pancarteData = {
+                                            'Pouls (/min)': [], 'Tension (mmHg)': [], 'Température (°C)': [], 'SpO2 (%)': [], 'Douleur (EVA /10)': []
+                                        };
+                                        for (const param in pancarteData) {
+                                            let row = `<tr><td class="p-2 text-left font-semibold">${param}</td>`;
+                                            for(let i=0; i<33; i++) {
+                                                row += `<td class="p-0"><input type="text" value="" onchange="updatePancarteChart()"></td>`;
+                                            }
+                                            row += `</tr>`;
+                                            document.write(row);
+                                        }
+                                    </script>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Care Diagram -->
+                <div id="diagramme" class="content-section">
+                     <div class="card p-6">
+                        <h2 class="card-header">Diagramme de Soins</h2>
+                        <div class="overflow-x-auto"><table class="w-full table-auto text-sm text-center diagram" id="care-diagram-table">
+                            <thead class="font-semibold bg-gray-100">
+                                <tr><th class="p-2 text-left">Soin / Surveillance</th>
+                                    <script>for(let i=1; i<=11; i++) document.write(`<th colspan="3" class="border-l">Jour ${i}</th>`)</script>
+                                </tr>
+                                <tr><th></th><script>for(let i=0; i<11; i++) document.write(`<th class="border-l">M</th><th>S</th><th>N</th>`)</script></tr>
+                            </thead>
+                            <tbody id="care-diagram-tbody">
+                                 <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">Hygiène & Confort</td></tr>
+                                 <tr><td class="text-left p-2">Toilette au lit / lavabo</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                 <tr><td class="text-left p-2">Prévention d'escarres</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                 <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">Mobilisation</td></tr>
+                                 <tr><td class="text-left p-2">Bas de contention</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                 <tr><td class="text-left p-2">Séance de kinésithérapie</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                 <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">Autres</td></tr>
+                            </tbody>
+                        </table></div>
+                     </div>
+                     <div class="card p-6">
+                        <h2 class="card-header">Ajouter un soin</h2>
+                        <form id="new-care-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                               <label for="care-name" class="block text-sm font-medium text-gray-700">Soin / Surveillance</label>
+                               <input type="text" id="care-name" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                           </div>
+                            <div class="flex justify-start md:col-start-4">
+                               <button type="button" onclick="addCareDiagramRow()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600">Ajouter</button>
+                           </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let pancarteChartInstance;
+        const SAVE_KEY = 'dossierPatientData';
+
+        // --- DATA PERSISTENCE FUNCTIONS ---
+
+        function saveData() {
+            const state = {};
+            // Save all inputs/textareas with an ID
+            document.querySelectorAll('input[id], textarea[id]').forEach(el => {
+                const id = el.id;
+                if (el.type === 'checkbox' || el.type === 'radio') {
+                    state[id] = el.checked;
+                } else {
+                    state[id] = el.value;
+                }
+            });
+
+            // Save the HTML content of dynamic lists
+            const dynamicContentIds = ['observations-list', 'transmissions-list-ide', 'prescription-tbody', 'care-diagram-tbody'];
+            dynamicContentIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    state[id + '_html'] = el.innerHTML;
+                }
+            });
+
+            // Save values from pancarte table inputs
+            state.pancarteValues = Array.from(document.querySelectorAll('#pancarte-table tbody input')).map(input => input.value);
+            
+            // Save checkbox states for dynamic tables
+            state.prescriptionCheckboxes = Array.from(document.querySelectorAll('#prescription-tbody input[type="checkbox"]')).map(cb => cb.checked);
+            state.careDiagramCheckboxes = Array.from(document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]')).map(cb => cb.checked);
+
+            // Save lock button states
+            state.lockButtonStates = {};
+            document.querySelectorAll('button[id^="lock-"]').forEach(btn => {
+                state.lockButtonStates[btn.id] = btn.innerHTML.includes('fa-lock');
+            });
+
+            localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        }
+
+        function loadData() {
+            const savedState = localStorage.getItem(SAVE_KEY);
+            if (!savedState) return;
+            const state = JSON.parse(savedState);
+
+            // Restore inputs/textareas with an ID
+            Object.keys(state).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox' || el.type === 'radio') {
+                        el.checked = state[id];
+                    } else {
+                        el.value = state[id];
+                    }
+                }
+            });
+            
+            // Restore HTML content of dynamic lists
+            const dynamicContentIds = ['observations-list', 'transmissions-list-ide', 'prescription-tbody', 'care-diagram-tbody'];
+            dynamicContentIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && state[id + '_html']) {
+                    el.innerHTML = state[id + '_html'];
+                }
+            });
+
+            // Restore checkbox states for dynamic tables AFTER innerHTML is set
+            if (state.prescriptionCheckboxes) {
+                document.querySelectorAll('#prescription-tbody input[type="checkbox"]').forEach((cb, index) => {
+                    cb.checked = state.prescriptionCheckboxes[index] || false;
+                });
+            }
+             if (state.careDiagramCheckboxes) {
+                document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]').forEach((cb, index) => {
+                    cb.checked = state.careDiagramCheckboxes[index] || false;
+                });
+            }
+
+            // Restore pancarte table values
+            if (state.pancarteValues) {
+                document.querySelectorAll('#pancarte-table tbody input').forEach((input, index) => {
+                    input.value = state.pancarteValues[index] || '';
+                });
+            }
+
+            // Post-load UI adjustments
+            document.querySelectorAll('textarea.info-value').forEach(autoResize);
+            const entryDateValue = document.getElementById('patient-entry-date').value;
+            if (entryDateValue) {
+                const entryDate = new Date(entryDateValue);
+                if (!isNaN(entryDate.getTime())) {
+                    updateDynamicDates(entryDate);
+                }
+            }
+            
+            // Restore lock button states
+            if (state.lockButtonStates) {
+                Object.keys(state.lockButtonStates).forEach(buttonId => {
+                    if (state.lockButtonStates[buttonId]) { // If the button should be in a "locked" state
+                        const button = document.getElementById(buttonId);
+                        if (button && button.innerHTML.includes('fa-check')) { // And it's currently "unlocked"
+                             // We need to find the containerId associated with this button
+                            let containerId;
+                            switch(buttonId) {
+                                case 'lock-header-btn': containerId = 'patient-header-form'; break;
+                                case 'lock-admin-btn': containerId = 'administratif'; break;
+                                case 'lock-vie-btn': containerId = 'mode-de-vie'; break;
+                            }
+                            if (containerId) {
+                                toggleLock(containerId, buttonId);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function exportData() {
+            saveData(); // Ensure latest data is captured
+            const dataStr = localStorage.getItem(SAVE_KEY);
+            if (!dataStr || dataStr === '{}') {
+                console.warn("Aucune donnée à exporter.");
+                return;
+            }
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            const patientName = (document.getElementById('patient-name').value.trim() || 'patient').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            a.download = `dossier_${patientName}.json`;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            a.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const content = e.target.result;
+                    JSON.parse(content); // Validate JSON format
+                    localStorage.setItem(SAVE_KEY, content);
+                    location.reload(); // Reload to apply imported data
+                } catch (error) {
+                    console.error("Erreur d'importation : le fichier n'est pas un JSON valide.", error);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input for same-file uploads
+        }
+
+        function clearData() {
+            // A confirmation modal would be ideal here, but for simplicity we clear directly.
+            // The export function serves as a backup mechanism.
+            localStorage.removeItem(SAVE_KEY);
+            localStorage.removeItem('activeTab');
+            location.reload();
+        }
+
+        // --- ORIGINAL PAGE FUNCTIONS (with modifications) ---
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        function toggleFullscreen() {
+            const elem = document.documentElement;
+            const icon = document.getElementById('fullscreen-icon');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
+                icon.classList.replace('fa-expand', 'fa-compress');
+            } else {
+                document.exitFullscreen();
+                icon.classList.replace('fa-compress', 'fa-expand');
+            }
+        }
+
+        function updateDynamicDates(startDate) {
+            const updateHeaders = (selector, isDateOnly = false) => {
+                const headers = document.querySelectorAll(selector);
+                headers.forEach((th, index) => {
+                    const currentDate = new Date(startDate);
+                    currentDate.setDate(startDate.getDate() + index);
+                    const day = String(currentDate.getDate()).padStart(2, '0');
+                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    th.innerHTML = isDateOnly ? `${day}/${month}` : `Jour ${index + 1}<br><span class="text-xs font-normal">${day}/${month}</span>`;
+                });
+            };
+            updateHeaders('#prescription-table thead tr:first-child th[colspan="4"]');
+            updateHeaders('#pancarte-table thead tr:first-child th[colspan="3"]');
+            updateHeaders('#care-diagram-table thead tr:first-child th[colspan="3"]');
+            if (pancarteChartInstance) updatePancarteChart();
+        }
+
+        function toggleLock(containerId, buttonId) {
+            const container = document.getElementById(containerId);
+            const button = document.getElementById(buttonId);
+            const inputs = container.querySelectorAll('.info-value');
+            const isUnlocking = button.innerHTML.includes('fa-lock');
+            
+            if (!isUnlocking && containerId === 'patient-header-form') {
+                const entryDateValue = document.getElementById('patient-entry-date').value;
+                if (entryDateValue) {
+                    const entryDate = new Date(entryDateValue);
+                    if (!isNaN(entryDate.getTime())) updateDynamicDates(entryDate);
+                }
+            }
+
+            inputs.forEach(input => {
+                input.disabled = !isUnlocking;
+                if (input.tagName.toLowerCase() === 'textarea' && isUnlocking) autoResize(input);
+            });
+            
+            // Define classes for different states
+            const colorMap = {
+                'lock-header-btn': {
+                    unlocked: ['border-sky-600', 'text-sky-700', 'hover:bg-sky-600'],
+                    locked: ['border-gray-400', 'text-gray-500', 'hover:bg-gray-400']
+                },
+                'lock-admin-btn': {
+                    unlocked: ['border-blue-600', 'text-blue-700', 'hover:bg-blue-600'],
+                    locked: ['border-gray-400', 'text-gray-500', 'hover:bg-gray-400']
+                },
+                'lock-vie-btn': {
+                    unlocked: ['border-teal-600', 'text-teal-700', 'hover:bg-teal-600'],
+                    locked: ['border-gray-400', 'text-gray-500', 'hover:bg-gray-400']
+                }
+            };
+
+            const styles = colorMap[buttonId];
+            const baseUnlockedText = (buttonId === 'lock-header-btn') ? "Valider l'en-tête" : "Valider les données";
+            
+            if (isUnlocking) {
+                // Changing to UNLOCKED state
+                button.innerHTML = `<i class="fas fa-check mr-2"></i> ${baseUnlockedText}`;
+                button.classList.remove(...styles.locked);
+                button.classList.add(...styles.unlocked);
+            } else {
+                // Changing to LOCKED state
+                button.innerHTML = `<i class="fas fa-lock mr-2"></i> Déverrouiller`;
+                button.classList.remove(...styles.unlocked);
+                button.classList.add(...styles.locked);
+            }
+        }
+
+
+        function changeTab(event, tabId) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            const targetContent = document.getElementById(tabId);
+            targetContent.classList.add('active');
+            
+            const baseClasses = "py-2.5 px-5 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-200 flex items-center justify-center shadow-sm";
+            const inactiveClasses = "text-gray-600 bg-gray-50 border-gray-200 hover:bg-gray-200";
+            const activeClasses = { blue: "bg-blue-500 text-white", teal: "bg-teal-500 text-white", rose: "bg-rose-500 text-white", indigo: "bg-indigo-500 text-white", green: "bg-green-500 text-white", violet: "bg-violet-500 text-white", orange: "bg-orange-500 text-white" };
+
+            document.querySelectorAll('nav[aria-label="Tabs"] button').forEach(tab => tab.className = `${baseClasses} ${inactiveClasses}`);
+            const clickedTab = event.currentTarget;
+            const color = clickedTab.dataset.color;
+            clickedTab.className = `${baseClasses} ${activeClasses[color]}`;
+            
+            document.querySelectorAll('.card-header').forEach(h => Object.keys(activeClasses).forEach(c => h.classList.remove(`header-${c}`)));
+            targetContent.querySelectorAll('.card-header').forEach(h => h.classList.add(`header-${color}`));
+
+            // FIX: Trigger resize for textareas in the now visible tab to prevent them from being flattened.
+            targetContent.querySelectorAll('textarea.info-value').forEach(autoResize);
+
+            localStorage.setItem('activeTab', tabId); // Save active tab
+
+            if (tabId === 'pancarte') {
+                setTimeout(() => updatePancarteChart(), 50);
+            }
+        }
+
+        function addObservation() {
+            const author = document.getElementById('new-observation-author').value.trim();
+            const text = document.getElementById('new-observation-text').value.trim();
+            const dateValue = document.getElementById('new-observation-date').value;
+            if (!text || !author) return;
+            const eventDate = dateValue ? new Date(dateValue) : new Date();
+            const formattedDate = new Date(eventDate.getTime() - (eventDate.getTimezoneOffset() * 60000)).toLocaleDateString('fr-FR');
+            const newHTML = `<div class="timeline-item"><div class="timeline-dot dot-rose"></div><h3 class="font-semibold text-gray-800">${formattedDate} - ${author.toUpperCase()}</h3><p class="text-gray-600 preserve-whitespace">${text}</p></div>`;
+            document.getElementById('observations-list').insertAdjacentHTML('afterbegin', newHTML);
+            document.getElementById('new-observation-form').reset();
+        }
+
+        function addTransmission() {
+            const author = document.getElementById('new-transmission-author-2').value.trim();
+            const text = document.getElementById('new-transmission-text-2').value.trim();
+            const dateValue = document.getElementById('new-transmission-date').value;
+            if (!text || !author) return;
+            const eventDate = dateValue ? new Date(dateValue) : new Date();
+            const formattedDate = new Date(eventDate.getTime() - (eventDate.getTimezoneOffset() * 60000)).toLocaleDateString('fr-FR');
+            const formattedText = text.replace(/Cible :/g, '<strong class="text-gray-900">Cible :</strong>').replace(/Données :/g, '<br><strong class="text-gray-900">Données :</strong>').replace(/Actions :/g, '<br><strong class="text-gray-900">Actions :</strong>').replace(/Résultat :/g, '<br><strong class="text-gray-900">Résultat :</strong>');
+            const newHTML = `<div class="timeline-item"><div class="timeline-dot dot-green"></div><h3 class="font-semibold text-gray-800">${formattedDate} - ${author.toUpperCase()}</h3><p class="text-gray-600 preserve-whitespace">${formattedText}</p></div>`;
+            document.getElementById('transmissions-list-ide').insertAdjacentHTML('afterbegin', newHTML);
+            document.getElementById('new-transmission-form-2').reset();
+        }
+
+        function addPrescription() {
+            const name = document.getElementById('med-name').value.trim();
+            const posologie = document.getElementById('med-posologie').value.trim();
+            const voie = document.getElementById('med-voie').value.trim();
+            const startDate = document.getElementById('med-start-date').value;
+            if (!name || !posologie || !voie || !startDate) return;
+            const formattedStartDate = new Date(new Date(startDate).getTime() - (new Date(startDate).getTimezoneOffset() * 60000)).toLocaleDateString('fr-FR');
+            const newRow = document.getElementById("prescription-tbody").insertRow();
+            let cellsHTML = `<td class="p-2 text-left">${name}</td><td class="p-2 text-left">${posologie}</td><td class="p-2 text-left">${voie}</td><td class="p-2 text-left">${formattedStartDate}</td>`;
+            for (let i = 0; i < 11; i++) cellsHTML += `<td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`;
+            newRow.innerHTML = cellsHTML;
+            document.getElementById('new-prescription-form').reset();
+        }
+
+        function addCareDiagramRow() {
+            const name = document.getElementById('care-name').value.trim();
+            if (!name) return;
+            const newRow = document.getElementById('care-diagram-tbody').insertRow();
+            let cellsHTML = `<td class="text-left p-2">${name}</td>`;
+            for(let i=0; i<11; i++) cellsHTML += `<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`;
+            newRow.innerHTML = cellsHTML;
+            document.getElementById('new-care-form').reset();
+        }
+        
+        function updatePancarteChart() {
+            const table = document.getElementById('pancarte-table');
+            const entryDateVal = document.getElementById('patient-entry-date').value;
+            const startDate = entryDateVal ? new Date(entryDateVal) : new Date();
+            
+            const labels = Array.from({ length: 33 }).map((_, i) => {
+                const dayOffset = Math.floor(i / 3);
+                const timeOfDay = ['Matin', 'Soir', 'Nuit'][i % 3];
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + dayOffset);
+                return `${currentDate.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'})} ${timeOfDay}`;
+            });
+            
+            const dataSetsConfig = { 'Pouls (/min)': { yAxisID: 'y1', borderColor: '#ef4444' }, 'Tension (mmHg)': { type: 'bar', yAxisID: 'y', backgroundColor: '#f9731640' }, 'Température (°C)': { yAxisID: 'y3', borderColor: '#3b82f6' }, 'SpO2 (%)': { yAxisID: 'y4', borderColor: '#10b981' }, 'Douleur (EVA /10)': { yAxisID: 'y2', borderColor: '#8b5cf6' }};
+            const datasets = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+                const paramName = row.cells[0].textContent.trim();
+                let data = Array.from(row.querySelectorAll('input')).map(input => (paramName === 'Tension (mmHg)' && input.value.includes('/')) ? [parseFloat(input.value.split('/')[1]), parseFloat(input.value.split('/')[0])] : (parseFloat(input.value) || null));
+                return { label: paramName, data, type: 'line', tension: 0.2, borderWidth: 2, spanGaps: true, pointBackgroundColor: dataSetsConfig[paramName].borderColor, ...dataSetsConfig[paramName] };
+            });
+
+            const ctx = document.getElementById('pancarteChart').getContext('2d');
+            if (pancarteChartInstance) pancarteChartInstance.destroy();
+            pancarteChartInstance = new Chart(ctx, {
+                type: 'bar', data: { labels, datasets },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left', title: { display: true, text: 'Tension (mmHg)' }, min: 0, max: 200 }, y1: { position: 'right', title: { display: true, text: 'Pouls' }, grid: { drawOnChartArea: false }, min: 0, max: 200 }, y2: { position: 'right', title: { display: true, text: 'Douleur' }, grid: { drawOnChartArea: false }, max: 10, min: 0 }, y3: { position: 'right', title: { display: true, text: 'Température' }, grid: { drawOnChartArea: false }, min: 35, max: 42 }, y4: { position: 'right', title: { display: true, text: 'SpO2' }, grid: { drawOnChartArea: false }, min: 60, max: 100 }},
+                    plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Tension (mmHg)' && ctx.raw?.length === 2 ? `${ctx.dataset.label}: ${ctx.raw[1]}/${ctx.raw[0]}` : `${ctx.dataset.label}: ${ctx.formattedValue}` }}}}
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updatePancarteChart();
+
+            const activeTabId = localStorage.getItem('activeTab') || 'administratif';
+            const activeTabButton = document.querySelector(`nav button[onclick*="'${activeTabId}'"]`);
+            if (activeTabButton) {
+                changeTab({ currentTarget: activeTabButton }, activeTabId);
+            } else {
+                const initialTab = document.querySelector('nav[aria-label="Tabs"] button');
+                changeTab({ currentTarget: initialTab }, 'administratif');
+            }
+            
+            const mainContainer = document.querySelector('main');
+            mainContainer.addEventListener('input', saveData);
+            mainContainer.addEventListener('change', saveData);
+        });
+    </script>
+
+</body>
+</html>
+

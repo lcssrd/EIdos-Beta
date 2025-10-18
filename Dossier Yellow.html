@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier Patient Informatisé - Mme YELLOW</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html {
+            scroll-behavior: smooth;
+            overflow-y: scroll; /* Makes scrollbar always visible */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        .card-header {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        /* Header Colors */
+        .card-header.header-blue { color: #1e40af; }
+        .card-header.header-teal { color: #0f766e; }
+        .card-header.header-rose { color: #be123c; }
+        .card-header.header-indigo { color: #4338ca; }
+        .card-header.header-green { color: #15803d; }
+        .card-header.header-sky { color: #0369a1; }
+        .card-header.header-violet { color: #6d28d9; }
+        .card-header.header-orange { color: #c2410c; }
+        
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
+        .info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
+        
+        .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
+        .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
+        .timeline-dot.dot-rose { background-color: #f43f5e; }
+        .timeline-dot.dot-green { background-color: #22c55e; }
+
+        .diagram th, .diagram td { border: 1px solid #e5e7eb; padding: 0.5rem; vertical-align: middle; }
+        .diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
+        .diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
+        
+        /* Styles for better input visibility */
+        .diagram input[type="text"] {
+            width: 100%;
+            border: none;
+            text-align: center;
+            padding: 4px;
+            background-color: transparent;
+            transition: background-color 0.2s;
+            color: #1f2937; /* Ensure text color is set */
+            font-size: 0.75rem; /* Smaller font size */
+        }
+        .diagram input[type="text"]:focus {
+            outline: 2px solid #3b82f6;
+            background-color: #eff6ff;
+            border-radius: 4px;
+        }
+
+        .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
+        
+        .styled-input {
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            transition: all 0.2s ease-in-out;
+        }
+        .styled-input:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: -1px;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+        }
+        .preserve-lines {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+    <div class="max-w-screen-xl mx-auto">
+        <header class="mb-6 p-4 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-lg flex justify-between items-center">
+            <h1 class="text-xl lg:text-2xl font-bold">Centre hospitalier de l'IFSI</h1>
+            <div class="flex items-center gap-4">
+                <span class="font-light text-sm hidden sm:inline">L. Séraudie - 2025</span>
+                <button onclick="toggleFullScreen()" id="fullscreen-btn" title="Plein écran" class="text-white hover:bg-white/20 p-2 rounded-full w-10 h-10 flex items-center justify-center transition-colors">
+                    <i id="fullscreen-icon" class="fas fa-expand"></i>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Patient Header -->
+            <header class="card mb-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Dossier Patient : YELLOW, Marguerite</h1>
+                        <p class="text-gray-500 mt-1 text-base">Née le 22/04/1955 (70 ans)</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 text-sm w-full md:w-auto mt-4 md:mt-0 bg-slate-50 p-4 rounded-lg border">
+                            <div class="text-left"><span class="font-semibold block text-slate-500">Service</span><span class="text-gray-800 font-medium">SMR</span></div>
+                            <div class="text-left"><span class="font-semibold block text-slate-500">Chambre</span><span class="text-gray-800 font-medium">225</span></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <div class="mb-6">
+                 <nav class="flex w-full gap-2" aria-label="Tabs">
+                    <button type="button" onclick="changeTab(event, 'administratif')" data-color="blue"><i class="fas fa-user-circle mr-2"></i>Administratif</button>
+                    <button type="button" onclick="changeTab(event, 'mode-de-vie')" data-color="teal"><i class="fas fa-home mr-2"></i>Vie & ATCD</button>
+                    <button type="button" onclick="changeTab(event, 'observations')" data-color="rose"><i class="fas fa-notes-medical mr-2"></i>Observations Médicales</button>
+                    <button type="button" onclick="changeTab(event, 'prescriptions')" data-color="indigo"><i class="fas fa-pills mr-2"></i>Prescriptions</button>
+                    <button type="button" onclick="changeTab(event, 'transmissions')" data-color="green"><i class="fas fa-exchange-alt mr-2"></i>Transmissions</button>
+                    <button type="button" onclick="changeTab(event, 'pancarte')" data-color="violet"><i class="fas fa-chart-line mr-2"></i>Pancarte</button>
+                    <button type="button" onclick="changeTab(event, 'diagramme')" data-color="orange"><i class="fas fa-calendar-alt mr-2"></i>Diagramme Soins</button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content">
+                <!-- Administrative Info -->
+                <div id="administratif" class="content-section active">
+                    <div class="card"><h2 class="card-header">Informations Personnelles</h2><div class="info-grid"><div class="info-item"><span class="info-label">Nom</span><span class="info-value">YELLOW</span></div><div class="info-item"><span class="info-label">Prénom</span><span class="info-value">Marguerite</span></div><div class="info-item"><span class="info-label">Date de Naissance</span><span class="info-value">22/04/1955</span></div><div class="info-item"><span class="info-label">Sexe</span><span class="info-value">Féminin</span></div></div></div>
+                    <div class="card"><h2 class="card-header">Contact</h2><div class="info-grid"><div class="info-item"><span class="info-label">Personne à contacter</span><span class="info-value">M. Thomas YELLOW (Fils)</span></div><div class="info-item"><span class="info-label">Téléphone</span><span class="info-value">06 12 34 56 78</span></div></div></div>
+                </div>
+                <!-- Lifestyle & History -->
+                <div id="mode-de-vie" class="content-section">
+                    <div class="card"><h2 class="card-header">Mode de vie</h2><div class="info-grid"><div class="info-item"><span class="info-label">Situation</span><span class="info-value">Vit seule, retraitée</span></div><div class="info-item"><span class="info-label">Habitat</span><span class="info-value">Appartement, 3ème étage sans ascenseur</span></div><div class="info-item"><span class="info-label">Habitudes</span><span class="info-value">Marche 30 min/jour, non-fumeuse</span></div></div></div>
+                    <div class="card"><h2 class="card-header">Antécédents (ATCD)</h2><div class="info-grid"><div class="info-item"><span class="info-label">Médicaux</span><span class="info-value">Diabète type 2, HTA, Arthrose</span></div><div class="info-item"><span class="info-label">Chirurgicaux</span><span class="info-value">Vésicule biliaire (2010), Cataracte (2022)</span></div><div class="info-item"><span class="info-label">Allergies</span><span class="info-value">Aucune connue</span></div></div></div>
+                </div>
+                <!-- Medical Observations -->
+                <div id="observations" class="content-section">
+                    <div class="card">
+                        <h2 class="card-header">Suivi Médical</h2>
+                        <div class="space-y-8 mt-4">
+                            <div class="timeline-item"><div class="timeline-dot dot-rose"></div><h3 class="font-semibold text-gray-800">18/01 - Dr. REED</h3><p class="text-gray-600">Examen clinique de la patiente à J+7 de sa PTH droite. La cicatrisation est favorable, justifiant l'ablation des agrafes. La gestion de la douleur est correcte sous antalgiques de palier 1. Le principal point de vigilance reste la rééducation fonctionnelle, ralentie par une forte appréhension de la patiente. Le traitement anticoagulant préventif et les traitements de fond sont maintenus. Un bilan social est demandé pour anticiper le retour à domicile.</p></div>
+                            <div class="timeline-item border-transparent"><div class="timeline-dot dot-rose"></div><h3 class="font-semibold text-gray-800">12/01 - Dr. REED</h3><p class="text-gray-600">Admission de Mme YELLOW en SMR au lendemain d'une arthroplastie de hanche. Patiente algique et anxieuse. L'examen clinique est sans particularité en dehors de la douleur post-opératoire. Prescription d'une analgésie multimodale, d'une anticoagulation préventive et mise en place du projet de rééducation avec le kinésithérapeute.</p></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Prescriptions -->
+                <div id="prescriptions" class="content-section">
+                    <div class="card">
+                         <h2 class="card-header">Prescriptions Médicales</h2>
+                         <div class="overflow-x-auto mt-4"><table class="w-full border-collapse text-sm diagram" id="prescription-table">
+                            <thead class="bg-gray-100 text-gray-600">
+                                <tr>
+                                    <th class="p-2 text-left" rowspan="2">Médicament / Soin</th>
+                                    <script>for(let i=12; i<=22; i++) { document.write(`<th class="p-2 text-center" colspan="4">${i}/01</th>`);}</script>
+                                </tr>
+                                <tr><script>for(let i=0; i<11; i++) { document.write(`<th class="p-1 text-center w-8">M</th><th class="p-1 text-center w-8">Mi</th><th class="p-1 text-center w-8">S</th><th class="p-1 text-center w-8">N</th>`);}</script></tr>
+                            </thead>
+                            <tbody class="text-center" id="prescription-tbody">
+                                <script>
+                                    const prescriptions = [
+                                        { name: "METFORMINE 850mg (diabète)", checks: [1,0,1,0] },
+                                        { name: "AMLODIPINE 5mg (tension)", checks: [1,0,0,0] },
+                                        { name: "PARACETAMOL 1g (douleur)", checks: [1,1,1,1] },
+                                        { name: "ENOXAPARINE 4000 UI (anticoagulant)", checks: [0,0,1,0] }
+                                    ];
+                                    prescriptions.forEach(p => {
+                                        let row = `<tr><td class="p-2 text-left">${p.name}</td>`;
+                                        for (let day = 0; day < 11; day++) {
+                                            for (let time = 0; time < 4; time++) {
+                                                let isChecked = (day < 7 || (day === 7 && time < 2)) && p.checks[time] === 1;
+                                                if (p.name.includes("PARACETAMOL") && day >= 8) isChecked = false;
+                                                row += `<td><input type="checkbox" ${isChecked ? 'checked' : ''}></td>`;
+                                            }
+                                        }
+                                        row += `</tr>`;
+                                        document.write(row);
+                                    });
+                                    let surveillanceRow = `<tr><td class="p-2 text-left">Surveillance glycémie</td><td class="p-2 continuous-surveillance" colspan="44"></td></tr>`;
+                                    document.write(surveillanceRow);
+                                    let pansementRow = `<tr><td class="p-2 text-left">Pansement hanche (tous les 2j)</td>`;
+                                    for(let day=0; day<11; day++) {
+                                         pansementRow += `<td><input type="checkbox" ${day % 2 === 0 && day < 8 ? 'checked': ''}></td><td></td><td></td><td></td>`;
+                                    }
+                                    pansementRow += `</tr>`;
+                                    document.write(pansementRow);
+
+                                </script>
+                            </tbody>
+                        </table></div>
+                    </div>
+                     <div class="card">
+                         <h2 class="card-header">Ajouter une prescription</h2>
+                         <form id="new-prescription-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                             <div>
+                                <label for="med-name" class="block text-sm font-medium text-gray-700">Médicament / Soin</label>
+                                <input type="text" id="med-name" class="styled-input mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                            </div>
+                             <div class="flex justify-start md:col-start-4">
+                                <button type="button" onclick="addPrescription()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Ajouter</button>
+                            </div>
+                         </form>
+                     </div>
+                </div>
+
+                <!-- Transmissions -->
+                <div id="transmissions" class="content-section">
+                    <div class="card">
+                        <h2 class="card-header">Ajouter une transmission</h2>
+                        <form id="new-transmission-form-2" class="space-y-4">
+                            <div>
+                                <label for="new-transmission-author-2" class="block text-sm font-medium text-gray-700">Auteur (ex: IDE, AS)</label>
+                                <input type="text" id="new-transmission-author-2" class="styled-input mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="new-transmission-text-2" class="block text-sm font-medium text-gray-700">Transmission Ciblée</label>
+                                <textarea id="new-transmission-text-2" rows="4" class="styled-input mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm" placeholder="Cible :&#10;Données :&#10;Actions :&#10;Résultats :"></textarea>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="button" onclick="addTransmission()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Ajouter</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card"><h2 class="card-header">Transmissions Soignantes</h2><div id="transmissions-list-ide" class="space-y-8 mt-4">
+                        <div class="timeline-item"><div class="timeline-dot dot-green"></div><h3 class="font-semibold text-gray-800">19/01 - IDE - Matin</h3><p class="text-gray-600 preserve-lines"><strong class="text-gray-900">Cible :</strong> Mobilisation. <br><strong class="text-gray-900">Données :</strong> Patiente refuse le lever ce matin. Exprime une forte anxiété à l'idée de marcher et une douleur à 4/10. <br><strong class="text-gray-900">Actions :</strong> Rassurance. Discussion avec la patiente. Antalgique donné en prévision de la séance de kiné. <br><strong class="text-gray-900">Résultat :</strong> Patiente accepte de réessayer avec le kiné cet après-midi.</p></div>
+                        <div class="timeline-item"><div class="timeline-dot dot-green"></div><h3 class="font-semibold text-gray-800">16/01 - Kinésithérapeute</h3><p class="text-gray-600 preserve-lines"><strong class="text-gray-900">Cible :</strong> Premier lever. <br><strong class="text-gray-900">Données :</strong> Patiente très algique et anxieuse. <br><strong class="text-gray-900">Actions :</strong> Lever effectué, la patiente a fait quelques pas sur place. <br><strong class="text-gray-900">Résultat :</strong> Objectif atteint mais difficilement. À poursuivre quotidiennement.</p></div>
+                        <div class="timeline-item border-transparent"><div class="timeline-dot dot-green"></div><h3 class="font-semibold text-gray-800">12/01 - IDE - Arrivée</h3><p class="text-gray-600 preserve-lines"><strong class="text-gray-900">Cible :</strong> Douleur. <br><strong class="text-gray-900">Données :</strong> Douleur à 6/10. <br><strong class="text-gray-900">Actions :</strong> Antalgique. Installation. Rassurance. <br><strong class="text-gray-900">Résultat :</strong> Soulagée 1h après (EVA 4/10).</p></div>
+                    </div></div>
+                </div>
+
+                <!-- Pancarte -->
+                <div id="pancarte" class="content-section">
+                    <div class="card">
+                        <h2 class="card-header">Graphique des Constantes</h2>
+                        <div class="relative h-96 w-full"><canvas id="pancarteChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h2 class="card-header">Tableau de Surveillance (Pancarte)</h2>
+                        <div class="overflow-x-auto mt-4">
+                            <table class="w-full border-collapse text-sm text-center diagram" id="pancarte-table">
+                                <thead class="bg-gray-100 text-gray-600">
+                                    <tr>
+                                        <th class="p-2 text-left" rowspan="2">Paramètres</th>
+                                        <script>for(let i=12; i<=22; i++) { document.write(`<th class="p-2 text-center" colspan="3">${i}/01</th>`);}</script>
+                                    </tr>
+                                    <tr><script>for(let i=0; i<11; i++) document.write(`<th class="p-1 w-32">Matin</th><th class="p-1 w-32">Soir</th><th class="p-1 w-32">Nuit</th>`)</script></tr>
+                                </thead>
+                                <tbody>
+                                    <script>
+                                        const pancarteData = {
+                                            'Pouls (/min)': ['85','82','78','80','76','75','78','74','72','75','72','70','72','70','68','70','68','65','70','66','64','68','65','62'],
+                                            'Tension (mmHg)': ['140/85','135/85','130/80','135/82','130/80','125/75','130/78','128/75','125/70','125/75','120/70','122/72','120/70','118/68','120/70','124/72','120/70','115/65','120/70','118/68','115/65','122/70','118/68','115/65'],
+                                            'Température (°C)': ['37.2','37.4','37.0','37.1','36.9','36.8','37.0','36.8','36.6','36.8','36.7','36.5','36.9','36.6','36.7','37.0','36.8','36.6','36.8','36.7','36.5','37.0','36.8','36.6'],
+                                            'SpO2 (%)': ['96','97','98','97','98','99','98','99','99','97','98','98','98','99','99','98','99','99','99','99','99','98','99','99'],
+                                            'Douleur (EVA /10)': ['6','4','3','5','3','2','4','2','2','3','2','1','2','1','1','2','1','1','2','1','1','2','2','1']
+                                        };
+                                        for (const param in pancarteData) {
+                                            let row = `<tr><td class="p-2 text-left font-semibold">${param}</td>`;
+                                            for(let i=0; i<33; i++) {
+                                                const value = pancarteData[param][i] || '';
+                                                row += `<td class="p-0"><input type="text" value="${value}" onchange="updatePancarteChart()"></td>`;
+                                            }
+                                            row += `</tr>`;
+                                            document.write(row);
+                                        }
+                                    </script>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Care Diagram -->
+                <div id="diagramme" class="content-section">
+                     <div class="card">
+                        <h2 class="card-header">Diagramme de Soins</h2>
+                        <div class="overflow-x-auto"><table class="w-full table-auto text-sm text-center diagram">
+                            <thead class="font-semibold bg-gray-100">
+                                <tr><th class="p-2 text-left">Soin / Surveillance</th>
+                                    <script>for(let i=12; i<=22; i++) document.write(`<th colspan="3" class="border-l">${i}/01</th>`)</script>
+                                </tr>
+                                <tr><th></th><script>for(let i=0; i<11; i++) document.write(`<th class="border-l">M</th><th>S</th><th>N</th>`)</script></tr>
+                            </thead>
+                            <tbody>
+                                <script>
+                                    const soins = [
+                                        { category: 'Hygiène & Confort', items: ["Toilette au lit / lavabo", "Prévention d'escarres"] },
+                                        { category: 'Mobilisation', items: ["Bas de contention", "Séance de kinésithérapie"] }
+                                    ];
+                                    soins.forEach(cat => {
+                                        document.write(`<tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">${cat.category}</td></tr>`);
+                                        cat.items.forEach(item => {
+                                            let row = `<tr><td class="text-left p-2">${item}</td>`;
+                                            for(let day=0; day<11; day++){
+                                                let mChecked = (day < 7 || (day === 7 && 0 < 2));
+                                                let sChecked = (item === "Prévention d'escarres" || item === "Séance de kinésithérapie") && (day < 7 || (day === 7 && 1 < 2));
+                                                let nChecked = item === "Prévention d'escarres" && (day < 7 || (day === 7 && 2 < 2));
+                                                row += `<td class="border-l"><input type="checkbox" ${mChecked ? 'checked' : ''}></td>`;
+                                                row += `<td><input type="checkbox" ${sChecked ? 'checked' : ''}></td>`;
+                                                row += `<td><input type="checkbox" ${nChecked ? 'checked' : ''}></td>`;
+                                            }
+                                            row += `</tr>`;
+                                            document.write(row);
+                                        });
+                                    });
+                                </script>
+                            </tbody>
+                        </table></div>
+                     </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let pancarteChartInstance;
+
+        const colorMaps = {
+            header: {
+                blue: 'header-blue', teal: 'header-teal', rose: 'header-rose',
+                indigo: 'header-indigo', green: 'header-green',
+                violet: 'header-violet', orange: 'header-orange',
+            },
+            dot: { rose: 'dot-rose', green: 'dot-green' }
+        };
+        
+        function toggleFullScreen() {
+            const elem = document.documentElement;
+            const icon = document.getElementById('fullscreen-icon');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => {
+                    alert(`Erreur lors du passage en plein écran: ${err.message} (${err.name})`);
+                });
+                icon.classList.remove('fa-expand');
+                icon.classList.add('fa-compress');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    icon.classList.remove('fa-compress');
+                    icon.classList.add('fa-expand');
+                }
+            }
+        }
+
+        function changeTab(event, tabId) {
+            // 1. Handle content sections visibility
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            const targetContent = document.getElementById(tabId);
+            targetContent.classList.add('active');
+            
+            // 2. Handle button styles
+            const baseClasses = "py-2.5 px-4 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center";
+            const inactiveClasses = "text-gray-600 bg-white border-gray-200 hover:bg-gray-100";
+            const activeClasses = {
+                blue:   "text-blue-900 border-blue-300 bg-gradient-to-br from-blue-200 to-cyan-200 shadow-inner",
+                teal:   "text-teal-900 border-teal-300 bg-gradient-to-br from-teal-200 to-green-200 shadow-inner",
+                rose:   "text-rose-900 border-rose-300 bg-gradient-to-br from-rose-200 to-pink-200 shadow-inner",
+                indigo: "text-indigo-900 border-indigo-300 bg-gradient-to-br from-indigo-200 to-violet-200 shadow-inner",
+                green:  "text-green-900 border-green-300 bg-gradient-to-br from-green-200 to-lime-200 shadow-inner",
+                violet: "text-purple-900 border-purple-300 bg-gradient-to-br from-purple-200 to-fuchsia-200 shadow-inner",
+                orange: "text-orange-900 border-orange-300 bg-gradient-to-br from-amber-200 to-orange-200 shadow-inner"
+            };
+
+            const allTabs = document.querySelectorAll('nav[aria-label="Tabs"] button');
+            allTabs.forEach(tab => {
+                tab.className = `${baseClasses} ${inactiveClasses}`;
+            });
+
+            const clickedTab = event.currentTarget;
+            const color = clickedTab.dataset.color;
+            clickedTab.className = `${baseClasses} ${activeClasses[color]}`;
+            
+            // 3. Handle header colors
+            document.querySelectorAll('.card-header').forEach(h => Object.values(colorMaps.header).forEach(c => h.classList.remove(c)));
+            targetContent.querySelectorAll('.card-header').forEach(h => h.classList.add(colorMaps.header[color]));
+
+            // 4. Update chart if needed
+            if (tabId === 'pancarte') {
+                setTimeout(() => updatePancarteChart(), 0);
+            }
+        }
+
+        function addTransmission() {
+            const author = document.getElementById('new-transmission-author-2').value.trim();
+            const text = document.getElementById('new-transmission-text-2').value.trim();
+            if (!text || !author) return;
+            const now = new Date();
+            const dotColorClass = 'dot-green';
+
+            // Replace keywords with bolded versions. Newlines will be handled by the "preserve-lines" CSS class.
+            const formattedText = text.replace(/Cible :/g, '<strong class="text-gray-900">Cible :</strong>')
+                                      .replace(/Données :/g, '<strong class="text-gray-900">Données :</strong>')
+                                      .replace(/Actions :/g, '<strong class="text-gray-900">Actions :</strong>')
+                                      .replace(/Résultat :/g, '<strong class="text-gray-900">Résultat :</strong>');
+
+            const newHTML = `<div class="timeline-item"><div class="timeline-dot ${dotColorClass}"></div><h3 class="font-semibold text-gray-800">${now.toLocaleDateString('fr-FR')} - ${author.toUpperCase()}</h3><p class="text-gray-600 preserve-lines">${formattedText}</p></div>`;
+            document.getElementById('transmissions-list-ide').insertAdjacentHTML('afterbegin', newHTML);
+            document.getElementById('new-transmission-form-2').reset();
+        }
+
+        function addPrescription() {
+            const name = document.getElementById('med-name').value.trim();
+            if (!name) return;
+            const tableBody = document.querySelector("#prescription-tbody");
+            const newRow = tableBody.insertRow();
+            let cellsHTML = `<td class="p-2 text-left">${name}</td>`;
+            const numDays = 11;
+            for (let i = 0; i < numDays; i++) {
+                cellsHTML += `<td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`;
+            }
+            newRow.innerHTML = cellsHTML;
+            document.getElementById('new-prescription-form').reset();
+        }
+        
+        function updatePancarteChart() {
+            const table = document.getElementById('pancarte-table');
+            const labels = [];
+            const headerDates = table.querySelectorAll('thead tr:first-child th:not([rowspan])');
+            const headerTimes = table.querySelectorAll('thead tr:last-child th');
+            
+            let timeIndex = 0;
+            headerDates.forEach(dateTh => {
+                const colspan = parseInt(dateTh.getAttribute('colspan') || 1);
+                for (let i=0; i<colspan; i++) {
+                    labels.push(`${dateTh.textContent} ${headerTimes[timeIndex].textContent}`);
+                    timeIndex++;
+                }
+            });
+            
+            const rows = table.querySelectorAll('tbody tr');
+            const dataSetsConfig = {
+                'Pouls (/min)': { type: 'line', yAxisID: 'y1', borderColor: '#ef4444', pointBackgroundColor: '#ef4444', color: '#ef4444'},
+                'Tension (mmHg)': { type: 'bar', yAxisID: 'y', backgroundColor: '#f9731640', borderColor: '#f97316', color: '#f97316' },
+                'Température (°C)': { type: 'line', yAxisID: 'y3', borderColor: '#3b82f6', pointBackgroundColor: '#3b82f6', color: '#3b82f6' },
+                'SpO2 (%)': { type: 'line', yAxisID: 'y1', borderColor: '#10b981', pointBackgroundColor: '#10b981', color: '#10b981' },
+                'Douleur (EVA /10)': { type: 'line', yAxisID: 'y2', borderColor: '#8b5cf6', pointBackgroundColor: '#8b5cf6', color: '#8b5cf6' }
+            };
+
+            const datasets = Array.from(rows).map(row => {
+                const paramName = row.cells[0].textContent.trim();
+                const config = dataSetsConfig[paramName];
+                let data;
+
+                if (paramName === 'Tension (mmHg)') {
+                    data = Array.from(row.querySelectorAll('input')).map(input => {
+                        const value = input.value;
+                        const parts = value.split('/');
+                        return [parseFloat(parts[1]), parseFloat(parts[0])];
+                    });
+                } else {
+                    data = Array.from(row.querySelectorAll('input')).map(input => parseFloat(input.value) || null);
+                }
+                
+                return { label: paramName, data: data, tension: 0.2, borderWidth: 2, ...config };
+            });
+
+            const ctx = document.getElementById('pancarteChart').getContext('2d');
+            if (pancarteChartInstance) pancarteChartInstance.destroy();
+            
+            pancarteChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'Tension (mmHg)', color: dataSetsConfig['Tension (mmHg)'].color } },
+                        y1: { type: 'linear', position: 'right', title: { display: true, text: 'Pouls / SpO2', color: dataSetsConfig['Pouls (/min)'].color }, grid: { drawOnChartArea: false } },
+                        y2: { type: 'linear', position: 'right', title: { display: true, text: 'Douleur (EVA)', color: dataSetsConfig['Douleur (EVA /10)'].color }, grid: { drawOnChartArea: false }, max: 10, min: 0 },
+                        y3: { type: 'linear', position: 'right', title: { display: true, text: 'Température (°C)', color: dataSetsConfig['Température (°C)'].color }, grid: { drawOnChartArea: false }, min: 35, max: 42 }
+                    },
+                    plugins: { 
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const raw = context.raw;
+
+                                    if (label === 'Tension (mmHg)' && Array.isArray(raw) && raw.length === 2) {
+                                        return `${label}: ${raw[1]}/${raw[0]}`; 
+                                    }
+
+                                    if (context.parsed.y !== null) {
+                                        return `${label}: ${context.parsed.y}`;
+                                    }
+                                    
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial active tab and content
+            const initialTab = document.querySelector('nav[aria-label="Tabs"] button');
+            changeTab({ currentTarget: initialTab }, 'administratif');
+        });
+    </script>
+
+</body>
+</html>
