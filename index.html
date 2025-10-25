@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIdos - Dossier Patient Informatisé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1f2937;
+        }
+
+        #main-content-wrapper {
+            overflow-y: scroll;
+            scrollbar-width: none; 
+            -ms-overflow-style: none;  
+        }
+        #main-content-wrapper::-webkit-scrollbar {
+            display: none;
+        }
+
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px; 
+            border: 1px solid #e5e7eb;
+        }
+        #patient-header-form .card {
+            padding: 0.5rem; 
+        }
+        .card-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .card-header.header-teal { color: #0f766e; border-bottom-color: #5eead4; border-bottom-width: 2px; } 
+        .card-header.header-blue { color: #1e40af; border-bottom-color: #60a5fa; border-bottom-width: 2px; } 
+        .card-header.header-rose { color: #be123c; border-bottom-color: #fb7185; border-bottom-width: 2px; }
+        .card-header.header-indigo { color: #4338ca; border-bottom-color: #a5b4fc; border-bottom-width: 2px; }
+        .card-header.header-green { color: #15803d; border-bottom-color: #86efac; border-bottom-width: 2px; }
+        .card-header.header-violet { color: #6d28d9; border-bottom-color: #c4b5fd; border-bottom-width: 2px; }
+        .card-header.header-purple { color: #7e22ce; border-bottom-color: #d8b4fe; border-bottom-width: 2px; }
+        .card-header.header-orange { color: #c2410c; border-bottom-color: #fdba74; border-bottom-width: 2px; }
+
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s ease-in-out;
+            background-color: #fff;
+        }
+        .info-item:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 1px #4f46e5;
+        }
+        .info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
+        .info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
+
+        .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
+        .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
+        .timeline-dot.dot-rose { background-color: #f43f5e; }
+        .timeline-dot.dot-green { background-color: #22c55e; }
+        .diagram th, .diagram td { border: 1px solid #e5e7eb; padding: 0.5rem; vertical-align: middle; }
+        .diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
+        .diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
+
+        .diagram input[type="text"], .diagram input[type="number"] {
+            width: 100%; border: none; text-align: center; padding: 4px; background-color: transparent;
+            transition: background-color 0.2s; color: #1f2937; font-size: 0.75rem;
+        }
+        .diagram input[type="text"]:focus, .diagram input[type="number"]:focus {
+            outline: 2px solid #3b82f6; background-color: #eff6ff; border-radius: 4px;
+        }
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
+
+        .styled-input {
+            background-color: #f9fafb; border: 1px solid #d1d5db; transition: all 0.2s ease-in-out;
+            padding: 0.5rem 0.75rem; border-radius: 0.375rem;
+            width: 100%;
+        }
+        .styled-input:focus {
+            outline: 2px solid #3b82f6; outline-offset: -1px;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); border-color: #3b82f6;
+        }
+        textarea.info-value {
+            resize: none;
+            overflow: hidden;
+        }
+
+        .styled-input:disabled, textarea.info-value:disabled, input.info-value:disabled {
+            background-color: transparent;
+            border-color: transparent;
+            cursor: default;
+            color: #1f2937;
+        }
+        .info-item > textarea.info-value,
+        .info-item > input.info-value,
+        .info-item > textarea.info-value:disabled,
+        .info-item > input.info-value:disabled {
+           background-color: transparent;
+           border-color: transparent;
+           padding: 0;
+           border-radius: 0;
+           box-shadow: none;
+           width: 100%;
+        }
+        .info-item > textarea.info-value:focus,
+        .info-item > input.info-value:focus {
+            outline: none;
+            box-shadow: none;
+            border-color: transparent;
+        }
+        .info-item > input[type="date"].info-value::-webkit-calendar-picker-indicator {
+            filter: invert(0.35);
+        }
+        .info-item > input[type="date"].info-value:disabled::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+        .preserve-whitespace {
+            white-space: pre-wrap;
+        }
+
+        #custom-confirm-modal #custom-confirm-box {
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+        }
+        #sidebar {
+            transition: width 0.3s ease;
+        }
+        #patient-list li button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            text-align: left;
+        }
+        #patient-list li button:hover {
+            background-color: #f3f4f6; 
+        }
+        #patient-list li button.active {
+            background-color: #0d9488; 
+            color: white;
+            font-weight: 600;
+        }
+        #patient-list li button.active .patient-room {
+            color: #ccfbf1; 
+        }
+        #patient-list li button .patient-icon {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+        .patient-name {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .patient-room {
+            font-size: 0.8rem;
+            color: #6b7280; 
+            margin-left: 0.5rem;
+        }
+
+        .iv-bar-container {
+            position: relative;
+            height: 38px;
+            padding: 0 !important;
+            cursor: crosshair;
+        }
+        .iv-bar {
+            position: absolute;
+            top: 55%;
+            transform: translateY(-50%);
+            height: 50%;
+            background-color: #60a5fa;
+            border: 1px solid #2563eb;
+            border-radius: 4px;
+            cursor: move;
+            z-index: 10;
+        }
+        .resize-handle {
+            position: absolute;
+            right: -2px;
+            top: -2px;
+            width: 10px;
+            height: calc(100% + 4px);
+            cursor: ew-resize;
+            z-index: 11;
+        }
+        body.is-drawing-iv, body.is-resizing-iv, body.is-moving-iv {
+            cursor: ew-resize !important;
+            user-select: none;
+        }
+        .iv-bar-container .iv-time-label {
+            position: absolute;
+            top: 2px;
+            font-family: monospace;
+            font-size: 10px;
+            background: rgba(229, 231, 235, 0.8);
+            padding: 1px 3px;
+            border-radius: 3px;
+            color: #374151;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 12;
+        }
+        .iv-time-label.end {
+             transform: translateX(-100%);
+        }
+
+        /* --- STYLES DU TUTORIEL --- */
+        #tutorial-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(2px); /* Ajout du flou */
+            z-index: 9990;
+            transition: opacity 0.3s ease;
+        }
+        #tutorial-step-box {
+            position: absolute;
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            width: 100%;
+            max-width: 350px;
+            transition: top 0.3s ease, left 0.3s ease, opacity 0.3s ease;
+        }
+        .tutorial-highlight {
+            position: relative;
+            z-index: 9995 !important;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7);
+            border-radius: 0.5rem;
+            background-color: white; /* Force un fond blanc pour les éléments transparents */
+        }
+        /* Assure que les enfants de l'élément surligné sont aussi au-dessus */
+        .tutorial-highlight > * {
+             position: relative;
+             z-index: 9996;
+        }
+        
+        /* Corrige les icônes blanches du header lors du tutoriel */
+        #main-header .tutorial-highlight i.text-white {
+            color: #0d9488; /* Utilise une couleur sarcelle foncée */
+        }
+        
+        /* --- FIN STYLES TUTORIEL --- */
+
+    </style>
+</head>
+<body class="flex h-screen bg-gray-100">
+    <aside id="sidebar" class="w-64 bg-white shadow-xl flex flex-col flex-shrink-0 m-4 rounded-2xl h-[calc(100vh-2rem)] transition-all duration-300 ease-in-out">
+        <div class="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-t-2xl">
+            <div class="flex items-center space-x-3">
+                <svg class="h-10 w-10 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
+                </svg>
+                <div>
+                    <h1 class="text-2xl font-bold">EIdos</h1>
+                    <p class="text-xs text-cyan-100">Simulation de Dossier Patient</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 overflow-y-auto">
+            <ul id="patient-list" class="p-2">
+                <!-- La liste des patients sera générée par JS -->
+            </ul>
+        </nav>
+        <div class="p-2 border-t border-gray-100">
+            <!-- Bouton pour relancer le tutoriel -->
+            <button onclick="EIdosApp.startTutorial()" class="w-full text-left text-sm text-blue-600 hover:bg-blue-100 p-2 rounded-md transition-colors mb-1">
+                <i class="fas fa-question-circle w-6 text-center mr-1"></i>
+                Aide / Tuto
+            </button>
+            <button onclick="EIdosApp.clearAllData()" class="w-full text-left text-sm text-red-600 hover:bg-red-100 p-2 rounded-md transition-colors">
+                <i class="fas fa-exclamation-triangle w-6 text-center mr-1"></i>
+                Vider tous les dossiers
+            </button>
+        </div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden m-4 h-[calc(100vh-2rem)]">
+
+        <div class="p-0 md:p-0 lg:p-0 pb-0">
+            <div class="max-w-screen-xl mx-auto">
+                <header id="main-header" class="mb-4 p-4 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-400 text-white shadow-lg flex justify-between items-center">
+                    <h1 class="text-xl lg:text-2xl font-bold">Service de soins de l'IFSI</h1>
+                    <div id="header-buttons" class="flex items-center space-x-2">
+                        <button type="button" onclick="EIdosApp.exportCurrentPatientData()" title="Exporter le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-file-export text-white"></i>
+                        </button>
+                        <button type="button" onclick="document.getElementById('import-file').click()" title="Importer dans ce dossier" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-file-import text-white"></i>
+                        </button>
+                        <input type="file" id="import-file" accept=".json" class="hidden" onchange="EIdosApp.importCurrentPatientData(event)">
+                        <button type="button" onclick="EIdosApp.clearCurrentPatientData()" title="Effacer le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-trash text-white"></i>
+                        </button>
+                        <span class="font-light text-sm mr-4">EIdos - créé par L. Séraudie - 2025</span>
+                        <button type="button" onclick="EIdosApp.toggleFullscreen()" title="Plein écran" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i id="fullscreen-icon" class="fas fa-expand text-white"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <header id="patient-header-form" class="mb-4">
+                    <div class="card p-2">
+                        <div class="grid grid-cols-12 gap-x-2 gap-y-3 items-stretch">
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Nom d'usage</span><input type="text" id="patient-nom-usage" class="info-value text-lg font-bold" placeholder="NOM Usage"></div>
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Prénom</span><input type="text" id="patient-prenom" class="info-value text-lg font-bold" placeholder="Prénom"></div>
+                            <div class="info-item col-span-12 sm:col-span-12 md:col-span-3">
+                                <span class="info-label">Date de naissance</span>
+                                <div class="flex items-center gap-2"><input type="date" id="patient-dob" class="info-value text-gray-500 flex-grow" style="flex-basis: 150px;"><span id="patient-age" class="text-sm text-gray-600 font-medium whitespace-nowrap"></span></div>
+                            </div>
+
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Motif d'hospitalisation</span><input type="text" id="patient-motif" class="info-value"></div>
+
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2">
+                                <span class="info-label">Date d'entrée / Jour</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="patient-entry-date" class="info-value">
+                                    <span id="patient-jour-hosp" class="info-value font-bold text-lg text-teal-700">J-</span>
+                                </div>
+                            </div>
+                            <div class="col-span-12 sm:col-span-12 md:col-span-1 flex items-end justify-end">
+                                <button id="lock-header-btn" type="button" onclick="EIdosApp.toggleLock('patient-header-form', 'lock-header-btn')" class="w-full h-full inline-flex items-center justify-center py-2 px-3 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
+                                    <i class="fas fa-check mr-2"></i> Valider
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div id="tabs-nav-container" class="card p-2">
+                       <nav class="flex flex-wrap w-full gap-2" aria-label="Tabs">
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'administratif')" data-color="teal"><i class="fas fa-user-circle mr-2"></i>Administratif</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'mode-de-vie')" data-color="blue"><i class="fas fa-home mr-2"></i>Vie & ATCD</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'observations')" data-color="rose"><i class="fas fa-notes-medical mr-2"></i>Observations Médicales</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'prescriptions')" data-color="indigo"><i class="fas fa-pills mr-2"></i>Prescriptions</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'transmissions')" data-color="green"><i class="fas fa-exchange-alt mr-2"></i>Transmissions</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'pancarte')" data-color="violet"><i class="fas fa-chart-line mr-2"></i>Pancarte</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'diagramme')" data-color="orange"><i class="fas fa-calendar-alt mr-2"></i>Diagramme Soins</button>
+                            <button type="button" onclick="EIdosApp.changeTab(event, 'biologie')" data-color="purple"><i class="fas fa-vial mr-2"></i>Résultats Biologiques</button>
+                       </nav>
+                </div>
+            </div>
+        </div>
+        <div id="main-content-wrapper" class="flex-1 overflow-x-hidden overflow-y-auto px-4 md:px-6 lg:px-8">
+            <div class="max-w-screen-xl mx-auto py-4 md:py-6 lg:py-8 pt-0">
+                <main>
+                    <div id="tab-content">
+                        <!-- Le reste du contenu des onglets (administratif, mode-de-vie, etc.) reste inchangé -->
+                        <!-- ... -->
+                        <div id="administratif" class="content-section active">
+                            <div class="card p-6">
+                                <h2 class="card-header">Dossier Administratif</h2>
+                                <div class="mt-6">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Identité du patient</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">Nom d'usage</span><textarea id="admin-nom-usage" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Prénom</span><textarea id="admin-prenom" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item">
+                                            <span class="info-label">Date de Naissance</span>
+                                            <div class="flex items-center gap-2">
+                                                <input type="date" id="admin-dob" class="info-value flex-grow" style="flex-basis: 150px;">
+                                                <span id="admin-age" class="text-sm text-gray-600 font-medium whitespace-nowrap"></span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item"><span class="info-label">Sexe</span><textarea id="admin-sexe" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item col-span-full lg:col-span-2"><span class="info-label">Adresse</span><textarea id="admin-adresse" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                    </div>
+                                </div>
+                                <div class="mt-8">
+                                     <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Contacts</h3>
+                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">Personne à contacter</span><textarea id="admin-contact" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Téléphone</span><textarea id="admin-telephone" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Médecin traitant</span><textarea id="admin-medecin" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Personne de confiance</span><textarea id="admin-pers-confiance" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Téléphone P. de confiance</span><textarea id="admin-pers-confiance-tel" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                    </div>
+                                </div>
+                                 <div class="mt-8">
+                                     <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Couverture Sociale</h3>
+                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">N° de Sécurité Sociale</span><textarea id="admin-secu" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Mutuelle</span><textarea id="admin-mutuelle" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">N° Adhérent Mutuelle</span><textarea id="admin-mutuelle-num" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                     </div>
+                                 </div>
+                            </div>
+                            <div class="flex justify-end mt-4">
+                                <button id="lock-admin-btn" type="button" onclick="EIdosApp.toggleLock('administratif', 'lock-admin-btn')" class="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
+                                    <i class="fas fa-check mr-2"></i>Valider les données
+                                </button>
+                            </div>
+                        </div>
+                        <div id="mode-de-vie" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Mode de Vie & Antécédents</h2>
+                                <div class="mt-6">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Mode de vie</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">Situation familiale/professionnelle</span><textarea id="vie-situation" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Conditions de logement (Habitat)</span><textarea id="vie-habitat" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Habitudes (Alcool, Tabac, etc.)</span><textarea id="vie-habitudes" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Poids (kg)</span><textarea id="vie-poids" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Taille (cm)</span><textarea id="vie-taille" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Régime alimentaire</span><textarea id="vie-regime" class="info-value" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                    </div>
+                                </div>
+                                <div class="mt-8">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Antécédents (ATCD)</h3>
+                                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div class="info-item"><span class="info-label">Médicaux</span><textarea id="atcd-medicaux" class="info-value" rows="6" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Chirurgicaux</span><textarea id="atcd-chirurgicaux" class="info-value" rows="6" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Allergies</span><textarea id="atcd-allergies" class="info-value" rows="6" oninput="EIdosApp.autoResize(this)"></textarea></div>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="flex justify-end mt-4">
+                                <button id="lock-vie-btn" type="button" onclick="EIdosApp.toggleLock('mode-de-vie', 'lock-vie-btn')" class="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-blue-600 text-blue-700 hover:bg-blue-600">
+                                    <i class="fas fa-check mr-2"></i>Valider les données
+                                </button>
+                            </div>
+                        </div>
+                        <div id="observations" class="content-section">
+                            <div class="card p-6"><h2 class="card-header">Suivi Médical</h2><div id="observations-list" class="space-y-8 mt-4"></div></div>
+                            <div class="card p-6">
+                                <h2 class="card-header">Ajouter une observation médicale</h2>
+                                <form id="new-observation-form" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2"><label for="new-observation-author" class="block text-sm font-medium text-gray-700">Auteur (ex: Dr. REED)</label><input type="text" id="new-observation-author" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                        <div><label for="new-observation-date" class="block text-sm font-medium text-gray-700">Date</label><input type="date" id="new-observation-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                    </div>
+                                    <div><label for="new-observation-text" class="block text-sm font-medium text-gray-700">Observation</label><textarea id="new-observation-text" rows="4" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></textarea></div>
+                                    <div class="flex justify-end"><button type="button" onclick="EIdosApp.addObservation()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700">Ajouter</button></div>
+                                </form>
+                            </div>
+                        </div>
+                        <div id="prescriptions" class="content-section">
+                            <div class="card p-6">
+                                 <h2 class="card-header">Prescriptions Médicales</h2>
+                                 <div class="overflow-x-auto mt-4">
+                                     <table class="w-full border-collapse text-sm diagram" id="prescription-table">
+                                         <thead class="bg-gray-100 text-gray-600">
+                                            <!-- En-têtes générés par JS -->
+                                         </thead>
+                                         <tbody class="text-center" id="prescription-tbody">
+                                            <!-- Contenu généré par JS -->
+                                         </tbody>
+                                     </table>
+                                 </div>
+                            </div>
+                             <div class="card p-6">
+                                 <h2 class="card-header">Ajouter une prescription</h2>
+                                 <form id="new-prescription-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                     <div>
+                                         <label for="med-name" class="block text-sm font-medium text-gray-700">Médicament / Soin</label>
+                                         <input type="text" id="med-name" class="styled-input mt-1">
+                                     </div>
+                                     <div>
+                                         <label for="med-posologie" class="block text-sm font-medium text-gray-700">Posologie</label>
+                                         <input type="text" id="med-posologie" class="styled-input mt-1">
+                                     </div>
+                                     <div>
+                                         <label for="med-voie" class="block text-sm font-medium text-gray-700">Voie</label>
+                                         <input type="text" id="med-voie" class="styled-input mt-1">
+                                     </div>
+                                     <div>
+                                         <label for="med-start-date" class="block text-sm font-medium text-gray-700">Date de début</label>
+                                         <input type="date" id="med-start-date" class="styled-input mt-1">
+                                     </div>
+                                     <div class="md:col-start-4 flex justify-end">
+                                         <button type="button" onclick="EIdosApp.addPrescription(null, false)" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Ajouter</button>
+                                     </div>
+                                 </form>
+                             </div>
+                        </div>
+                        <div id="transmissions" class="content-section">
+                            <div class="card p-6"><h2 class="card-header">Transmissions Soignantes</h2><div id="transmissions-list-ide" class="space-y-8 mt-4"></div></div>
+                            <div class="card p-6">
+                                <h2 class="card-header">Ajouter une transmission</h2>
+                                <form id="new-transmission-form-2" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2"><label for="new-transmission-author-2" class="block text-sm font-medium text-gray-700">Auteur (ex: IDE, AS)</label><input type="text" id="new-transmission-author-2" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                        <div><label for="new-transmission-date" class="block text-sm font-medium text-gray-700">Date</label><input type="date" id="new-transmission-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                    </div>
+                                    <div><label for="new-transmission-text-2" class="block text-sm font-medium text-gray-700">Transmission Ciblée</label><textarea id="new-transmission-text-2" rows="4" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm" placeholder="Cible :&#10;Données :&#10;Actions :&#10;Résultats :"></textarea></div>
+                                    <div class="flex justify-end"><button type="button" onclick="EIdosApp.addTransmission()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Ajouter</button></div>
+                                </form>
+                            </div>
+                        </div>
+                        <div id="biologie" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Suivi Biologique</h2>
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="w-full border-collapse text-sm diagram" id="bio-table">
+                                        <thead class="bg-gray-100 text-gray-600">
+                                            <tr>
+                                                <th class="p-2 text-left w-1/4">Analyse</th>
+                                                <th class="p-2 text-left w-1/4">Valeurs de référence</th>
+                                                <!-- Les 6 en-têtes de date sont générés par JS -->
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Contenu généré par JS -->
+                                        </tbody>
+                                    </table>
+                                 </div>
+                            </div>
+                        </div>
+                        <div id="pancarte" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Graphique des Constantes</h2>
+                                <div class="relative h-96 w-full"><canvas id="pancarteChart"></canvas></div>
+                            </div>
+                            <div class="card p-6">
+                                <h2 class="card-header">Tableau de Surveillance (Pancarte)</h2>
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="w-full border-collapse text-sm text-center diagram" id="pancarte-table">
+                                        <thead class="bg-gray-100 text-gray-600">
+                                            <!-- En-têtes générés par JS -->
+                                        </thead>
+                                        <tbody>
+                                            <!-- Contenu généré par JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="diagramme" class="content-section">
+                             <div class="card p-6">
+                                <h2 class="card-header">Diagramme de Soins</h2>
+                                <div class="overflow-x-auto"><table class="w-full table-auto text-sm text-center diagram" id="care-diagram-table">
+                                    <thead class="font-semibold bg-gray-100">
+                                        <!-- En-têtes générés par JS -->
+                                    </thead>
+                                    <tbody id="care-diagram-tbody">
+                                         <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">Hygiène & Confort</td></tr>
+                                         <tr><td class="text-left p-2">Toilette au lit / lavabo</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                         <tr><td class="text-left p-2">Prévention d'escarres</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                         <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">Mobilisation</td></tr>
+                                         <tr><td class="text-left p-2">Bas de contention</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                         <tr><td class="text-left p-2">Séance de kinésithérapie</td><script>for(let i=0; i<11; i++) document.write(`<td class="border-l"><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>`)</script></tr>
+                                         <tr class="font-bold bg-blue-50 text-left"><td class="p-2" colspan="34">Autres</td></tr>
+                                    </tbody>
+                                </table></div>
+                             </div>
+                             <div class="card p-6">
+                                <h2 class="card-header">Ajouter un soin</h2>
+                                <form id="new-care-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div>
+                                       <label for="care-name" class="block text-sm font-medium text-gray-700">Soin / Surveillance</label>
+                                       <input type="text" id="care-name" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                                   </div>
+                                    <div class="flex justify-start md:col-start-4">
+                                       <button type="button" onclick="EIdosApp.addCareDiagramRow()" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600">Ajouter</button>
+                                   </div>
+                                </form>
+                             </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        </div>
+    
+    <!-- MODAL DE CONFIRMATION (inchangée) -->
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4 transform transition-all scale-95 opacity-0" id="custom-confirm-box">
+            <h3 class="text-lg font-bold text-gray-800" id="custom-confirm-title">Confirmation requise</h3>
+            <p class="mt-2 text-sm text-gray-600" id="custom-confirm-message">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="custom-confirm-cancel" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">Annuler</button>
+                <button id="custom-confirm-ok" type="button" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÉLÉMENTS DU TUTORIEL (inchangés) -->
+    <div id="tutorial-overlay" class="hidden" onclick="EIdosApp.endTutorial(true)">
+        <div id="tutorial-step-box" onclick="event.stopPropagation()">
+            <p id="tutorial-text" class="text-gray-700 text-sm mb-4">Ceci est une étape du tutoriel.</p>
+            <div class="flex justify-between items-center">
+                <button id="tutorial-skip-btn" onclick="EIdosApp.endTutorial(true)" class="text-xs text-gray-500 hover:text-gray-800 transition-colors">Passer</button>
+                <button id="tutorial-next-btn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Suivant</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Le script est maintenant chargé depuis un fichier externe -->
+    <script src="simul_app.js" defer></script>
+
+</body>
+</html>
