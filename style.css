@@ -1,0 +1,293 @@
+/* MODIFICATION : Import de la police Parkinsans en plus d'Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Parkinsans:wght@600&display=swap');
+html {
+    scroll-behavior: smooth;
+}
+body {
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+}
+
+/* MODIFICATION : Ajout du style pour le titre EIdos */
+#sidebar h1 {
+    font-family: 'Parkinsans', sans-serif;
+    font-weight: 600;
+}
+
+#main-content-wrapper {
+    overflow-y: scroll;
+    scrollbar-width: none; 
+    -ms-overflow-style: none;  
+}
+#main-content-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.content-section { display: none; }
+.content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 16px; 
+    border: 1px solid #e5e7eb;
+}
+#patient-header-form .card {
+    padding: 0.5rem; 
+}
+.card-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+.card-header.header-teal { color: #0f766e; border-bottom-color: #5eead4; border-bottom-width: 2px; } 
+.card-header.header-blue { color: #1e40af; border-bottom-color: #60a5fa; border-bottom-width: 2px; } 
+.card-header.header-rose { color: #be123c; border-bottom-color: #fb7185; border-bottom-width: 2px; }
+.card-header.header-indigo { color: #4338ca; border-bottom-color: #a5b4fc; border-bottom-width: 2px; }
+.card-header.header-green { color: #15803d; border-bottom-color: #86efac; border-bottom-width: 2px; }
+.card-header.header-purple { color: #7e22ce; border-bottom-color: #d8b4fe; border-bottom-width: 2px; }
+.card-header.header-orange { color: #c2410c; border-bottom-color: #fdba74; border-bottom-width: 2px; }
+
+.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+.info-item {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease-in-out;
+    background-color: #fff;
+}
+.info-item:focus-within {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 1px #4f46e5;
+}
+.info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
+.info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
+
+.timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
+.timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
+.timeline-dot.dot-rose { background-color: #f43f5e; }
+.timeline-dot.dot-green { background-color: #22c55e; }
+.diagram th, .diagram td { border: 1px solid #e5e7eb; padding: 0.5rem; vertical-align: middle; }
+.diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
+.diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
+
+.diagram input[type="text"], .diagram input[type="number"] {
+    width: 100%; border: none; text-align: center; padding: 4px; background-color: transparent;
+    transition: background-color 0.2s; color: #1f2937; font-size: 0.75rem;
+}
+.diagram input[type="text"]:focus, .diagram input[type="number"]:focus {
+    outline: 2px solid #3b82f6; background-color: #eff6ff; border-radius: 4px;
+}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
+
+.styled-input {
+    background-color: #f9fafb; border: 1px solid #d1d5db; transition: all 0.2s ease-in-out;
+    padding: 0.5rem 0.75rem; border-radius: 0.375rem;
+    width: 100%;
+}
+.styled-input:focus {
+    outline: 2px solid #3b82f6; outline-offset: -1px;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); border-color: #3b82f6;
+}
+textarea.info-value {
+    resize: none;
+    overflow: hidden;
+}
+
+.styled-input:disabled, textarea.info-value:disabled, input.info-value:disabled {
+    background-color: transparent;
+    border-color: transparent;
+    cursor: default;
+    color: #1f2937;
+}
+.info-item > textarea.info-value,
+.info-item > input.info-value,
+.info-item > textarea.info-value:disabled,
+.info-item > input.info-value:disabled {
+   background-color: transparent;
+   border-color: transparent;
+   padding: 0;
+   border-radius: 0;
+   box-shadow: none;
+   width: 100%;
+}
+.info-item > textarea.info-value:focus,
+.info-item > input.info-value:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: transparent;
+}
+.info-item > input[type="date"].info-value::-webkit-calendar-picker-indicator {
+    filter: invert(0.35);
+}
+.info-item > input[type="date"].info-value:disabled::-webkit-calendar-picker-indicator {
+    display: none;
+}
+.preserve-whitespace {
+    white-space: pre-wrap;
+}
+
+#custom-confirm-modal #custom-confirm-box {
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+#sidebar {
+    transition: width 0.3s ease;
+}
+#patient-list li button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    text-align: left;
+}
+#patient-list li button:hover {
+    background-color: #f3f4f6; 
+}
+#patient-list li button.active {
+    background-color: #0d9488; 
+    color: white;
+    font-weight: 600;
+}
+#patient-list li button.active .patient-room {
+    color: #ccfbf1; 
+}
+#patient-list li button .patient-icon {
+    margin-right: 0.75rem;
+    width: 1.25rem;
+    text-align: center;
+}
+.patient-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.patient-room {
+    font-size: 0.8rem;
+    color: #6b7280; 
+    margin-left: 0.5rem;
+}
+
+.iv-bar-container {
+    position: relative;
+    height: 38px;
+    padding: 0 !important;
+    cursor: crosshair;
+}
+.iv-bar {
+    position: absolute;
+    top: 55%;
+    transform: translateY(-50%);
+    height: 50%;
+    background-color: #60a5fa;
+    border: 1px solid #2563eb;
+    border-radius: 4px;
+    cursor: move;
+    z-index: 10;
+}
+.resize-handle {
+    position: absolute;
+    right: -2px;
+    top: -2px;
+    width: 10px;
+    height: calc(100% + 4px);
+    cursor: ew-resize;
+    z-index: 11;
+}
+body.is-drawing-iv, body.is-resizing-iv, body.is-moving-iv {
+    cursor: ew-resize !important;
+    user-select: none;
+}
+.iv-bar-container .iv-time-label {
+    position: absolute;
+    top: 2px;
+    font-family: monospace;
+    font-size: 10px;
+    background: rgba(229, 231, 235, 0.8);
+    padding: 1px 3px;
+    border-radius: 3px;
+    color: #374151;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 12;
+}
+.iv-time-label.end {
+     transform: translateX(-100%);
+}
+
+#tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    z-index: 9990;
+    transition: opacity 0.3s ease;
+}
+#tutorial-step-box {
+    position: absolute;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    width: 100%;
+    max-width: 350px;
+    transition: top 0.3s ease, left 0.3s ease, opacity 0.3s ease;
+}
+.tutorial-highlight {
+    position: relative;
+    z-index: 9995 !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.7);
+    border-radius: 0.5rem;
+}
+.tutorial-highlight > * {
+     position: relative;
+     z-index: 9996;
+}
+#header-buttons .tutorial-highlight {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#header-buttons .tutorial-highlight i {
+     color: white !important;
+     z-index: 9997;
+}
+#sidebar .tutorial-highlight {
+    background-color: white;
+}
+
+/* colonnes petites et centrées pour M / Mi / S / N */
+.small-col {
+min-width: 44px;   /* largeur minimale utile : augmente si besoin (ex : 56px) */
+width: 44px;       /* force une largeur cohérente */
+text-align: center;
+padding-left: 0.25rem;
+padding-right: 0.25rem;
+}
+.small-col input[type="checkbox"] {
+display: block;
+margin: 0.35rem auto; /* centre la checkbox dans la cellule */
+}
