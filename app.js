@@ -2,7 +2,7 @@
 (function() {
     "use strict"; 
 
-    const API_URL = 'http://localhost:3000'; 
+    const API_URL = 'https://eidos-api.onrender.com';
 
     // --- NOUVEAU : Gestion des permissions ---
     let userPermissions = { 
@@ -2219,5 +2219,6 @@
     
     // Point d'entrée principal de l'application
     initApp(); 
+
 
 })(); // Fin de l'IIFE
