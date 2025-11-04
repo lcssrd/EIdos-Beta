@@ -2,8 +2,8 @@
 (function() {
     "use strict";
 
-    const API_URL = 'http://localhost:3000';
-
+    const API_URL = 'https://eidos-api.onrender.com';
+    
     // Sélection des 3 sections principales
     const loginSection = document.getElementById('login-section');
     const signupSection = document.getElementById('signup-section');
@@ -200,5 +200,6 @@
             verifyBtn.textContent = 'Vérifier';
         }
     }
+
 
 })();
