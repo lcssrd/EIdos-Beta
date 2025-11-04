@@ -2,8 +2,8 @@
 (function() {
     "use strict"; 
 
-    const API_URL = 'http://localhost:3000'; 
-
+    const API_URL = 'https://eidos-api.onrender.com';
+    
     // --- Fonctions utilitaires d'authentification (copiées de app.js) ---
     
     /**
@@ -516,5 +516,6 @@
 
     // Lancer l'initialisation
     document.addEventListener('DOMContentLoaded', init);
+
 
 })();
