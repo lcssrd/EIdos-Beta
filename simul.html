@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIdos - Dossier Patient Informatisé</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <link href="style.css" rel="stylesheet">
+
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="a33bd886-5e06-4a52-b1d6-1c3181d1214f"></script>
+
+</head>
+<body class="flex h-screen bg-gray-100">
+    <aside id="sidebar" class="w-64 bg-white shadow-xl flex flex-col flex-shrink-0 m-4 rounded-2xl h-[calc(100vh-2rem)] transition-all duration-300 ease-in-out">
+        <div class="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-t-2xl">
+            <div class="flex items-center space-x-3">
+                <svg class="h-10 w-10 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
+                </svg>
+                <div>
+                     <div class="flex items-center space-x-4">
+                        <h1 class="text-2xl font-bold">EIdos</h1>
+                        <span class="bg-white text-teal-700 text-xs font-bold uppercase px-2 py-0,5 rounded-full">V1</span>
+                    </div>
+                    <p class="text-xs text-cyan-100">Simulation de Dossier Patient</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 overflow-y-auto">
+            <ul id="patient-list" class="p-2">
+                </ul>
+        </nav>
+        <div class="p-2 border-t border-gray-100">
+            <a href="account.html" id="account-management-btn" class="block w-full text-left text-sm text-gray-600 hover:bg-gray-100 p-2 rounded-md transition-colors mb-1">
+                <i class="fas fa-user-cog w-6 text-center mr-1"></i>
+                Gestion de compte
+            </a>
+            <a href="https://fr.linkedin.com/in/lucas-s%C3%A9raudie-1858ba14b" target="_blank" rel="noopener noreferrer" class="block w-full text-left text-sm text-gray-600 hover:bg-gray-100 p-2 rounded-md transition-colors mb-1">
+                <i class="fab fa-linkedin w-6 text-center mr-1"></i>
+                Me contacter
+            </a>
+            <button id="start-tutorial-btn" type="button" class="w-full text-left text-sm text-blue-600 hover:bg-blue-100 p-2 rounded-md transition-colors mb-1">
+                <i class="fas fa-question-circle w-6 text-center mr-1"></i>
+                Aide / Tuto
+            </button>
+            <button id="clear-all-data-btn" type="button" class="w-full text-left text-sm text-red-600 hover:bg-red-100 p-2 rounded-md transition-colors">
+                <i class="fas fa-exclamation-triangle w-6 text-center mr-1"></i>
+                Vider tous les dossiers
+            </button>
+        </div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden m-4 h-[calc(100vh-2rem)]">
+
+        <div class="p-0 md:p-0 lg:p-0 pb-0">
+            <div class="max-w-screen-xl mx-auto">
+                <header id="main-header" class="mb-4 p-4 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-400 text-white shadow-lg flex justify-between items-center">
+                    <h1 class="text-xl lg:text-2xl font-bold">Service de soins</h1>
+                    <div id="header-buttons" class="flex items-center space-x-2">
+                        
+                        <button id="save-patient-btn" type="button" title="Sauvegarder le dossier actuel sur le serveur" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-save text-white"></i>
+                        </button>
+                        
+                        <button id="load-patient-btn" type="button" title="Charger un dossier sauvegardé" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-folder-open text-white"></i>
+                        </button>
+
+                        <button id="import-json-btn" type="button" title="Importer un fichier .json" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-file-import text-white"></i>
+                        </button>
+                        
+                        <input type="file" id="import-file" accept=".json" class="hidden"> 
+                        
+                        <button id="clear-current-patient-btn" type="button" title="Effacer le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-trash text-white"></i>
+                        </button>
+                        <span class="font-light text-sm mr-4">EIdos - créé par L. Séraudie - 2025</span>
+                        <button id="toggle-fullscreen-btn" type="button" title="Plein écran" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i id="fullscreen-icon" class="fas fa-expand text-white"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <header id="patient-header-form" class="mb-4">
+                    <div class="card p-2">
+                        <div class="grid grid-cols-12 gap-x-2 gap-y-3 items-stretch">
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Nom d'usage</span><input type="text" id="patient-nom-usage" class="info-value text-lg font-bold" placeholder="NOM Usage"></div>
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Prénom</span><input type="text" id="patient-prenom" class="info-value text-lg font-bold" placeholder="Prénom"></div>
+                            <div class="info-item col-span-12 sm:col-span-12 md:col-span-3">
+                                <span class="info-label">Date de naissance</span>
+                                <div class="flex items-center gap-2"><input type="date" id="patient-dob" class="info-value text-gray-500 flex-grow" style="flex-basis: 150px;"><span id="patient-age" class="text-sm text-gray-600 font-medium whitespace-nowrap"></span></div>
+                            </div>
+
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Motif d'hospitalisation</span><input type="text" id="patient-motif" class="info-value"></div>
+
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2">
+                                <span class="info-label">Date d'entrée / Jour</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="date" id="patient-entry-date" class="info-value">
+                                    <span id="patient-jour-hosp" class="info-value font-bold text-lg text-teal-700">J-</span>
+                                </div>
+                            </div>
+                            <div class="col-span-12 sm:col-span-12 md:col-span-1 flex items-end justify-end">
+                                <button id="lock-header-btn" type="button" class="w-full h-full inline-flex items-center justify-center py-2 px-3 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
+                                    <i class="fas fa-check mr-2"></i> Valider
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div id="tabs-nav-container" class="card p-2">
+                       <nav id="tabs-nav" class="flex flex-wrap w-full gap-2" aria-label="Tabs">
+                            <button type="button" data-tab-id="administratif" data-color="teal"><i class="fas fa-user-circle mr-2"></i>Administratif</button>
+                            <button type="button" data-tab-id="mode-de-vie" data-color="blue"><i class="fas fa-home mr-2"></i>Vie & ATCD</button>
+                            <button type="button" data-tab-id="observations" data-color="rose"><i class="fas fa-notes-medical mr-2"></i>Observations Médicales</button>
+                            <button type="button" data-tab-id="prescriptions" data-color="indigo"><i class="fas fa-pills mr-2"></i>Prescriptions</button>
+                            <button type="button" data-tab-id="transmissions" data-color="green"><i class="fas fa-exchange-alt mr-2"></i>Transmissions</button>
+                            <button type="button" data-tab-id="pancarte" data-color="orange"><i class="fas fa-chart-line mr-2"></i>Pancarte</button>
+                            <button type="button" data-tab-id="diagramme" data-color="rose"><i class="fas fa-calendar-alt mr-2"></i>Diagramme Soins</button>
+                            <button type="button" data-tab-id="biologie" data-color="purple"><i class="fas fa-vial mr-2"></i>Résultats Biologiques</button>
+                       </nav>
+                </div>
+            </div>
+        </div>
+        <div id="main-content-wrapper" class="flex-1 overflow-x-hidden overflow-y-auto px-4 md:px-6 lg:px-8">
+            <div class="max-w-screen-xl mx-auto py-4 md:py-6 lg:py-8 pt-0">
+                <main>
+                    <div id="tab-content">
+                        <div id="administratif" class="content-section active">
+                            <div class="card p-6">
+                                <h2 class="card-header">Dossier Administratif</h2>
+                                <div class="mt-6">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Identité du patient</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">Nom d'usage</span><textarea id="admin-nom-usage" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Prénom</span><textarea id="admin-prenom" class="info-value"></textarea></div>
+                                        <div class="info-item">
+                                            <span class="info-label">Date de Naissance</span>
+                                            <div class="flex items-center gap-2">
+                                                <input type="date" id="admin-dob" class="info-value flex-grow" style="flex-basis: 150px;">
+                                                <span id="admin-age" class="text-sm text-gray-600 font-medium whitespace-nowrap"></span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item"><span class="info-label">Sexe</span><textarea id="admin-sexe" class="info-value"></textarea></div>
+                                        <div class="info-item col-span-full lg:col-span-2"><span class="info-label">Adresse</span><textarea id="admin-adresse" class="info-value"></textarea></div>
+                                    </div>
+                                </div>
+                                <div class="mt-8">
+                                     <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Contacts</h3>
+                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">Personne à contacter</span><textarea id="admin-contact" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Téléphone</span><textarea id="admin-telephone" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Médecin traitant</span><textarea id="admin-medecin" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Personne de confiance</span><textarea id="admin-pers-confiance" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Téléphone P. de confiance</span><textarea id="admin-pers-confiance-tel" class="info-value"></textarea></div>
+                                    </div>
+                                </div>
+                                 <div class="mt-8">
+                                     <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Couverture Sociale</h3>
+                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="info-item"><span class="info-label">N° de Sécurité Sociale</span><textarea id="admin-secu" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Mutuelle</span><textarea id="admin-mutuelle" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">N° Adhérent Mutuelle</span><textarea id="admin-mutuelle-num" class="info-value"></textarea></div>
+                                     </div>
+                                 </div>
+                            </div>
+                            <div class="flex justify-end mt-4">
+                                <button id="lock-admin-btn" type="button" class="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
+                                    <i class="fas fa-check mr-2"></i>Valider les données
+                                </button>
+                            </div>
+                        </div>
+                        <div id="mode-de-vie" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Mode de Vie & Antécédents</h2>
+                                <div class="mt-6">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Mode de vie</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div class="info-item"><span class="info-label">Situation familiale/professionnelle</span><textarea id="vie-situation" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Conditions de logement (Habitat)</span><textarea id="vie-habitat" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Habitudes (Alcool, Tabac, etc.)</span><textarea id="vie-habitudes" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Régime alimentaire</span><textarea id="vie-regime" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Poids (kg)</span><textarea id="vie-poids" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Taille (cm)</span><textarea id="vie-taille" class="info-value"></textarea></div>
+                                        <div class="info-item"><span class="info-label">IMC (kg/m²)</span><textarea id="vie-imc" class="info-value" rows="1" disabled></textarea></div>
+                                    </div>
+                                </div>
+                                <div class="mt-8">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b">Antécédents (ATCD)</h3>
+                                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div class="info-item"><span class="info-label">Médicaux</span><textarea id="atcd-medicaux" class="info-value" rows="6"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Chirurgicaux</span><textarea id="atcd-chirurgicaux" class="info-value" rows="6"></textarea></div>
+                                        <div class="info-item"><span class="info-label">Allergies</span><textarea id="atcd-allergies" class="info-value" rows="6"></textarea></div>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="flex justify-end mt-4">
+                                <button id="lock-vie-btn" type="button" class="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-blue-600 text-blue-700 hover:bg-blue-600">
+                                    <i class="fas fa-check mr-2"></i>Valider les données
+                                </button>
+                            </div>
+                        </div>
+                        <div id="observations" class="content-section">
+                            <div class="card p-6"><h2 class="card-header">Suivi Médical</h2><div id="observations-list" class="space-y-8 mt-4"></div></div>
+                            <div class="card p-6">
+                                <h2 class="card-header">Ajouter une observation médicale</h2>
+                                <form id="new-observation-form" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2"><label for="new-observation-author" class="block text-sm font-medium text-gray-700">Auteur (ex: Dr. REED)</label><input type="text" id="new-observation-author" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                        <div><label for="new-observation-date" class="block text-sm font-medium text-gray-700">Date</label><input type="date" id="new-observation-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                    </div>
+                                    <div><label for="new-observation-text" class="block text-sm font-medium text-gray-700">Observation</label><textarea id="new-observation-text" rows="4" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></textarea></div>
+                                    <div class="flex justify-end"><button id="add-observation-btn" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700">Ajouter</button></div>
+                                </form>
+                            </div>
+                        </div>
+                        <div id="prescriptions" class="content-section">
+                            <div class="card p-6">
+                                 <h2 class="card-header">Prescriptions Médicales</h2>
+                                 <div class="overflow-x-auto mt-4">
+                                     <table class="w-full border-collapse text-sm diagram" id="prescription-table">
+                                         <thead id="prescription-thead" class="bg-gray-100 text-gray-600">
+                                         </thead>
+                                         <tbody class="text-center" id="prescription-tbody"></tbody>
+                                     </table>
+                                 </div>
+                            </div>
+                             <div class="card p-6">
+                                 <h2 class="card-header">Ajouter une prescription</h2>
+                                 <form id="new-prescription-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                     <div>
+                                         <label for="med-name" class="block text-sm font-medium text-gray-700">Médicament / Soin</label>
+                                         <input type="text" id="med-name" class="styled-input mt-1">
+                                     </div>
+                                     <div>
+                                         <label for="med-posologie" class="block text-sm font-medium text-gray-700">Posologie</label>
+                                         <input type="text" id="med-posologie" class="styled-input mt-1">
+                                     </div>
+                                     <div>
+                                         <label for="med-voie" class="block text-sm font-medium text-gray-700">Voie</label>
+                                         <input type="text" id="med-voie" class="styled-input mt-1">
+                                     </div>
+                                     <div>
+                                         <label for="med-start-date" class="block text-sm font-medium text-gray-700">Date de début</label>
+                                         <input type="date" id="med-start-date" class="styled-input mt-1">
+                                     </div>
+                                     <div class="md:col-start-4 flex justify-end">
+                                         <button id="add-prescription-btn" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Ajouter</button>
+                                     </div>
+                                 </form>
+                             </div>
+                        </div>
+                        <div id="transmissions" class="content-section">
+                            <div class="card p-6"><h2 class="card-header">Transmissions Soignantes</h2><div id="transmissions-list-ide" class="space-y-8 mt-4"></div></div>
+                            <div class="card p-6">
+                                <h2 class="card-header">Ajouter une transmission</h2>
+                                <form id="new-transmission-form-2" class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2"><label for="new-transmission-author-2" class="block text-sm font-medium text-gray-700">Auteur (ex: IDE, AS)</label><input type="text" id="new-transmission-author-2" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                        <div><label for="new-transmission-date" class="block text-sm font-medium text-gray-700">Date</label><input type="date" id="new-transmission-date" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm"></div>
+                                    </div>
+                                    <div><label for="new-transmission-text-2" class="block text-sm font-medium text-gray-700">Transmission Ciblée</label><textarea id="new-transmission-text-2" rows="4" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm" placeholder="Cible :&#10;Données :&#10;Actions :&#10;Résultats :"></textarea></div>
+                                    <div class="flex justify-end"><button id="add-transmission-btn" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">Ajouter</button></div>
+                                </form>
+                            </div>
+                        </div>
+                        <div id="biologie" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Suivi Biologique</h2>
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="w-full border-collapse text-sm diagram" id="bio-table">
+                                        <thead id="bio-thead" class="bg-gray-100 text-gray-600">
+                                        </thead>
+                                        <tbody id="bio-tbody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="pancarte" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Graphique des Constantes</h2>
+                                <div class="relative h-96 w-full"><canvas id="pancarteChart"></canvas></div>
+                            </div>
+                            <div class="card p-6">
+                                <h2 class="card-header">Tableau de Surveillance (Pancarte)</h2>
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="w-full border-collapse text-sm text-center diagram" id="pancarte-table">
+                                        <thead id="pancarte-thead" class="bg-gray-100 text-gray-600">
+                                        </thead>
+                                        <tbody id="pancarte-tbody">
+                                        </tbody>
+                                    </table>
+                                 </div>
+                            </div>
+                        </div>
+                        <div id="diagramme" class="content-section">
+                             <div class="card p-6">
+                                <h2 class="card-header">Diagramme de Soins</h2>
+                                <div class="overflow-x-auto"><table class="w-full table-auto text-sm text-center diagram" id="care-diagram-table">
+                                    <thead id="care-diagram-thead" class="font-semibold bg-gray-100">
+                                    </thead>
+                                    <tbody id="care-diagram-tbody">
+                                        </tbody>
+                                </table></div>
+                             </div>
+                             <div class="card p-6">
+                                <h2 class="card-header">Ajouter un soin</h2>
+                                <form id="new-care-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div>
+                                       <label for="care-name" class="block text-sm font-medium text-gray-700">Soin / Surveillance</label>
+                                       <input type="text" id="care-name" class="styled-input mt-1 block w-full rounded-md shadow-sm sm:text-sm">
+                                   </div>
+                                    <div class="flex justify-start md:col-start-4">
+                                       <button id="add-care-diagram-btn" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700">Ajouter</button>
+                                   </div>
+                                </form>
+                             </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        </div>
+    
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center hidden" style="z-index: 10001;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4 transform transition-all scale-95 opacity-0" id="custom-confirm-box">
+            <h3 class="text-lg font-bold text-gray-800" id="custom-confirm-title">Confirmation requise</h3>
+            <p class="mt-2 text-sm text-gray-600" id="custom-confirm-message">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="custom-confirm-cancel" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">Annuler</button>
+                <button id="custom-confirm-ok" type="button" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-patient-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center hidden" style="z-index: 9980;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg m-4 transform transition-all scale-95 opacity-0" id="load-patient-box">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Charger un dossier patient</h3>
+                <button id="load-patient-close-btn" type="button" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+            <div id="load-patient-list-container" class="max-h-96 overflow-y-auto pr-2 space-y-2">
+                <p class="text-gray-500">Chargement des dossiers...</p>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="load-patient-cancel-btn" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tutorial-overlay" class="hidden">
+        <div id="tutorial-step-box">
+            <p id="tutorial-text" class="text-gray-700 text-sm mb-4">Ceci est une étape du tutoriel.</p>
+            <div class="flex justify-between items-center">
+                <button id="tutorial-skip-btn" class="text-xs text-gray-500 hover:text-gray-800 transition-colors">Passer</button>
+                <button id="tutorial-next-btn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Suivant</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    
+</body>
+</html>
