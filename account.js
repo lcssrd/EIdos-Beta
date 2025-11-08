@@ -2,7 +2,7 @@
 (function() {
     "use strict"; 
 
-    const API_URL = 'https://eidos-api.onrender.com:3000'; 
+    const API_URL = 'https://eidos-api.onrender.com'; 
 
     // --- Fonctions utilitaires d'authentification (copiées de app.js) ---
     
@@ -810,4 +810,5 @@
 
 
 })();
+
 
