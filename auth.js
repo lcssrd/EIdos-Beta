@@ -2,8 +2,8 @@
 (function() {
     "use strict";
 
-    const API_URL = 'https://eidos-api.onrender.com';
-    
+    const API_URL = 'http://localhost:3000';
+
     // Sélection des 3 sections principales
     const loginSection = document.getElementById('login-section');
     const signupSection = document.getElementById('signup-section');
@@ -18,6 +18,25 @@
     const showSignupLink = document.getElementById('show-signup-link');
     const showLoginLink1 = document.getElementById('show-login-link-1');
     const showLoginLink2 = document.getElementById('show-login-link-2');
+
+    // --- NOUVEAU : Gestion de la sélection de plan ---
+    const planCards = signupSection.querySelectorAll('.plan-card');
+    let selectedPlan = 'free'; // 'free' par défaut
+
+    planCards.forEach(card => {
+        // Sélectionner 'free' par défaut
+        if (card.dataset.plan === 'free') {
+            card.classList.add('selected');
+        }
+
+        card.addEventListener('click', () => {
+            planCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedPlan = card.dataset.plan;
+        });
+    });
+    // --- FIN NOUVEAU ---
+
 
     // --- Gestionnaires d'affichage ---
     function showSection(sectionToShow) {
@@ -53,12 +72,11 @@
     }
 
     /**
-     * Gère la soumission du formulaire de connexion (MODIFIÉ)
+     * Gère la soumission du formulaire de connexion (Inchangé)
      */
     async function handleLogin(e) {
         e.preventDefault();
         
-        // MODIFIÉ : Récupère l'identifiant (email ou login)
         const identifier = document.getElementById('login-identifier').value;
         const password = document.getElementById('login-password').value;
         const errorMsg = document.getElementById('login-error-message');
@@ -72,7 +90,6 @@
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // MODIFIÉ : Envoie 'identifier' au lieu de 'email'
                 body: JSON.stringify({ identifier, password })
             });
 
@@ -98,7 +115,7 @@
     }
 
     /**
-     * Gère la soumission du formulaire d'inscription (Inchangé)
+     * Gère la soumission du formulaire d'inscription (MODIFIÉ)
      */
     async function handleSignup(e) {
         e.preventDefault();
@@ -116,7 +133,8 @@
             const response = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                // MODIFIÉ : Ajout du plan sélectionné
+                body: JSON.stringify({ email, password, plan: selectedPlan })
             });
 
             const data = await response.json();
@@ -138,6 +156,12 @@
 
             showSection(verifySection);
             signupForm.reset(); // Vider le formulaire d'inscription
+
+            // Réinitialiser la sélection de plan au cas où l'utilisateur revient en arrière
+            planCards.forEach(c => c.classList.remove('selected'));
+            planCards[0].classList.add('selected');
+            selectedPlan = 'free';
+
 
         } catch (err) {
             errorMsg.textContent = err.message;
@@ -200,6 +224,5 @@
             verifyBtn.textContent = 'Vérifier';
         }
     }
-
 
 })();

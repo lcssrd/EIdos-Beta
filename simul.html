@@ -39,17 +39,17 @@
                 <i class="fas fa-user-cog w-6 text-center mr-1"></i>
                 Gestion de compte
             </a>
-            <a href="https://fr.linkedin.com/in/lucas-s%C3%A9raudie-1858ba14b" target="_blank" rel="noopener noreferrer" class="block w-full text-left text-sm text-gray-600 hover:bg-gray-100 p-2 rounded-md transition-colors mb-1">
-                <i class="fab fa-linkedin w-6 text-center mr-1"></i>
-                Me contacter
-            </a>
             <button id="start-tutorial-btn" type="button" class="w-full text-left text-sm text-blue-600 hover:bg-blue-100 p-2 rounded-md transition-colors mb-1">
                 <i class="fas fa-question-circle w-6 text-center mr-1"></i>
                 Aide / Tuto
             </button>
-            <button id="clear-all-data-btn" type="button" class="w-full text-left text-sm text-red-600 hover:bg-red-100 p-2 rounded-md transition-colors">
+            <button id="clear-all-data-btn" type="button" class="w-full text-left text-sm text-red-600 hover:bg-red-100 p-2 rounded-md transition-colors mb-1">
                 <i class="fas fa-exclamation-triangle w-6 text-center mr-1"></i>
                 Vider tous les dossiers
+            </button>
+            <button id="logout-btn" type="button" class="w-full text-left text-sm text-gray-600 hover:bg-gray-100 p-2 rounded-md transition-colors">
+                <i class="fas fa-sign-out-alt w-6 text-center mr-1"></i>
+                Déconnexion
             </button>
         </div>
     </aside>
@@ -73,12 +73,16 @@
                             <i class="fas fa-file-import text-white"></i>
                         </button>
                         
+                        <button id="export-json-btn" type="button" title="Exporter en .json" class="p-2 rounded-full hover:bg-white/20 transition-colors">
+                            <i class="fas fa-file-export text-white"></i>
+                        </button>
+                        
                         <input type="file" id="import-file" accept=".json" class="hidden"> 
                         
                         <button id="clear-current-patient-btn" type="button" title="Effacer le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-trash text-white"></i>
                         </button>
-                        <span class="font-light text-sm mr-4">EIdos - créé par L. Séraudie - 2025</span>
+                        <span class="font-light text-sm mr-4">EIdos - 2025</span>
                         <button id="toggle-fullscreen-btn" type="button" title="Plein écran" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i id="fullscreen-icon" class="fas fa-expand text-white"></i>
                         </button>
@@ -97,17 +101,12 @@
 
                             <div class="info-item col-span-12 sm:col-span-6 md:col-span-2"><span class="info-label">Motif d'hospitalisation</span><input type="text" id="patient-motif" class="info-value"></div>
 
-                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-2">
+                            <div class="info-item col-span-12 sm:col-span-6 md:col-span-3">
                                 <span class="info-label">Date d'entrée / Jour</span>
                                 <div class="flex items-center gap-2">
                                     <input type="date" id="patient-entry-date" class="info-value">
                                     <span id="patient-jour-hosp" class="info-value font-bold text-lg text-teal-700">J-</span>
                                 </div>
-                            </div>
-                            <div class="col-span-12 sm:col-span-12 md:col-span-1 flex items-end justify-end">
-                                <button id="lock-header-btn" type="button" class="w-full h-full inline-flex items-center justify-center py-2 px-3 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
-                                    <i class="fas fa-check mr-2"></i> Valider
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -169,11 +168,6 @@
                                      </div>
                                  </div>
                             </div>
-                            <div class="flex justify-end mt-4">
-                                <button id="lock-admin-btn" type="button" class="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-teal-600 text-teal-700 hover:bg-teal-600">
-                                    <i class="fas fa-check mr-2"></i>Valider les données
-                                </button>
-                            </div>
                         </div>
                         <div id="mode-de-vie" class="content-section">
                             <div class="card p-6">
@@ -198,11 +192,6 @@
                                         <div class="info-item"><span class="info-label">Allergies</span><textarea id="atcd-allergies" class="info-value" rows="6"></textarea></div>
                                     </div>
                                 </div>
-                            </div>
-                             <div class="flex justify-end mt-4">
-                                <button id="lock-vie-btn" type="button" class="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md transition-colors bg-transparent hover:text-white border-blue-600 text-blue-700 hover:bg-blue-600">
-                                    <i class="fas fa-check mr-2"></i>Valider les données
-                                </button>
                             </div>
                         </div>
                         <div id="observations" class="content-section">
@@ -369,5 +358,4 @@
     <script src="app.js"></script>
     
 </body>
-
 </html>

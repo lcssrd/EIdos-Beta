@@ -12,7 +12,7 @@
     
     <style>
         /* Styles spécifiques pour la page de compte */
-        #account-sidebar nav button {
+        #account-sidebar nav button, #account-sidebar nav a {
             display: flex;
             align-items: center;
             width: 100%;
@@ -23,15 +23,15 @@
             font-weight: 500;
             color: #374151; /* text-gray-700 */
         }
-        #account-sidebar nav button:hover {
+        #account-sidebar nav button:hover, #account-sidebar nav a:hover {
             background-color: #f3f4f6; /* hover:bg-gray-100 */
         }
-        #account-sidebar nav button.active {
+        #account-sidebar nav button.active, #account-sidebar nav a.active {
             background-color: #0d9488; /* bg-teal-700 */
             color: white;
             font-weight: 600;
         }
-        #account-sidebar nav button i {
+        #account-sidebar nav button i, #account-sidebar nav a i {
             width: 1.25rem;
             margin-right: 0.75rem;
             text-align: center;
@@ -63,7 +63,7 @@
                     </div>
                 </div>
             </div>
-            <nav class="flex-1 p-2">
+            <nav class="flex-1 p-2 space-y-1">
                 <button type="button" id="tab-security" class="account-tab-btn active">
                     <i class="fas fa-shield-alt"></i> Sécurité
                 </button>
@@ -71,7 +71,10 @@
                     <i class="fas fa-rocket"></i> Abonnement
                 </button>
                 <button type="button" id="tab-invitations" class="account-tab-btn">
-                    <i class="fas fa-users"></i> Invitations
+                    <i class="fas fa-users"></i> Gestion des étudiants
+                </button>
+                <button type="button" id="tab-contact" class="account-tab-btn">
+                    <i class="fas fa-envelope"></i> Contacter le développeur
                 </button>
             </nav>
             <div class="p-2 border-t border-gray-100">
@@ -136,43 +139,101 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                            <div class="card p-6 flex flex-col">
-                                <h3 class="text-xl font-bold text-teal-700">Solo</h3>
-                                <p class="text-3xl font-extrabold my-4">Gratuit</p>
-                                <ul class="space-y-2 text-gray-600 flex-grow">
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 10 dossiers patients</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Sauvegardes illimitées</li>
-                                    <li class="flex items-center"><i class="fas fa-times text-red-500 mr-2"></i> Pas de comptes étudiants</li>
-                                </ul>
-                                <button class="mt-6 w-full py-2 px-4 rounded-md font-semibold text-gray-700 bg-gray-200 cursor-not-allowed" disabled>Plan actuel</button>
-                            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8 items-start">
                             
-                            <div class="card p-6 flex flex-col border-2 border-blue-500 shadow-lg">
-                                <h3 class="text-xl font-bold text-blue-700">Pro (Formateur)</h3>
-                                <p class="text-3xl font-extrabold my-4">9€ <span class="text-lg font-normal text-gray-500">/ mois</span></p>
-                                <ul class="space-y-2 text-gray-600 flex-grow">
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> 10 dossiers patients</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Sauvegardes illimitées</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Jusqu'à 50 comptes étudiants</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Gestion des permissions</li>
+                            <div class="card bg-white p-6 flex flex-col border-t-4 border-gray-400 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <h3 class="text-2xl font-semibold text-gray-800">Free</h3>
+                                <p class="text-4xl font-extrabold my-4">Gratuit</p>
+                                <p class="text-gray-500 mb-6 min-h-[4rem]">Pour la découverte et l'utilisation basique.</p>
+                                <ul class="space-y-3 text-gray-600 flex-grow">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Découverte du logiciel</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-times text-red-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Pas de sauvegarde en ligne</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-times text-red-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Pas de comptes étudiants</span>
+                                    </li>
                                 </ul>
-                                <button class="mt-6 w-full py-2 px-4 rounded-md font-semibold text-white bg-blue-600 hover:bg-blue-700">Choisir ce plan</button>
+                                <button id="sub-btn-free" type="button" class="mt-8 w-full py-3 px-4 rounded-lg font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 sub-plan-btn transition-all">
+                                    Choisir ce plan
+                                </button>
                             </div>
 
-                            <div class="card p-6 flex flex-col">
-                                <h3 class="text-xl font-bold text-indigo-700">Organisation</h3>
-                                <p class="text-3xl font-extrabold my-4">Sur devis</p>
-                                <ul class="space-y-2 text-gray-600 flex-grow">
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Dossiers illimités</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Comptes étudiants illimités</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Gestion avancée</li>
-                                    <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i> Support prioritaire</li>
+                            <div class="card bg-white p-6 flex flex-col border-t-4 border-teal-600 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <h3 class="text-2xl font-semibold text-teal-700">Indépendant</h3>
+                                <p class="text-4xl font-extrabold my-4 text-gray-900">19€ <span class="text-lg font-normal text-gray-500">/ mois</span></p>
+                                <p class="text-gray-500 mb-6 min-h-[4rem]">Pour formateurs solo ou en test.</p>
+                                <ul class="space-y-3 text-gray-600 flex-grow">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Sauvegardes en ligne</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Archives patients (20)</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Jusqu'à 5 comptes étudiants</span>
+                                    </li>
                                 </ul>
-                                <button class="mt-6 w-full py-2 px-4 rounded-md font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Nous contacter</button>
+                                <button id="sub-btn-independant" type="button" class="mt-8 w-full py-3 px-4 rounded-lg font-semibold text-white bg-teal-600 hover:bg-teal-700 sub-plan-btn transition-all">
+                                    Choisir ce plan
+                                </button>
+                            </div>
+                            
+                            <div class="card bg-white p-6 flex flex-col border-t-4 border-blue-600 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <h3 class="text-2xl font-semibold text-blue-700">Promo</h3>
+                                <p class="text-4xl font-extrabold my-4 text-gray-900">49€ <span class="text-lg font-normal text-gray-500">/ mois</span></p>
+                                <p class="text-gray-500 mb-6 min-h-[4rem]">Pour gérer une promotion ou classe complète.</p>
+                                <ul class="space-y-3 text-gray-600 flex-grow">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Archives patients (50)</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Jusqu'à 40 comptes étudiants</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Gestion des permissions</span>
+                                    </li>
+                                </ul>
+                                <button id="sub-btn-promo" type="button" class="mt-8 w-full py-3 px-4 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 sub-plan-btn transition-all shadow-lg hover:shadow-xl">
+                                    Choisir ce plan
+                                </button>
+                            </div>
+
+                            <div class="card bg-white p-6 flex flex-col border-t-4 border-indigo-600 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <h3 class="text-2xl font-semibold text-indigo-700">Centre</h3>
+                                <p class="text-4xl font-extrabold my-4 text-gray-900">Sur devis</p>
+                                <p class="text-gray-500 mb-6 min-h-[4rem]">Pour les centres de formation (IFSI, etc).</p>
+                                <ul class="space-y-3 text-gray-600 flex-grow">
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Comptes multi-formateurs</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Étudiants illimités</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1 flex-shrink-0"></i>
+                                        <span>Support prioritaire</span>
+                                    </li>
+                                </ul>
+                                <button id="sub-btn-centre" type="button" class="mt-8 w-full py-3 px-4 rounded-lg font-semibold text-gray-700 bg-gray-200 cursor-not-allowed" disabled>
+                                    Nous contacter
+                                </button>
                             </div>
                         </div>
-                    </section>
+                        </section>
 
                     <section id="content-invitations" class="account-section">
                         <h1 class="text-3xl font-bold text-gray-800 mb-6">Invitations et Gestion</h1>
@@ -199,7 +260,7 @@
                                         <button type="button" id="generate-credentials-btn" class="text-sm text-blue-600 hover:underline">
                                             <i class="fas fa-random mr-1"></i> Suggérer
                                         </button>
-                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                                        <button type="submit" id="create-student-submit-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
                                             <i class="fas fa-plus mr-2"></i> Créer le compte
                                         </button>
                                     </div>
@@ -221,7 +282,7 @@
                             </div>
                             </div>
                         <div class="card p-6 mt-8">
-                            <h2 class="card-header header-indigo">Gestion des étudiants (0)</h2>
+                            <h2 class="card-header header-indigo" id="student-list-title">Gestion des étudiants (0)</h2>
                             <div class="overflow-x-auto mt-4">
                                 <table class="w-full border-collapse text-sm diagram" id="permissions-table">
                                     <thead class="bg-gray-100 text-gray-600">
@@ -240,16 +301,51 @@
                                             <th class="p-2 text-center" title="Permet de modifier la Pancarte">Pancarte</th>
                                             <th class="p-2 text-center" title="Permet de modifier le Diagramme de soins">Diagramme Soins</th>
                                             <th class="p-2 text-center" title="Permet de modifier les résultats de Biologie">Biologie</th>
+                                            
+                                            <th class="p-2 text-center">Chambres</th>
+                                            
                                             <th class="p-2 text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="permissions-tbody">
                                         <tr>
-                                            <td colspan="13" class="p-4 text-center text-gray-500">Vous n'avez pas encore créé de compte étudiant.</td>
+                                            <td colspan="14" class="p-4 text-center text-gray-500">Vous n'avez pas encore créé de compte étudiant.</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </section>
+                    
+                    <section id="content-contact" class="account-section">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-6">Contacter le développeur</h1>
+                        
+                        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                            
+                            <div class="card p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-t-4 border-teal-500">
+                                <span class="flex items-center justify-center h-16 w-16 bg-teal-100 text-teal-600 rounded-full text-3xl mb-6">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Email Professionnel</h2>
+                                <p class="text-gray-600 mb-6">Pour toute demande commerciale, support technique ou collaboration.</p>
+                                <p id="contact-email" class="text-lg font-medium text-teal-700 bg-teal-50 p-3 rounded-lg">[Email à remplir]</p>
+                                <button id="copy-email-btn" type="button" class="mt-6 w-full py-3 px-4 rounded-lg font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-all">
+                                    Copier l'email
+                                </button>
+                            </div>
+
+                            <div class="card p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-t-4 border-blue-600">
+                                <span class="flex items-center justify-center h-16 w-16 bg-blue-100 text-blue-600 rounded-full text-3xl mb-6">
+                                    <i class="fab fa-linkedin"></i>
+                                </span>
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Profil LinkedIn</h2>
+                                <p class="text-gray-600 mb-6">Pour un aperçu de mon parcours, de mes compétences et pour se connecter.</p>
+                                <p class="text-lg font-medium text-blue-700 bg-blue-50 p-3 rounded-lg">Lucas Séraudie</p>
+                                <a href="https://fr.linkedin.com/in/lucas-s%C3%A9raudie-1858ba14b" target="_blank" rel="noopener noreferrer" class="mt-6 w-full block py-3 px-4 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all text-center">
+                                    Voir le profil
+                                </a>
+                            </div>
+
                         </div>
                     </section>
                 </main>
@@ -268,6 +364,21 @@
         </div>
     </div>
 
+    <div id="room-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center hidden" style="z-index: 10002;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4 transform transition-all scale-95 opacity-0" id="room-modal-box">
+            <h3 class="text-lg font-bold text-gray-800" id="room-modal-title">Gérer les chambres pour...</h3>
+            <p class="mt-1 text-sm text-gray-500">Sélectionnez les chambres auxquelles cet étudiant aura accès.</p>
+            <form id="room-modal-form" class="mt-4">
+                <input type="hidden" id="room-modal-login">
+                <div id="room-modal-list" class="grid grid-cols-5 gap-2">
+                    </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button id="room-modal-cancel" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200">Annuler</button>
+                    <button id="room-modal-save" type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <script src="account.js"></script>
 
 </body>

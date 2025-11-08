@@ -428,3 +428,23 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
 .iv-bar-container.marker-container .iv-time-label.end {
     display: none;
 }
+
+/*
+ * NOUVEAU : Correction visuelle pour l'alignement des heures
+ * Cible TOUTES les colonnes d'heure dans les en-têtes des
+ * tableaux de prescription et de diagramme de soins.
+*/
+#prescription-thead .small-col,
+#care-diagram-thead .small-col {
+    position: relative; 
+    
+    /* * Décale le texte (qui est centré dans sa cellule) de 50% de 
+    * sa propre largeur vers la gauche.
+    * Cela l'aligne visuellement sur la ligne de démarcation
+    * de début de sa plage horaire.
+    */
+    transform: translateX(-50%);
+    
+    /* Empêche que le texte décalé ne soit coupé */
+    overflow: visible; 
+}

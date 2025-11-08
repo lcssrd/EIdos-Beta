@@ -2,49 +2,122 @@
 (function() {
     "use strict"; 
 
-    const API_URL = 'https://eidos-api.onrender.com';
+    const API_URL = 'http://localhost:3000'; 
 
-    // --- NOUVEAU : Gestion des permissions ---
+    // --- Gestion des permissions ---
     let userPermissions = { 
-        isStudent: false 
-        // Par défaut, l'utilisateur a tous les droits (n'est pas étudiant)
-        // Si isStudent = true, on lira :
-        // header: true/false,
-        // admin: true/false,
-        // ...
-        // prescriptions_add: true/false,
-        // prescriptions_delete: true/false,
-        // prescriptions_validate: true/false,
-        // ...
+        isStudent: false,
+        subscription: 'free', 
+        allowedRooms: [] 
+        // ... (permissions)
     };
-    // ------------------------------------------
+    
+    // --- Fonctions Utilitaires pour les Dates Relatives ---
+
+    /**
+     * Calcule la différence en jours entre deux dates.
+     * @param {string} entryDateStr - La date d'entrée (ex: '2025-11-08')
+     * @param {string} eventDateStr - La date de l'événement (ex: '2025-11-10')
+     * @returns {number} Le nombre de jours de décalage (ex: 2)
+     */
+    function _calculateDaysOffset(entryDateStr, eventDateStr) {
+        if (!entryDateStr || !eventDateStr) {
+            return 0;
+        }
+        try {
+            // Utilise UTC pour éviter les problèmes de fuseau horaire et de DST
+            const entryDate = new Date(entryDateStr + 'T00:00:00Z');
+            const eventDate = new Date(eventDateStr + 'T00:00:00Z');
+            
+            const diffTime = eventDate.getTime() - entryDate.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        } catch (e) {
+            console.error("Erreur de calcul d'offset de date:", e);
+            return 0;
+        }
+    }
+
+    /**
+     * Calcule une date absolue à partir d'une date d'entrée et d'un décalage en jours.
+     * @param {string} entryDateStr - La date d'entrée (ex: '2025-11-08')
+     * @param {number} offsetDays - Le décalage (ex: 2)
+     * @returns {Date} La nouvelle date absolue (ex: Date object for 2025-11-10)
+     */
+    function _calculateDateFromOffset(entryDateStr, offsetDays) {
+        if (!entryDateStr) {
+            // Retourne la date d'aujourd'hui si pas de date d'entrée
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return today;
+        }
+        
+        try {
+            // Ne pas utiliser UTC ici, sinon on peut avoir un décalage d'un jour
+            // On se base sur la date locale de l'ordinateur
+            const entryDate = new Date(entryDateStr + 'T00:00:00'); 
+            
+            // Crée une nouvelle date
+            const targetDate = new Date(entryDate.getTime());
+            // setDate gère correctement les changements de mois/année
+            targetDate.setDate(entryDate.getDate() + parseInt(offsetDays, 10));
+            
+            return targetDate;
+        } catch (e) {
+            console.error("Erreur de calcul de date depuis offset:", e);
+            return new Date();
+        }
+    }
+
+    /**
+     * Formate un objet Date en "JJ/MM/AAAA".
+     * @param {Date} date - L'objet Date à formater.
+     * @returns {string} La date formatée.
+     */
+    function _formatDate(date) {
+        if (!date || isNaN(date.getTime())) {
+            return "??/??/????";
+        }
+         // Utilise 'fr-CA' pour le format YYYY-MM-DD (pour les inputs)
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+    
+    /**
+     * Formate un objet Date en "YYYY-MM-DD" pour les inputs <input type="date">.
+     * @param {Date} date - L'objet Date à formater.
+     * @returns {string} La date formatée.
+     */
+    function _formatDateForInput(date) {
+        if (!date || isNaN(date.getTime())) {
+            return "";
+        }
+        // Crée une date qui n'est pas affectée par le fuseau horaire
+        const adjustedDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return adjustedDate.toISOString().split('T')[0];
+    }
+
+    // --- Fin des fonctions utilitaires de date ---
+    
 
     // --- Fonction utilitaire pour l'authentification ---
     
-    /**
-     * Récupère le token d'authentification depuis le localStorage.
-     * Si le token n'est pas trouvé, redirige vers la page de connexion.
-     * @returns {string|null} Le token ou null si non trouvé.
-     */
     function getAuthToken() {
         const token = localStorage.getItem('authToken');
         if (!token) {
             console.error("Aucun token trouvé, redirection vers login.");
-            // Redirige l'utilisateur s'il n'est pas connecté
-            window.location.href = 'auth.html'; // Redirigé vers auth.html
+            window.location.href = 'auth.html'; 
             return null;
         }
         return token;
     }
 
-    /**
-     * Crée l'objet "headers" requis pour les requêtes API authentifiées.
-     * @returns {Object} L'objet headers avec le token.
-     */
     function getAuthHeaders() {
         const token = getAuthToken();
         if (!token) {
-            // Cette vérification est redondante si getAuthToken redirige, mais c'est une sécurité
             throw new Error("Token non trouvé, impossible de créer les headers.");
         }
         return {
@@ -53,29 +126,22 @@
         };
     }
 
-    /**
-     * Gère les réponses non autorisées (401) en redirigeant vers le login.
-     * @param {Response} response - La réponse de l'API.
-     */
     function handleAuthError(response) {
         if (response.status === 401) {
             console.error("Token invalide ou expiré, redirection vers login.");
             localStorage.removeItem('authToken');
-            window.location.href = 'auth.html'; // Redirigé vers auth.html
+            window.location.href = 'auth.html'; 
             return true;
         }
         return false;
     }
     // -----------------------------------------------------------
 
-    // --- NOUVEAU : Récupère les permissions de l'utilisateur ---
     async function loadUserPermissions() {
         try {
             const headers = getAuthHeaders();
             delete headers['Content-Type'];
 
-            // NOTE : Cette route /api/auth/me doit être créée sur le backend.
-            // Elle doit renvoyer les infos de l'utilisateur, y compris son rôle et ses permissions.
             const response = await fetch(`${API_URL}/api/auth/me`, { headers });
 
             if (handleAuthError(response)) return;
@@ -85,70 +151,85 @@
 
             const userData = await response.json();
             
-            // Si l'utilisateur est un étudiant, on stocke ses permissions
+            userPermissions.subscription = userData.subscription || 'free';
+            userPermissions.allowedRooms = userData.allowedRooms || []; 
+
             if (userData.role === 'etudiant' && userData.permissions) {
                 userPermissions = {
+                    ...userPermissions, 
                     ...userData.permissions,
                     isStudent: true
                 };
-                console.log("Compte étudiant chargé. Permissions appliquées :", userPermissions);
+                
+                if (userPermissions.allowedRooms.length > 0) {
+                    patients = userPermissions.allowedRooms
+                        .map(roomId => ({ id: roomId, room: roomId.split('_')[1] }))
+                        .sort((a, b) => a.room.localeCompare(b.room)); 
+                } else {
+                    patients = []; 
+                }
+                
+                console.log(`Compte étudiant chargé (Plan: ${userPermissions.subscription}). ${patients.length} chambres autorisées.`);
             } else {
-                // C'est un 'solo', 'pro' ou 'admin', il a tous les droits.
-                userPermissions = { isStudent: false };
-                console.log("Compte formateur chargé. Tous droits activés.");
+                patients = [...defaultPatients]; 
+                userPermissions = { 
+                    ...userPermissions, 
+                    isStudent: false 
+                };
+                console.log(`Compte formateur chargé (Plan: ${userPermissions.subscription}). Tous droits activés.`);
             }
         } catch (err) {
             console.error(err);
-            // En cas d'erreur, on garde les droits par défaut (non-étudiant)
-            userPermissions = { isStudent: false };
-            showCustomAlert("Erreur de permissions", "Impossible de vérifier les permissions du compte. Tous les droits sont activés par défaut.");
+            userPermissions = { isStudent: false, subscription: 'free', allowedRooms: [] };
+            patients = [...defaultPatients]; 
+            showCustomAlert("Erreur de permissions", "Impossible de vérifier les permissions du compte. Les droits par défaut sont appliqués.");
         }
     }
 
-    // --- NOUVEAU : Applique les restrictions de permissions à l'UI ---
+    function disableSectionInputs(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const inputs = container.querySelectorAll('.info-value, input[type=text], input[type=date]');
+        inputs.forEach(input => {
+            if (input.id !== 'vie-imc') { 
+                input.disabled = true;
+            }
+        });
+    }
+
     function applyPermissions() {
-        // Si l'utilisateur n'est pas un étudiant, il a tous les droits, on ne fait rien.
+        
+        if (userPermissions.subscription === 'free' && !userPermissions.isStudent) {
+            const saveBtn = document.getElementById('save-patient-btn');
+            if (saveBtn) saveBtn.style.display = 'none';
+        }
+
         if (!userPermissions.isStudent) return;
 
-        // 1. Cacher les boutons de haut niveau
         const studentForbiddenButtons = [
             '#save-patient-btn',
             '#load-patient-btn',
             '#import-json-btn',
+            '#export-json-btn', 
             '#clear-current-patient-btn',
             '#clear-all-data-btn',
-            '#account-management-btn' // (Bouton sur simul.html)
+            '#account-management-btn'
         ];
         studentForbiddenButtons.forEach(selector => {
             const btn = document.querySelector(selector);
             if (btn) btn.style.display = 'none';
         });
 
-        // 2. Verrouiller les sections (En-tête, Admin, Vie)
         if (!userPermissions.header) {
-            const btn = document.getElementById('lock-header-btn');
-            if (btn) {
-                btn.style.display = 'none';
-                // Force le verrouillage (le 'true' final force l'état 'is-locked')
-                toggleLock('patient-header-form', 'lock-header-btn', true);
-            }
+            disableSectionInputs('patient-header-form'); 
         }
         if (!userPermissions.admin) {
-            const btn = document.getElementById('lock-admin-btn');
-            if (btn) {
-                btn.style.display = 'none';
-                toggleLock('administratif', 'lock-admin-btn', true);
-            }
+            disableSectionInputs('administratif'); 
         }
         if (!userPermissions.vie) {
-            const btn = document.getElementById('lock-vie-btn');
-            if (btn) {
-                btn.style.display = 'none';
-                toggleLock('mode-de-vie', 'lock-vie-btn', true);
-            }
+            disableSectionInputs('mode-de-vie'); 
         }
-
-        // 3. Cacher les formulaires d'ajout
         if (!userPermissions.observations) {
             const form = document.getElementById('new-observation-form');
             if (form) form.style.display = 'none';
@@ -157,7 +238,6 @@
             const form = document.getElementById('new-transmission-form-2');
             if (form) form.style.display = 'none';
         }
-        // MODIFIÉ : Utilisation de la permission granulaire
         if (!userPermissions.prescriptions_add) {
             const form = document.getElementById('new-prescription-form');
             if (form) form.style.display = 'none';
@@ -166,8 +246,6 @@
             const form = document.getElementById('new-care-form');
             if (form) form.style.display = 'none';
         }
-
-        // 4. Désactiver les inputs directs (Pancarte, Bio)
         if (!userPermissions.pancarte) {
             document.querySelectorAll('#pancarte-table input').forEach(el => el.disabled = true);
         }
@@ -182,15 +260,17 @@
     let loadPatientModal, loadPatientBox, loadPatientListContainer;
     // -----------------------------------------------------------
 
-    // Verrou pour empêcher l'auto-save pendant le chargement
     let isLoadingData = false;
-
     let pancarteChartInstance;
-    const patients = Array.from({ length: 10 }, (_, i) => ({
+    
+    const defaultPatients = Array.from({ length: 10 }, (_, i) => ({
         id: `chambre_${101 + i}`,
         room: `${101 + i}`
     }));
-    let activePatientId = localStorage.getItem('activePatientId') || patients[0].id; 
+    let patients = [...defaultPatients]; 
+    
+    let activePatientId = localStorage.getItem('activePatientId'); 
+
 
     let ivInteraction = {
         active: false, mode: null, targetBar: null, targetCell: null,
@@ -208,44 +288,431 @@
         'Pouls (/min)': [], 'Tension (mmHg)': [], 'Température (°C)': [], 'SpO2 (%)': [], 'Douleur (EVA /10)': []
     };
 
-    /**
-     * Arrondit un objet Date à l'intervalle de 15 minutes le plus proche.
-     * @param {Date} date - La date à arrondir.
-     * @returns {Date} La date arrondie.
-     */
     function roundDateTo15Min(date) {
-        const ms = 1000 * 60 * 15; // 15 minutes en millisecondes
-        // Utilise Math.round() pour trouver le multiple de 15min le plus proche
-        return new Date(Math.round(date.getTime() / ms) * ms);
+        const newDate = new Date(date.getTime()); 
+        const minutes = newDate.getMinutes();
+        const roundedMinutes = Math.round(minutes / 15) * 15;
+        newDate.setMinutes(roundedMinutes); 
+        newDate.setSeconds(0);
+        newDate.setMilliseconds(0);
+        return newDate;
     }
 
-    // =================================================================
-    // MODIFIÉ : Sauvegarde les données de la CHAMBRE sur le SERVEUR
-    // =================================================================
     async function saveData(patientId) {
-        // MODIFIÉ : La sauvegarde est activée pour TOUS (le serveur filtrera)
-        
-        if (!patientId) return;
-        
-        if (!patientId.startsWith('chambre_')) {
+        if (userPermissions.subscription === 'free') {
+            console.log("Plan 'Free' : Sauvegarde automatique désactivée.");
+            return;
+        }
+        if (!patientId || !patientId.startsWith('chambre_')) {
             console.warn('La sauvegarde automatique ne concerne que les chambres.');
             return;
         }
 
         const state = {};
+        const entryDateStr = document.getElementById('patient-entry-date').value;
 
-        // 1. Collecte du 'state'
+        // 1. Collecte des inputs simples
         document.querySelectorAll('input[id], textarea[id]').forEach(el => {
             const id = el.id;
             if (el.type === 'checkbox' || el.type === 'radio') { state[id] = el.checked; } else { state[id] = el.value; }
         });
-        const dynamicContentIds = ['observations-list', 'transmissions-list-ide', 'care-diagram-tbody'];
-        dynamicContentIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) state[id + '_html'] = el.innerHTML;
+
+        // 2. Collecte des Observations (en tant que data)
+        state.observations = [];
+        document.querySelectorAll('#observations-list .timeline-item').forEach(item => {
+            state.observations.push({
+                author: item.dataset.author || '',
+                text: item.dataset.text || '',
+                dateOffset: parseInt(item.dataset.dateOffset, 10) || 0
+            });
         });
-        const bioData = { dates: [], analyses: {} };
-        document.querySelectorAll('#bio-table thead input[type="text"]').forEach(input => bioData.dates.push(input.value));
+
+        // 3. Collecte des Transmissions (en tant que data)
+        state.transmissions = [];
+        document.querySelectorAll('#transmissions-list-ide .timeline-item').forEach(item => {
+            state.transmissions.push({
+                author: item.dataset.author || '',
+                text: item.dataset.text || '',
+                dateOffset: parseInt(item.dataset.dateOffset, 10) || 0
+            });
+        });
+
+        // 4. Collecte du Diagramme de Soins (HTML + Checkboxes)
+        const careDiagramTbody = document.getElementById('care-diagram-tbody');
+        if (careDiagramTbody) state['care-diagram-tbody_html'] = careDiagramTbody.innerHTML;
+        state.careDiagramCheckboxes = Array.from(document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]')).map(cb => cb.checked);
+
+        
+        // 5. Collecte de la Biologie (avec offsets)
+        const bioData = { dateOffsets: [], analyses: {} };
+        document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
+            const offset = _calculateDaysOffset(entryDateStr, input.value);
+            bioData.dateOffsets.push(offset);
+            input.dataset.dateOffset = offset;
+        });
+        document.querySelectorAll('#bio-table tbody tr').forEach(row => {
+            if (row.cells.length > 1 && row.cells[0].classList.contains('font-semibold')) { 
+                const analyseName = row.cells[0].textContent.trim();
+                if (analyseName) {
+                    bioData.analyses[analyseName] = [];
+                    row.querySelectorAll('input[type="text"]').forEach(input => bioData.analyses[analyseName].push(input.value));
+                }
+            }
+        });
+        state.biologie = bioData;
+        
+        // 6. Collecte Pancarte (inchangé)
+        const pancarteData = {};
+        document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
+            const paramName = row.cells[0].textContent.trim();
+            if (paramName) {
+                pancarteData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => pancarteData[paramName].push(input.value));
+            }
+        });
+        state.pancarte = pancarteData;
+        
+        // 7. Collecte Prescriptions (avec offsets)
+        state.prescriptions = [];
+        document.querySelectorAll('#prescription-tbody tr').forEach(row => {
+            state.prescriptions.push({
+                name: row.cells[0].querySelector('span').textContent,
+                posologie: row.cells[1].textContent,
+                voie: row.cells[2].textContent,
+                dateOffset: parseInt(row.dataset.dateOffset, 10) || 0,
+                type: row.dataset.type,
+                bars: Array.from(row.querySelectorAll('.iv-bar')).map(bar => ({ 
+                    left: bar.style.left, 
+                    width: bar.style.width, 
+                    title: bar.title 
+                }))
+            });
+        });
+        
+        // 8. Nom du patient (inchangé)
+        const nomUsage = document.getElementById('patient-nom-usage').value.trim();
+        const prenom = document.getElementById('patient-prenom').value.trim();
+        const patientName = `${nomUsage} ${prenom}`.trim();
+        state['sidebar_patient_name'] = patientName;
+        // ... (Fin de la collecte de 'state') ...
+        
+        try {
+            const headers = getAuthHeaders(); 
+            if (!headers) return;
+
+            const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    dossierData: state,
+                    sidebar_patient_name: patientName || `Chambre ${patientId.split('_')[1]}`
+                })
+            });
+
+            if (handleAuthError(response)) return;
+            
+        } catch (err) {
+            console.error("Erreur lors de la sauvegarde sur le serveur:", err);
+            if (err.message.includes("Token non trouvé")) {
+                 window.location.href = 'auth.html';
+            }
+        }
+        
+        const sidebarEntry = document.querySelector(`#patient-list button[data-patient-id="${patientId}"] .patient-name`);
+        if (sidebarEntry) {
+            sidebarEntry.textContent = patientName || `Chambre ${patientId.split('_')[1]}`;
+        }
+    }
+
+    async function loadData(patientId) {
+        if (!patientId) return;
+        
+        isLoadingData = true;
+        
+        let state;
+
+        if (userPermissions.subscription === 'free') {
+            console.log("Plan 'Free' : Chargement d'un dossier vide.");
+            state = {};
+        } else {
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                delete headers['Content-Type'];
+
+                const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
+                    headers: headers
+                });
+
+                if (handleAuthError(response)) return;
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.log(`Dossier ${patientId} non trouvé sur le serveur, initialisation locale.`);
+                        state = {};
+                    } else {
+                        throw new Error('Erreur réseau');
+                    }
+                } else {
+                    state = await response.json();
+                }
+
+            } catch (err) {
+                console.error("Erreur de chargement des données:", err);
+                if (err.message.includes("Token non trouvé")) {
+                    window.location.href = 'auth.html';
+                }
+                state = {}; 
+            }
+        }
+
+
+        if (!state || Object.keys(state).length === 0) {
+            resetForm();
+        } else {
+            // Logique de remplissage
+            
+            // 1. Remplir les inputs simples (inchangé)
+            Object.keys(state).forEach(id => {
+                if (id === 'observations' || id === 'transmissions' || id === 'biologie' || id === 'pancarte' || id === 'prescriptions' || id ==='lockButtonStates' || id === 'careDiagramCheckboxes' || id.endsWith('_html')) return;
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox' || el.type === 'radio') { el.checked = state[id]; } else { el.value = state[id]; }
+                }
+            });
+            
+            const entryDateStr = document.getElementById('patient-entry-date').value;
+
+            // 2. Charger les Observations (avec rétro-compatibilité)
+            const obsList = document.getElementById('observations-list');
+            obsList.innerHTML = ''; 
+            if (state.observations) {
+                state.observations.forEach(obsData => {
+                    let dateOffset = obsData.dateOffset;
+                    let formattedDate;
+
+                    if (dateOffset === undefined && obsData.date) { // === Ancien format JSON ===
+                        dateOffset = _calculateDaysOffset(entryDateStr, obsData.date);
+                        formattedDate = _formatDate(new Date(obsData.date + 'T00:00:00'));
+                    } else { // === Nouveau format ===
+                        const targetDate = _calculateDateFromOffset(entryDateStr, dateOffset);
+                        formattedDate = _formatDate(targetDate);
+                    }
+                    
+                    addObservation({ ...obsData, dateOffset: dateOffset, formattedDate: formattedDate }, true);
+                });
+            }
+
+            // 3. Charger les Transmissions (avec rétro-compatibilité)
+            const transList = document.getElementById('transmissions-list-ide');
+            transList.innerHTML = ''; 
+            if (state.transmissions) {
+                state.transmissions.forEach(transData => {
+                    let dateOffset = transData.dateOffset;
+                    let formattedDate;
+
+                    if (dateOffset === undefined && transData.date) { // === Ancien format JSON ===
+                        dateOffset = _calculateDaysOffset(entryDateStr, transData.date);
+                        formattedDate = _formatDate(new Date(transData.date + 'T00:00:00'));
+                    } else { // === Nouveau format ===
+                        const targetDate = _calculateDateFromOffset(entryDateStr, dateOffset);
+                        formattedDate = _formatDate(targetDate);
+                    }
+                    
+                    addTransmission({ ...transData, dateOffset: dateOffset, formattedDate: formattedDate }, true);
+                });
+            }
+
+            // 4. Charger le Diagramme de Soins (inchangé)
+            const careDiagramTbody = document.getElementById('care-diagram-tbody');
+            if (careDiagramTbody && state['care-diagram-tbody_html']) {
+                careDiagramTbody.innerHTML = state['care-diagram-tbody_html'];
+            } else if (careDiagramTbody) {
+                careDiagramTbody.innerHTML = getDefaultForCareDiagramTbody();
+            }
+            if (state.careDiagramCheckboxes) {
+                document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]').forEach((cb, index) => {
+                    if (state.careDiagramCheckboxes[index] !== undefined) {
+                        cb.checked = state.careDiagramCheckboxes[index];
+                    }
+                });
+            }
+            
+            // 5. Charger les Prescriptions (avec rétro-compatibilité)
+            const prescrTbody = document.getElementById('prescription-tbody');
+            prescrTbody.innerHTML = ''; 
+            if (state.prescriptions) {
+                state.prescriptions.forEach(pData => {
+                    let dateOffset = pData.dateOffset;
+
+                    if (dateOffset === undefined && pData.startDate) { // === Ancien format JSON ===
+                        // L'ancien format était YYYY-MM-DD ou JJ/MM/AA, _calculateDaysOffset gère les deux
+                        let oldStartDate = pData.startDate;
+                        if (oldStartDate.includes('/')) { // Convertir JJ/MM/AAAA en YYYY-MM-DD
+                             const parts = oldStartDate.split('/');
+                             if (parts.length === 3) {
+                                 oldStartDate = `20${parts[2]}-${parts[1]}-${parts[0]}`;
+                             }
+                        }
+                        dateOffset = _calculateDaysOffset(entryDateStr, oldStartDate);
+                    }
+                    
+                    addPrescription({ ...pData, dateOffset: dateOffset }, true);
+                });
+            }
+
+            // 6. Charger la Biologie (avec rétro-compatibilité)
+            if (state.biologie) {
+                document.querySelectorAll('#bio-table thead input[type="date"]').forEach((input, index) => {
+                    let offset = undefined;
+                    
+                    if (state.biologie.dateOffsets && state.biologie.dateOffsets[index] !== undefined) {
+                        // === Nouveau format ===
+                        offset = state.biologie.dateOffsets[index];
+                    } 
+                    else if (state.biologie.dates && state.biologie.dates[index]) {
+                        // === Ancien format ===
+                         const oldDateStr = state.biologie.dates[index];
+                         if (oldDateStr) { // S'assure que la date n'est pas vide
+                            offset = _calculateDaysOffset(entryDateStr, oldDateStr);
+                         }
+                    }
+
+                    if (offset !== undefined) {
+                        const targetDate = _calculateDateFromOffset(entryDateStr, offset);
+                        input.value = _formatDateForInput(targetDate);
+                        input.dataset.dateOffset = offset;
+                    }
+                });
+                // Le remplissage des analyses est inchangé
+                document.querySelectorAll('#bio-table tbody tr').forEach(row => {
+                    if (row.cells.length > 1 && row.cells[0].classList.contains('font-semibold')) {
+                        const analyseName = row.cells[0].textContent.trim();
+                        if (analyseName && state.biologie.analyses && state.biologie.analyses[analyseName]) {
+                            row.querySelectorAll('input[type="text"]').forEach((input, index) => {
+                                input.value = state.biologie.analyses[analyseName][index] || '';
+                            });
+                        }
+                    }
+                });
+            }
+            
+            // 7. Charger Pancarte (inchangé)
+            if (state.pancarte) {
+                document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
+                    const paramName = row.cells[0].textContent.trim();
+                    if (paramName && state.pancarte && state.pancarte[paramName]) {
+                        row.querySelectorAll('input').forEach((input, index) => { input.value = state.pancarte[paramName][index] || ''; });
+                    }
+                });
+            }
+            
+            if (entryDateStr) {
+                const entryDate = new Date(entryDateStr);
+                if (!isNaN(entryDate.getTime())) { updateDynamicDates(entryDate); }
+            }
+        }
+        
+        const roomDisplay = document.querySelector(`#patient-list button[data-patient-id="${patientId}"] .patient-room`);
+        if (roomDisplay) {
+            const patientRoomEl = document.getElementById('patient-room');
+            if (patientRoomEl) patientRoomEl.value = roomDisplay.textContent;
+        }
+        
+        updateAgeDisplay();
+        updateJourHosp(); 
+        calculateAndDisplayIMC();
+
+        setTimeout(() => { isLoadingData = false; }, 0);
+    }
+    
+    function refreshAllRelativeDates() {
+        const entryDateStr = document.getElementById('patient-entry-date').value;
+        if (!entryDateStr) return; 
+        
+        // 1. Rafraîchir les Observations
+        document.querySelectorAll('#observations-list .timeline-item').forEach(item => {
+            const offset = parseInt(item.dataset.dateOffset, 10);
+            if (!isNaN(offset)) {
+                const targetDate = _calculateDateFromOffset(entryDateStr, offset);
+                const formattedDate = _formatDate(targetDate);
+                item.querySelector('h3').textContent = `${formattedDate} - ${item.dataset.author.toUpperCase()}`;
+            }
+        });
+        
+        // 2. Rafraîchir les Transmissions
+        document.querySelectorAll('#transmissions-list-ide .timeline-item').forEach(item => {
+            const offset = parseInt(item.dataset.dateOffset, 10);
+            if (!isNaN(offset)) {
+                const targetDate = _calculateDateFromOffset(entryDateStr, offset);
+                const formattedDate = _formatDate(targetDate);
+                item.querySelector('h3').textContent = `${formattedDate} - ${item.dataset.author.toUpperCase()}`;
+            }
+        });
+        
+        // 3. Rafraîchir les Prescriptions
+        document.querySelectorAll('#prescription-tbody tr').forEach(row => {
+            const offset = parseInt(row.dataset.dateOffset, 10);
+            if (!isNaN(offset)) {
+                const targetDate = _calculateDateFromOffset(entryDateStr, offset);
+                const formattedDate = _formatDate(targetDate).slice(0, 8); // JJ/MM/AA
+                row.cells[3].textContent = formattedDate;
+            }
+        });
+
+        // 4. Rafraîchir les Dates de Biologie
+        document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
+            const offset = parseInt(input.dataset.dateOffset, 10);
+             if (!isNaN(offset)) {
+                const targetDate = _calculateDateFromOffset(entryDateStr, offset);
+                input.value = _formatDateForInput(targetDate);
+            }
+        });
+        
+        // 5. Rafraîchir les barres IV (elles dépendent de la date d'entrée)
+        document.querySelectorAll('#prescription-tbody .iv-bar').forEach(bar => {
+            updateIVBarDetails(bar, bar.closest('.iv-bar-container'));
+        });
+    }
+
+    function exportPatientAsJson() {
+        if (userPermissions.isStudent || userPermissions.subscription === 'free') {
+             showCustomAlert("Exportation impossible", "L'exportation de dossiers n'est pas disponible avec votre plan.");
+            return;
+        }
+
+        // --- Copie la logique de saveData pour assembler l'état ---
+        const state = {};
+        const entryDateStr = document.getElementById('patient-entry-date').value;
+
+        document.querySelectorAll('input[id], textarea[id]').forEach(el => {
+            const id = el.id;
+            if (el.type === 'checkbox' || el.type === 'radio') { state[id] = el.checked; } else { state[id] = el.value; }
+        });
+        state.observations = [];
+        document.querySelectorAll('#observations-list .timeline-item').forEach(item => {
+            state.observations.push({
+                author: item.dataset.author || '',
+                text: item.dataset.text || '',
+                dateOffset: parseInt(item.dataset.dateOffset, 10) || 0
+            });
+        });
+        state.transmissions = [];
+        document.querySelectorAll('#transmissions-list-ide .timeline-item').forEach(item => {
+            state.transmissions.push({
+                author: item.dataset.author || '',
+                text: item.dataset.text || '',
+                dateOffset: parseInt(item.dataset.dateOffset, 10) || 0
+            });
+        });
+        const careDiagramTbody = document.getElementById('care-diagram-tbody');
+        if (careDiagramTbody) state['care-diagram-tbody_html'] = careDiagramTbody.innerHTML;
+        state.careDiagramCheckboxes = Array.from(document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]')).map(cb => cb.checked);
+        const bioData = { dateOffsets: [], analyses: {} };
+        document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
+            const offset = _calculateDaysOffset(entryDateStr, input.value);
+            bioData.dateOffsets.push(offset);
+        });
         document.querySelectorAll('#bio-table tbody tr').forEach(row => {
             if (row.cells.length > 1 && row.cells[0].classList.contains('font-semibold')) { 
                 const analyseName = row.cells[0].textContent.trim();
@@ -265,200 +732,52 @@
             }
         });
         state.pancarte = pancarteData;
-        
         state.prescriptions = [];
         document.querySelectorAll('#prescription-tbody tr').forEach(row => {
-            const prescriptionData = {
+            state.prescriptions.push({
                 name: row.cells[0].querySelector('span').textContent,
                 posologie: row.cells[1].textContent,
                 voie: row.cells[2].textContent,
-                startDate: row.cells[3].textContent,
-                type: row.dataset.type
-            };
-
-            prescriptionData.bars = Array.from(row.querySelectorAll('.iv-bar')).map(bar => ({ 
-                left: bar.style.left, 
-                width: bar.style.width, 
-                title: bar.title 
-            }));
-            
-            state.prescriptions.push(prescriptionData);
-        });
-        
-        state.careDiagramCheckboxes = Array.from(document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]')).map(cb => cb.checked);
-        state.lockButtonStates = {};
-        document.querySelectorAll('button[id^="lock-"]').forEach(btn => {
-            state.lockButtonStates[btn.id] = btn.classList.contains('is-locked');
+                dateOffset: parseInt(row.dataset.dateOffset, 10) || 0,
+                type: row.dataset.type,
+                bars: Array.from(row.querySelectorAll('.iv-bar')).map(bar => ({ 
+                    left: bar.style.left, 
+                    width: bar.style.width, 
+                    title: bar.title 
+                }))
+            });
         });
         const nomUsage = document.getElementById('patient-nom-usage').value.trim();
         const prenom = document.getElementById('patient-prenom').value.trim();
         const patientName = `${nomUsage} ${prenom}`.trim();
         state['sidebar_patient_name'] = patientName;
-        // ... (Fin de la collecte de 'state') ...
+        // --- Fin de la copie ---
 
-        
-        try {
-            const headers = getAuthHeaders(); 
-            if (!headers) return;
-
-            // Appelle la route POST standard pour mettre à jour la chambre
-            const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({
-                    dossierData: state,
-                    sidebar_patient_name: patientName || `Chambre ${patientId.split('_')[1]}`
-                })
-            });
-
-            if (handleAuthError(response)) return;
-            
-        } catch (err) {
-            console.error("Erreur lors de la sauvegarde sur le serveur:", err);
-            if (err.message.includes("Token non trouvé")) {
-                 window.location.href = 'auth.html';
-            }
+        // Créer le nom du fichier
+        let fileName = "dossier_patient.json";
+        if (patientName) {
+            // Nettoie le nom pour le système de fichiers
+            fileName = `${nomUsage.toLowerCase()}_${prenom.toLowerCase()}.json`.replace(/[^a-z0-9_.]/g, '_');
         }
+
+        // Créer le contenu du fichier
+        const jsonString = JSON.stringify(state, null, 2); // 'null, 2' pour un joli formatage
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        // Créer un lien de téléchargement et simuler un clic
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
         
-        // Mettre à jour la barre latérale
-        const sidebarEntry = document.querySelector(`#patient-list button[data-patient-id="${patientId}"] .patient-name`);
-        if (sidebarEntry) {
-            sidebarEntry.textContent = patientName || `Chambre ${patientId.split('_')[1]}`;
-        }
+        // Nettoyer
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
-    // =================================================================
-    // MODIFIÉ : Charge les données depuis le SERVEUR (avec Auth)
-    // =================================================================
-    async function loadData(patientId) {
-        if (!patientId) return;
-        
-        isLoadingData = true;
-        
-        let state;
-        try {
-            const headers = getAuthHeaders();
-            if (!headers) return;
-            delete headers['Content-Type'];
-
-            const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
-                headers: headers
-            });
-
-            if (handleAuthError(response)) return;
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    console.log(`Dossier ${patientId} non trouvé sur le serveur, initialisation locale.`);
-                    state = {};
-                } else {
-                    throw new Error('Erreur réseau');
-                }
-            } else {
-                 state = await response.json();
-            }
-
-        } catch (err) {
-            console.error("Erreur de chargement des données:", err);
-            if (err.message.includes("Token non trouvé")) {
-                 window.location.href = 'auth.html';
-            }
-            state = {}; 
-        }
-
-        if (!state || Object.keys(state).length === 0) {
-            resetForm();
-        } else {
-            // Logique de remplissage (inchangée)
-            Object.keys(state).forEach(id => {
-                if (id === 'biologie' || id === 'pancarte' || id === 'prescriptions' || id ==='lockButtonStates' || id === 'careDiagramCheckboxes' || id.endsWith('_html')) return;
-                const el = document.getElementById(id);
-                if (el) {
-                    if (el.type === 'checkbox' || el.type === 'radio') { el.checked = state[id]; } else { el.value = state[id]; }
-                }
-            });
-            const dynamicContentIds = ['observations-list', 'transmissions-list-ide', 'care-diagram-tbody'];
-            dynamicContentIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el && state[id + '_html']) {
-                    el.innerHTML = state[id + '_html'];
-                } else if (id === 'care-diagram-tbody' && (!state[id + '_html'])) {
-                    el.innerHTML = getDefaultForCareDiagramTbody();
-                }
-            });
-            if (state.prescriptions) {
-                const tbody = document.getElementById('prescription-tbody');
-                tbody.innerHTML = '';
-                // addPrescription va maintenant vérifier les permissions
-                state.prescriptions.forEach(pData => addPrescription(pData, true));
-            }
-            if (state.careDiagramCheckboxes && !state['care-diagram-tbody_html']) {
-                document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]').forEach((cb, index) => {
-                    cb.checked = state.careDiagramCheckboxes[index] || false;
-                });
-            }
-            if (state.biologie) {
-                document.querySelectorAll('#bio-table thead input[type="text"]').forEach((input, index) => {
-                    if (state.biologie.dates && state.biologie.dates[index]) { input.value = state.biologie.dates[index]; }
-                });
-                document.querySelectorAll('#bio-table tbody tr').forEach(row => {
-                    if (row.cells.length > 1 && row.cells[0].classList.contains('font-semibold')) {
-                        const analyseName = row.cells[0].textContent.trim();
-                        if (analyseName && state.biologie.analyses && state.biologie.analyses[analyseName]) {
-                            row.querySelectorAll('input[type="text"]').forEach((input, index) => {
-                                input.value = state.biologie.analyses[analyseName][index] || '';
-                            });
-                        }
-                    }
-                });
-            }
-            if (state.pancarte) {
-                document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
-                    const paramName = row.cells[0].textContent.trim();
-                    if (paramName && state.pancarte && state.pancarte[paramName]) {
-                        row.querySelectorAll('input').forEach((input, index) => { input.value = state.pancarte[paramName][index] || ''; });
-                    }
-                });
-            }
-            const entryDateValue = document.getElementById('patient-entry-date').value;
-            if (entryDateValue) {
-                const entryDate = new Date(entryDateValue);
-                if (!isNaN(entryDate.getTime())) { updateDynamicDates(entryDate); }
-            }
-            if (state.lockButtonStates) {
-                Object.keys(state.lockButtonStates).forEach(buttonId => {
-                    if (state.lockButtonStates[buttonId]) { 
-                        const button = document.getElementById(buttonId);
-                        if (button && !button.classList.contains('is-locked')) { 
-                            let containerId;
-                            if (buttonId === 'lock-header-btn') containerId = 'patient-header-form';
-                            if (buttonId === 'lock-admin-btn') containerId = 'administratif';
-                            if (buttonId === 'lock-vie-btn') containerId = 'mode-de-vie';
-                            if (containerId) { toggleLock(containerId, buttonId, true); }
-                        }
-                    }
-                });
-            }
-        }
-        
-        const roomDisplay = document.querySelector(`#patient-list button[data-patient-id="${patientId}"] .patient-room`);
-        if (roomDisplay) {
-            const patientRoomEl = document.getElementById('patient-room');
-            if (patientRoomEl) patientRoomEl.value = roomDisplay.textContent;
-        }
-        
-        updateAgeDisplay();
-        updateJourHosp(); 
-        
-        calculateAndDisplayIMC();
-
-        setTimeout(() => { isLoadingData = false; }, 0);
-    }
-
-    // =================================================================
-    // Efface les données LOCALES de la chambre actuelle
-    // =================================================================
-    function clearCurrentPatientData() {
+    async function clearCurrentPatientData() {
         if (userPermissions.isStudent) return;
         
         const message = `Êtes-vous sûr de vouloir effacer les données de la chambre ${activePatientId.split('_')[1]} ? Cela réinitialisera l'affichage. Aucune donnée ne sera supprimée du serveur.`;
@@ -473,6 +792,10 @@
                 nameEl.textContent = `Chambre ${roomEl.textContent}`;
             }
             
+            if (userPermissions.subscription === 'free') {
+                return;
+            }
+
             const headers = getAuthHeaders();
             if (!headers) return;
             try {
@@ -490,10 +813,7 @@
         });
     }
 
-    // =================================================================
-    // "Vider tous les dossiers" (localement)
-    // =================================================================
-    function clearAllData() {
+    async function clearAllData() {
         if (userPermissions.isStudent) return;
 
         const message = "ATTENTION : Vous êtes sur le point de réinitialiser les 10 chambres du service. Les sauvegardes ne sont pas affectées. Continuer ?";
@@ -509,9 +829,14 @@
             });
             
             resetForm();
+
+            if (userPermissions.subscription === 'free') {
+                return;
+            }
             
             const headers = getAuthHeaders();
             if (!headers) return;
+            
             const allChambreIds = patients.map(p => p.id);
             const clearPromises = [];
 
@@ -537,24 +862,40 @@
         });
     }
 
-    // =================================================================
-    // Sauvegarde le cas patient (distinct de saveData)
-    // =================================================================
     async function savePatientAsCase() {
-        if (userPermissions.isStudent) return;
+        if (userPermissions.isStudent || userPermissions.subscription === 'free') return;
 
+        // --- Copie la logique de saveData ---
         const state = {};
+        const entryDateStr = document.getElementById('patient-entry-date').value;
         document.querySelectorAll('input[id], textarea[id]').forEach(el => {
             const id = el.id;
             if (el.type === 'checkbox' || el.type === 'radio') { state[id] = el.checked; } else { state[id] = el.value; }
         });
-        const dynamicContentIds = ['observations-list', 'transmissions-list-ide', 'care-diagram-tbody'];
-        dynamicContentIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) state[id + '_html'] = el.innerHTML;
+        state.observations = [];
+        document.querySelectorAll('#observations-list .timeline-item').forEach(item => {
+            state.observations.push({
+                author: item.dataset.author || '',
+                text: item.dataset.text || '',
+                dateOffset: parseInt(item.dataset.dateOffset, 10) || 0
+            });
         });
-        const bioData = { dates: [], analyses: {} };
-        document.querySelectorAll('#bio-table thead input[type="text"]').forEach(input => bioData.dates.push(input.value));
+        state.transmissions = [];
+        document.querySelectorAll('#transmissions-list-ide .timeline-item').forEach(item => {
+            state.transmissions.push({
+                author: item.dataset.author || '',
+                text: item.dataset.text || '',
+                dateOffset: parseInt(item.dataset.dateOffset, 10) || 0
+            });
+        });
+        const careDiagramTbody = document.getElementById('care-diagram-tbody');
+        if (careDiagramTbody) state['care-diagram-tbody_html'] = careDiagramTbody.innerHTML;
+        state.careDiagramCheckboxes = Array.from(document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]')).map(cb => cb.checked);
+        const bioData = { dateOffsets: [], analyses: {} };
+        document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
+            const offset = _calculateDaysOffset(entryDateStr, input.value);
+            bioData.dateOffsets.push(offset);
+        });
         document.querySelectorAll('#bio-table tbody tr').forEach(row => {
             if (row.cells.length > 1 && row.cells[0].classList.contains('font-semibold')) { 
                 const analyseName = row.cells[0].textContent.trim();
@@ -574,33 +915,26 @@
             }
         });
         state.pancarte = pancarteData;
-        
         state.prescriptions = [];
         document.querySelectorAll('#prescription-tbody tr').forEach(row => {
-            const prescriptionData = {
+            state.prescriptions.push({
                 name: row.cells[0].querySelector('span').textContent,
                 posologie: row.cells[1].textContent,
                 voie: row.cells[2].textContent,
-                startDate: row.cells[3].textContent,
-                type: row.dataset.type
-            };
-            prescriptionData.bars = Array.from(row.querySelectorAll('.iv-bar')).map(bar => ({ 
-                left: bar.style.left, 
-                width: bar.style.width, 
-                title: bar.title 
-            }));
-            state.prescriptions.push(prescriptionData);
-        });
-        
-        state.careDiagramCheckboxes = Array.from(document.querySelectorAll('#care-diagram-tbody input[type="checkbox"]')).map(cb => cb.checked);
-        state.lockButtonStates = {};
-        document.querySelectorAll('button[id^="lock-"]').forEach(btn => {
-            state.lockButtonStates[btn.id] = btn.classList.contains('is-locked');
+                dateOffset: parseInt(row.dataset.dateOffset, 10) || 0,
+                type: row.dataset.type,
+                bars: Array.from(row.querySelectorAll('.iv-bar')).map(bar => ({ 
+                    left: bar.style.left, 
+                    width: bar.style.width, 
+                    title: bar.title 
+                }))
+            });
         });
         const nomUsage = document.getElementById('patient-nom-usage').value.trim();
         const prenom = document.getElementById('patient-prenom').value.trim();
         const patientName = `${nomUsage} ${prenom}`.trim();
         state['sidebar_patient_name'] = patientName;
+        // --- Fin de la copie ---
         
         if (!patientName || patientName.startsWith('Chambre ')) {
             showCustomAlert("Sauvegarde impossible", "Veuillez d'abord donner un Nom et un Prénom au patient dans l'en-tête (Champs 'Nom d'usage' et 'Prénom').");
@@ -639,12 +973,12 @@
         }
     }
 
-    // =================================================================
-    // Fonction d'importation par fichier JSON
-    // =================================================================
     function importCurrentPatientData(event) {
-        if (userPermissions.isStudent) return;
-
+        if (userPermissions.isStudent || userPermissions.subscription === 'free') {
+            showCustomAlert("Importation impossible", "L'importation de dossiers n'est pas disponible avec votre plan.");
+            return;
+        }
+        
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -665,6 +999,10 @@
                 const headers = getAuthHeaders();
                 if (!headers) return;
                 
+                if (jsonData['patient-entry-date']) {
+                    document.getElementById('patient-entry-date').value = jsonData['patient-entry-date'];
+                }
+                
                 const response = await fetch(`${API_URL}/api/patients/${activePatientId}`, {
                     method: 'POST',
                     headers: headers, 
@@ -677,7 +1015,7 @@
                 if (handleAuthError(response)) return;
 
                 await switchPatient(activePatientId, true); 
-                await initSidebar(); // Mettre à jour la sidebar
+                await initSidebar(); 
 
             } catch (error) {
                 console.error("Erreur d'importation:", error);
@@ -696,9 +1034,6 @@
         event.target.value = '';
     }
 
-    // =================================================================
-    // Fonctions pour la modale "Charger Patient"
-    // =================================================================
     function hideLoadPatientModal() {
         loadPatientBox.classList.add('scale-95', 'opacity-0');
         setTimeout(() => {
@@ -707,7 +1042,7 @@
     }
 
     async function openLoadPatientModal() {
-        if (userPermissions.isStudent) return;
+        if (userPermissions.isStudent || userPermissions.subscription === 'free') return;
 
         loadPatientListContainer.innerHTML = '<p class="text-gray-500">Chargement des dossiers...</p>';
         loadPatientModal.classList.remove('hidden');
@@ -761,39 +1096,40 @@
         }
     }
 
-    // =================================================================
-    // Initialise la sidebar depuis le SERVEUR (avec Auth)
-    // =================================================================
     async function initSidebar() {
         const list = document.getElementById('patient-list');
         let listHTML = '';
         let patientMap = new Map();
-        
-        try {
-            const headers = getAuthHeaders();
-            if (!headers) return;
-            delete headers['Content-Type'];
 
-            const response = await fetch(`${API_URL}/api/patients`, {
-                headers: headers
-            });
+        if (userPermissions.subscription === 'free') {
+            console.log("Plan 'Free' : Initialisation de la sidebar en local uniquement.");
+        } else {
+            try {
+                const headers = getAuthHeaders();
+                if (!headers) return;
+                delete headers['Content-Type'];
 
-            if (handleAuthError(response)) return;
+                const response = await fetch(`${API_URL}/api/patients`, {
+                    headers: headers
+                });
 
-            const patientsData = await response.json();
-            patientsData.forEach(p => {
-                if (p.patientId.startsWith('chambre_')) {
-                    patientMap.set(p.patientId, p.sidebar_patient_name);
+                if (handleAuthError(response)) return;
+
+                const patientsData = await response.json();
+                patientsData.forEach(p => {
+                    if (p.patientId.startsWith('chambre_')) {
+                        patientMap.set(p.patientId, p.sidebar_patient_name);
+                    }
+                });
+
+            } catch (err) {
+                console.error("Impossible de charger la liste des patients:", err);
+                if (err.message.includes("Token non trouvé")) {
+                    window.location.href = 'auth.html';
                 }
-            });
-
-        } catch (err) {
-            console.error("Impossible de charger la liste des patients:", err);
-            if (err.message.includes("Token non trouvé")) {
-                 window.location.href = 'auth.html';
             }
         }
-
+        
         patients.forEach(patient => {
             const patientName = patientMap.get(patient.id) || `Chambre ${patient.room}`;
             listHTML += `
@@ -808,10 +1144,6 @@
         list.innerHTML = listHTML;
     }
 
-    // =================================================================
-    // LE RESTE DU FICHIER EST INCHANGÉ (sauf setupEventListeners et initApp)
-    // =================================================================
-    
     function updateSidebarActiveState(patientId) {
         document.querySelectorAll('#patient-list button').forEach(btn => {
             btn.classList.remove('active');
@@ -826,25 +1158,19 @@
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
             else if (el.type !== 'file') el.value = '';
         });
-
         ['observations-list', 'transmissions-list-ide', 'prescription-tbody'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = '';
         });
-        
         const careDiagramTbody = document.getElementById('care-diagram-tbody');
         if (careDiagramTbody) {
             careDiagramTbody.innerHTML = getDefaultForCareDiagramTbody();
         }
-
-        document.querySelectorAll('button[id^="lock-"]').forEach(btn => {
-            if (btn.classList.contains('is-locked')) { 
-                btn.click(); 
-            }
+        document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
+            input.value = '';
+            delete input.dataset.dateOffset;
         });
-        
         calculateAndDisplayIMC();
-        
         if (pancarteChartInstance) pancarteChartInstance.destroy();
     }
 
@@ -867,22 +1193,12 @@
         const mainContent = document.getElementById('main-content-wrapper');
         mainContent.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // NOUVEAU : Réappliquer les permissions après le chargement/changement
         applyPermissions();
     }
 
-    function generateBioRows(title, data) {
-        let html = `<tr class="font-bold bg-purple-50 text-left"><td class="p-2" colspan="8">${title}</td></tr>`;
-        for (const [key, value] of Object.entries(data)) {
-            html += `<tr><td class="p-2 text-left font-semibold">${key}</td><td class="p-2 text-left text-xs">${value}</td>`;
-            for (let i = 0; i < 6; i++) {
-                html += '<td class="p-0"><input type="text"></td>';
-            }
-            html += '</tr>';
-        }
-        return html;
-    }
-
+    // =================================================================
+    // MODIFIÉ : initializeDynamicTables (pancarte 150px)
+    // =================================================================
     function initializeDynamicTables() {
         let html = '';
 
@@ -905,7 +1221,7 @@
         if (bioThead) {
             html = '<tr><th class="p-2 text-left w-1/4">Analyse</th><th class="p-2 text-left w-1/4">Valeurs de référence</th>';
             for(let i=0; i<6; i++) {
-                html += `<th class="p-1"><input type="text" placeholder="JJ/MM/AA" class="font-semibold text-center w-24 bg-transparent"></th>`;
+                html += `<th class="p-1"><input type="date" placeholder="JJ/MM/AA" class="font-semibold text-center w-24 bg-transparent"></th>`;
             }
             html += '</tr>';
             bioThead.innerHTML = html;
@@ -928,7 +1244,13 @@
             html = '<tr><th class="p-2 text-left" rowspan="2">Paramètres</th>';
             for(let i=0; i<11; i++) { html += `<th class="p-2 text-center" colspan="3">Jour ${i}</th>`;}
             html += '</tr><tr>';
-            for(let i=0; i<11; i++) { html += `<th class="p-1 w-32">Matin</th><th class="p-1 w-32">Soir</th><th class="p-1 w-32">Nuit</th>`;}
+            // --- MODIFICATION ICI ---
+            for(let i=0; i<11; i++) { 
+                html += `<th class="p-1" style="min-width: 70px;">Matin</th>`;
+                html += `<th class="p-1" style="min-width: 70px;">Soir</th>`;
+                html += `<th class="p-1" style="min-width: 70px;">Nuit</th>`;
+            }
+            // --- FIN MODIFICATION ---
             html += '</tr>';
             pancarteThead.innerHTML = html;
         }
@@ -943,7 +1265,9 @@
                     inputHtml = '<input type="number" step="0.1" value="">';
                 }
                 for(let i=0; i<33; i++) {
-                    html += `<td class="p-0">${inputHtml}</td>`;
+                    // --- MODIFICATION ICI ---
+                    html += `<td class="p-0" style="min-width: 70px;">${inputHtml}</td>`;
+                    // --- FIN MODIFICATION ---
                 }
                 html += `</tr>`;
             }
@@ -967,66 +1291,81 @@
             careDiagramThead.innerHTML = html;
         }
     }
+    
+    function generateBioRows(title, data) {
+        let html = `<tr class="font-bold bg-purple-50 text-left"><td class="p-2" colspan="8">${title}</td></tr>`;
+        for (const [key, value] of Object.entries(data)) {
+            html += `<tr><td class="p-2 text-left font-semibold">${key}</td><td class="p-2 text-left text-xs">${value}</td>`;
+            for (let i = 0; i < 6; i++) {
+                html += '<td class="p-0"><input type="text"></td>';
+            }
+            html += '</tr>';
+        }
+        return html;
+    }
 
-    // =================================================================
-    // MODIFIÉ : setupEventListeners (ajout des vérifications de permissions)
-    // =================================================================
+    function handleLogout() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('activePatientId');
+        localStorage.removeItem('activeTab');
+        window.location.href = 'auth.html';
+    }
+
     function setupEventListeners() {
-        // Barre latérale
         document.getElementById('start-tutorial-btn').addEventListener('click', startTutorial);
         document.getElementById('clear-all-data-btn').addEventListener('click', clearAllData);
-        // NOUVEAU : Listener pour le bouton de gestion de compte
+        document.getElementById('logout-btn').addEventListener('click', handleLogout); 
         const accountBtn = document.getElementById('account-management-btn');
         if (accountBtn) {
             accountBtn.addEventListener('click', (e) => {
-                if (userPermissions.isStudent) e.preventDefault(); // Double sécurité
+                if (userPermissions.isStudent) e.preventDefault(); 
             });
         }
-        
-        // Entête principale
         document.getElementById('save-patient-btn').addEventListener('click', savePatientAsCase);
         document.getElementById('load-patient-btn').addEventListener('click', openLoadPatientModal);
         document.getElementById('import-json-btn').addEventListener('click', () => {
-             // NOUVEAU : Check
-            if (userPermissions.isStudent) return;
+            if (userPermissions.isStudent || userPermissions.subscription === 'free') return;
             document.getElementById('import-file').click()
         });
         document.getElementById('import-file').addEventListener('change', importCurrentPatientData);
         
+        document.getElementById('export-json-btn').addEventListener('click', exportPatientAsJson);
+        
         document.getElementById('clear-current-patient-btn').addEventListener('click', clearCurrentPatientData);
         document.getElementById('toggle-fullscreen-btn').addEventListener('click', toggleFullscreen);
 
-        // Entête Patient
-        document.getElementById('lock-header-btn').addEventListener('click', () => toggleLock('patient-header-form', 'lock-header-btn'));
-        document.getElementById('patient-entry-date').addEventListener('input', updateJourHosp);
+        document.getElementById('patient-entry-date').addEventListener('input', () => {
+            updateJourHosp(); 
+            
+            const entryDateValue = document.getElementById('patient-entry-date').value;
+            if (entryDateValue) {
+                const entryDate = new Date(entryDateValue);
+                if (!isNaN(entryDate.getTime())) {
+                    updateDynamicDates(entryDate);
+                }
+            }
+            
+            refreshAllRelativeDates(); 
+        });
 
-        // Onglets de navigation (Délégation)
+
         document.getElementById('tabs-nav').addEventListener('click', (e) => {
             const button = e.target.closest('button[data-tab-id]');
             if (button) {
                 changeTab({ currentTarget: button }, button.dataset.tabId);
             }
         });
-
-        // Liste des patients (Délégation)
         document.getElementById('patient-list').addEventListener('click', (e) => {
             const button = e.target.closest('button[data-patient-id]');
             if (button) {
                 switchPatient(button.dataset.patientId); 
             }
         });
-
-        // Boutons "Valider" des sections
-        document.getElementById('lock-admin-btn').addEventListener('click', () => toggleLock('administratif', 'lock-admin-btn'));
-        document.getElementById('lock-vie-btn').addEventListener('click', () => toggleLock('mode-de-vie', 'lock-vie-btn'));
-
-        // Formulaires d'ajout
-        document.getElementById('add-observation-btn').addEventListener('click', addObservation);
+        document.getElementById('add-observation-btn').addEventListener('click', () => addObservation(null, false));
         document.getElementById('add-prescription-btn').addEventListener('click', () => addPrescription(null, false));
-        document.getElementById('add-transmission-btn').addEventListener('click', addTransmission);
+        document.getElementById('add-transmission-btn').addEventListener('click', () => addTransmission(null, false));
         document.getElementById('add-care-diagram-btn').addEventListener('click', addCareDiagramRow);
 
-        // Listes dynamiques pour suppression (Délégation) - AVEC CHECK DE PERMISSION
         document.getElementById('observations-list').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('button[title*="Supprimer"]');
             if (deleteBtn) {
@@ -1044,7 +1383,6 @@
         document.getElementById('prescription-tbody').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('button[title*="Supprimer"]');
             if (deleteBtn) {
-                // MODIFIÉ : Utilisation de la permission granulaire
                 if (userPermissions.isStudent && !userPermissions.prescriptions_delete) return;
                 deletePrescription(deleteBtn);
             }
@@ -1057,27 +1395,20 @@
             }
         });
 
-        // Pancarte
         document.getElementById('pancarte-tbody').addEventListener('change', (e) => {
             if (e.target.tagName === 'INPUT') updatePancarteChart();
         });
-
-        // AutoResize
         document.querySelector('main').addEventListener('input', (e) => {
             if (e.target.tagName === 'TEXTAREA' && e.target.classList.contains('info-value')) {
                 autoResize(e.target);
             }
         });
-        
-        // Calcul de l'IMC
         document.getElementById('vie-poids').addEventListener('input', calculateAndDisplayIMC);
         document.getElementById('vie-taille').addEventListener('input', calculateAndDisplayIMC);
 
-        // Listeners globaux (souris)
         document.addEventListener('mousemove', handleIVMouseMove);
         document.addEventListener('mouseup', handleIVMouseUp);
 
-        // Tuto
         document.getElementById('tutorial-overlay').addEventListener('click', () => endTutorial(true));
         document.getElementById('tutorial-step-box').addEventListener('click', (e) => e.stopPropagation());
         document.getElementById('tutorial-skip-btn').addEventListener('click', () => endTutorial(true));
@@ -1086,21 +1417,18 @@
             showTutorialStep(currentStepIndex);
         });
 
-        // Listeners pour la modale "Charger Patient"
         document.getElementById('load-patient-close-btn').addEventListener('click', hideLoadPatientModal);
         document.getElementById('load-patient-cancel-btn').addEventListener('click', hideLoadPatientModal);
 
-        // Listener délégué pour les boutons dans la liste
         document.getElementById('load-patient-list-container').addEventListener('click', async (e) => {
-            // NOUVEAU : Bloqué pour les étudiants
-            if (userPermissions.isStudent) return;
+            if (userPermissions.isStudent || userPermissions.subscription === 'free') return;
 
             const loadBtn = e.target.closest('.load-btn');
             const deleteBtn = e.target.closest('.delete-btn');
 
             if (loadBtn) {
-                const patientIdToLoadFrom = loadBtn.dataset.patientId; // 'save_...' ID
-                const patientIdToLoadInto = activePatientId; // 'chambre_...' ID
+                const patientIdToLoadFrom = loadBtn.dataset.patientId; 
+                const patientIdToLoadInto = activePatientId; 
                 
                 const patientToLoadFromName = loadBtn.closest('.flex').querySelector('.font-medium').textContent;
                 const roomToLoadInto = patientIdToLoadInto.split('_')[1];
@@ -1124,6 +1452,10 @@
 
                         const patientName = dossierToLoad.sidebar_patient_name;
                         
+                        if (dossierToLoad['patient-entry-date']) {
+                            document.getElementById('patient-entry-date').value = dossierToLoad['patient-entry-date'];
+                        }
+
                         headers = getAuthHeaders();
                         if (!headers) return;
 
@@ -1154,7 +1486,7 @@
             }
 
             if (deleteBtn) {
-                const patientId = deleteBtn.dataset.patientId; // 'save_...' ID
+                const patientId = deleteBtn.dataset.patientId;
                 const patientName = deleteBtn.dataset.patientName;
                 
                 showDeleteConfirmation(`Êtes-vous sûr de vouloir supprimer la sauvegarde "${patientName}" ? Cette action est irréversible.`, async () => {
@@ -1184,37 +1516,49 @@
         });
     }
 
-    // =================================================================
-    // MODIFIÉ : initApp (pour charger les permissions)
-    // =================================================================
     async function initApp() {
-        // 1. Vérifie le token au démarrage
         const token = getAuthToken();
-        if (!token) return; // Stoppe l'app si pas de token (getAuthToken a redirigé)
+        if (!token) return; 
 
-        // 2. Initialise les variables de la modale
         loadPatientModal = document.getElementById('load-patient-modal');
         loadPatientBox = document.getElementById('load-patient-box');
         loadPatientListContainer = document.getElementById('load-patient-list-container');
         
-        // 3. NOUVEAU : Charger les permissions
         await loadUserPermissions();
 
-        // 4. Initialiser l'UI
         initializeDynamicTables();
+        
+        if (userPermissions.isStudent && patients.length === 0) {
+            document.getElementById('patient-list').innerHTML = '<li class="p-2 text-sm text-gray-500">Aucune chambre ne vous a été assignée.</li>';
+            document.getElementById('main-content-wrapper').innerHTML = '<div class="p-8 text-center text-gray-600">Aucune chambre ne vous a été assignée. Veuillez contacter votre formateur.</div>';
+            document.querySelectorAll('#main-header button').forEach(btn => btn.disabled = true);
+            
+            setupModalListeners(); 
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+            const accountBtn = document.getElementById('account-management-btn');
+            if (accountBtn) {
+                accountBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                accountBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                });
+            }
+            return;
+        }
+
+        if (!activePatientId || !patients.find(p => p.id === activePatientId)) {
+            activePatientId = patients[0].id; 
+        }
+        
         await initSidebar(); 
         
-        // 5. Mettre en place les écouteurs (qui dépendent maintenant de userPermissions)
         setupEventListeners();
         setupModalListeners();
         setupSync(); 
 
-        // 6. Mettre en place l'auto-sauvegarde (qui dépend aussi de userPermissions)
         let saveTimeout;
         const debouncedSave = () => {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
-                // MODIFIÉ : Sauvegarde toujours (le serveur filtre), sauf si chargement
                 if (!isLoadingData) { 
                     saveData(activePatientId);
                 }
@@ -1223,13 +1567,8 @@
         document.querySelector('main').addEventListener('input', debouncedSave);
         document.querySelector('main').addEventListener('change', debouncedSave);
 
-        // 7. Charger le premier patient (ce qui appellera loadData -> addPrescription)
         await switchPatient(activePatientId, true); 
 
-        // 8. NOUVEAU : Appliquer les permissions (maintenant que tout est chargé)
-        // applyPermissions(); // Déplacé à la fin de switchPatient pour s'exécuter à chaque fois
-
-        // 9. Gérer l'onglet actif
         const activeTabId = localStorage.getItem('activeTab') || 'administratif';
         const activeTabButton = document.querySelector(`nav button[data-tab-id="${activeTabId}"]`);
         if (activeTabButton) {
@@ -1240,8 +1579,7 @@
                 firstButton.click();
             }
         }
-
-        // 10. Gérer le tutoriel (inchangé)
+        
         if (!localStorage.getItem('tutorialCompleted')) {
             tutorialSteps[3] = {
                 element: '#save-patient-btn',
@@ -1255,15 +1593,20 @@
             };
              tutorialSteps[5] = {
                 element: '#import-json-btn',
-                text: "Ce bouton vous permet d'importer un fichier JSON (ancien système) dans la chambre actuelle.",
+                text: "Ce bouton vous permet d'importer un fichier JSON dans la chambre actuelle.",
                 position: 'bottom-left'
             };
             tutorialSteps[6] = {
+                element: '#export-json-btn',
+                text: "Et celui-ci vous permet d'exporter le dossier actuel en fichier .json (pour le partager).",
+                position: 'bottom-left'
+            };
+            tutorialSteps[7] = {
                 element: '#clear-current-patient-btn',
                 text: "Attention : Ce bouton efface les données *visibles* du patient actuel (réinitialise la chambre localement).",
                 position: 'bottom-left'
             };
-            tutorialSteps[7] = {
+            tutorialSteps[8] = {
                 element: 'button[id="clear-all-data-btn"]', 
                 text: "ATTENTION : Ce bouton réinitialise *localement* les 10 chambres du service. Les sauvegardes ne sont pas effacées.",
                 position: 'top'
@@ -1273,6 +1616,7 @@
         }
     }
 
+    // --- Modales (inchangées) ---
     let confirmCallback = null;
     function showDeleteConfirmation(message, callback) {
         const modal = document.getElementById('custom-confirm-modal');
@@ -1317,7 +1661,6 @@
         });
         document.getElementById('custom-confirm-cancel').addEventListener('click', hideConfirmation);
     }
-
     function showCustomAlert(title, message) {
         const modal = document.getElementById('custom-confirm-modal');
         const modalBox = document.getElementById('custom-confirm-box');
@@ -1342,9 +1685,7 @@
         }, 10);
     }
 
-    /**
-     * Calcule et affiche l'IMC à partir des champs poids et taille
-     */
+    // --- Fonctions d'UI (inchangées) ---
     function calculateAndDisplayIMC() {
         const poidsEl = document.getElementById('vie-poids');
         const tailleEl = document.getElementById('vie-taille');
@@ -1364,7 +1705,6 @@
         }
         autoResize(imcEl);
     }
-
     function updateJourHosp() {
         const entryDateEl = document.getElementById('patient-entry-date');
         const jourHospEl = document.getElementById('patient-jour-hosp');
@@ -1447,7 +1787,6 @@
             });
         }
     }
-
     function deleteCareDiagramRow(button) {
         const row = button.closest('tr');
         if (row) {
@@ -1457,11 +1796,9 @@
             });
         }
     }
-
     function getDefaultForCareDiagramTbody() {
         return ``;
     }
-
     function autoResize(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
@@ -1492,63 +1829,6 @@
         updateHeaders('#care-diagram-table thead tr:first-child th[colspan="8"]');
         if (pancarteChartInstance) updatePancarteChart();
     }
-    
-    function toggleLock(containerId, buttonId, forceLock = false) {
-        const container = document.getElementById(containerId);
-        const button = document.getElementById(buttonId);
-        
-        const isCurrentlyLocked = button.classList.contains('is-locked');
-        
-        // MODIFIÉ : Simplification de la logique de forçage
-        let shouldLock;
-        if (forceLock) {
-            shouldLock = true;
-        } else {
-            shouldLock = !isCurrentlyLocked;
-        }
-        
-        const isUnlocking = !shouldLock;
-        // ---
-
-        const inputs = container.querySelectorAll('.info-value, input[type=text], input[type=date]');
-        
-        if (shouldLock && containerId === 'patient-header-form') { // Appliquer les dates au moment du verrouillage
-            const entryDateValue = document.getElementById('patient-entry-date').value;
-            if (entryDateValue) {
-                const entryDate = new Date(entryDateValue);
-                if (!isNaN(entryDate.getTime())) {
-                    updateDynamicDates(entryDate);
-                    updateJourHosp();
-                }
-            }
-        }
-        inputs.forEach(input => {
-            if (input.id === 'vie-imc') {
-                input.disabled = true;
-            } else {
-                input.disabled = shouldLock; // Verrouille si shouldLock=true
-            }
-            if (input.tagName.toLowerCase() === 'textarea' && isUnlocking) autoResize(input);
-        });
-        const colorMap = {
-            'lock-header-btn': { unlocked: ['border-teal-600', 'text-teal-700', 'hover:bg-teal-600'], locked: ['border-gray-400', 'text-gray-500', 'hover:bg-gray-400'] },
-            'lock-admin-btn': { unlocked: ['border-teal-600', 'text-teal-700', 'hover:bg-teal-600'], locked: ['border-gray-400', 'text-gray-500', 'hover:bg-gray-400'] },
-            'lock-vie-btn': { unlocked: ['border-blue-600', 'text-blue-700', 'hover:bg-blue-600'], locked: ['border-gray-400', 'text-gray-500', 'hover:bg-gray-400'] }
-        };
-        const styles = colorMap[buttonId];
-        const baseUnlockedText = (buttonId === 'lock-header-btn') ? "Valider" : "Valider les données";
-        
-        if (isUnlocking) {
-            button.innerHTML = `<i class="fas fa-check mr-2"></i> ${baseUnlockedText}`;
-            button.classList.remove(...styles.locked, 'is-locked');
-            button.classList.add(...styles.unlocked);
-        } else {
-            button.innerHTML = `<i class="fas fa-lock mr-2"></i> Lock`;
-            button.classList.remove(...styles.unlocked);
-            button.classList.add(...styles.locked, 'is-locked');
-        }
-    }
-
     function changeTab(event, tabId) {
         document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
         const activeSection = document.getElementById(tabId);
@@ -1571,20 +1851,38 @@
         if (tabId === 'pancarte') setTimeout(() => updatePancarteChart(), 50);
     }
     
-    function addObservation() {
-        // NOUVEAU : Check
-        if (userPermissions.isStudent && !userPermissions.observations) return;
+    function addObservation(data = null, fromLoad = false) {
+        if (!fromLoad && userPermissions.isStudent && !userPermissions.observations) return;
         
-        const author = document.getElementById('new-observation-author').value.trim();
-        const text = document.getElementById('new-observation-text').value.trim();
-        const dateValue = document.getElementById('new-observation-date').value;
-        if (!text || !author) return;
+        let author, text, formattedDate, dateOffset;
+        
+        if (fromLoad) {
+            author = data.author;
+            text = data.text;
+            formattedDate = data.formattedDate; // Pré-calculé par loadData
+            dateOffset = data.dateOffset;
+        } else {
+            author = document.getElementById('new-observation-author').value.trim();
+            text = document.getElementById('new-observation-text').value.trim();
+            const dateValue = document.getElementById('new-observation-date').value;
+            const entryDateStr = document.getElementById('patient-entry-date').value;
+            
+            if (!text || !author || !dateValue || !entryDateStr) {
+                if(!entryDateStr) showCustomAlert("Action impossible", "Veuillez d'abord définir une date d'entrée pour le patient.");
+                return;
+            }
 
-        const eventDate = dateValue ? new Date(dateValue) : new Date();
-        const formattedDate = new Date(eventDate.getTime() - (eventDate.getTimezoneOffset() * 60000)).toLocaleDateString('fr-FR');
+            const eventDate = new Date(dateValue + 'T00:00:00');
+            formattedDate = _formatDate(eventDate);
+            dateOffset = _calculateDaysOffset(entryDateStr, dateValue);
+        }
 
         const item = document.createElement('div');
         item.className = 'timeline-item';
+        item.dataset.author = author;
+        item.dataset.text = text;
+        item.dataset.dateOffset = dateOffset;
+        
         item.innerHTML = `
             <div class="timeline-dot dot-rose"></div>
             <div class="flex justify-between items-start">
@@ -1600,23 +1898,43 @@
         item.querySelector('p').textContent = text;
         
         document.getElementById('observations-list').prepend(item);
-        document.getElementById('new-observation-form').reset();
+        if (!fromLoad) {
+            document.getElementById('new-observation-form').reset();
+        }
     }
     
-    function addTransmission() {
-        // NOUVEAU : Check
-        if (userPermissions.isStudent && !userPermissions.transmissions) return;
+    function addTransmission(data = null, fromLoad = false) {
+        if (!fromLoad && userPermissions.isStudent && !userPermissions.transmissions) return;
         
-        const author = document.getElementById('new-transmission-author-2').value.trim();
-        const text = document.getElementById('new-transmission-text-2').value.trim();
-        const dateValue = document.getElementById('new-transmission-date').value;
-        if (!text || !author) return;
+        let author, text, formattedDate, dateOffset;
+        
+        if (fromLoad) {
+            author = data.author;
+            text = data.text;
+            formattedDate = data.formattedDate; // Pré-calculé par loadData
+            dateOffset = data.dateOffset;
+        } else {
+            author = document.getElementById('new-transmission-author-2').value.trim();
+            text = document.getElementById('new-transmission-text-2').value.trim();
+            const dateValue = document.getElementById('new-transmission-date').value;
+            const entryDateStr = document.getElementById('patient-entry-date').value;
+            
+            if (!text || !author || !dateValue || !entryDateStr) {
+                 if(!entryDateStr) showCustomAlert("Action impossible", "Veuillez d'abord définir une date d'entrée pour le patient.");
+                return;
+            }
 
-        const eventDate = dateValue ? new Date(dateValue) : new Date();
-        const formattedDate = new Date(eventDate.getTime() - (eventDate.getTimezoneOffset() * 60000)).toLocaleDateString('fr-FR');
-        
+            const eventDate = new Date(dateValue + 'T00:00:00');
+            formattedDate = _formatDate(eventDate);
+            dateOffset = _calculateDaysOffset(entryDateStr, dateValue);
+        }
+
         const item = document.createElement('div');
         item.className = 'timeline-item';
+        item.dataset.author = author;
+        item.dataset.text = text;
+        item.dataset.dateOffset = dateOffset;
+        
         item.innerHTML = `
             <div class="timeline-dot dot-green"></div>
             <div class="flex justify-between items-start">
@@ -1633,44 +1951,56 @@
         const safeTextNode = document.createTextNode(text);
         const tempDiv = document.createElement('div');
         tempDiv.appendChild(safeTextNode);
-        
         const formattedText = tempDiv.innerHTML
             .replace(/Cible :/g, '<strong class="text-gray-900">Cible :</strong>')
             .replace(/Données :/g, '<br><strong class="text-gray-900">Données :</strong>')
             .replace(/Actions :/g, '<br><strong class="text-gray-900">Actions :</strong>')
             .replace(/Résultat :/g, '<br><strong class="text-gray-900">Résultat :</strong>');
-
         item.querySelector('p').innerHTML = formattedText;
         
         document.getElementById('transmissions-list-ide').prepend(item);
-        document.getElementById('new-transmission-form-2').reset();
+        if (!fromLoad) {
+            document.getElementById('new-transmission-form-2').reset();
+        }
     }
 
-    // =================================================================
-    // MODIFIÉ : addPrescription (vérification des permissions)
-    // =================================================================
     function addPrescription(data = null, fromLoad = false) {
-        // MODIFIÉ : Check (pour l'ajout manuel)
         if (!fromLoad && userPermissions.isStudent && !userPermissions.prescriptions_add) {
             return;
         }
 
-        let name, posologie, voie, startDate, type, checkboxes, bars;
+        let name, posologie, voie, type, bars, dateOffset, formattedStartDate;
+        const entryDateStr = document.getElementById('patient-entry-date').value;
+
         if (fromLoad) {
-            ({ name, posologie, voie, startDate, type, checkboxes, bars } = data);
+            ({ name, posologie, voie, type, bars, dateOffset } = data);
+            
+            if (isNaN(parseInt(dateOffset, 10))) dateOffset = 0;
+
+            const targetDate = _calculateDateFromOffset(entryDateStr, dateOffset);
+            formattedStartDate = _formatDate(targetDate).slice(0, 8); // JJ/MM/AA
         } else {
             name = document.getElementById('med-name').value.trim();
             posologie = document.getElementById('med-posologie').value.trim();
             voie = document.getElementById('med-voie').value.trim();
             const startDateValue = document.getElementById('med-start-date').value;
-            if (!name || !startDateValue) return;
+            
+            if (!name || !startDateValue || !entryDateStr) {
+                if(!entryDateStr) showCustomAlert("Action impossible", "Veuillez d'abord définir une date d'entrée pour le patient.");
+                return;
+            }
+
             const [year, month, day] = startDateValue.split('-');
-            startDate = `${day}/${month}/${year.slice(2)}`;
+            formattedStartDate = `${day}/${month}/${year.slice(2)}`;
             type = voie.trim().toUpperCase() === 'IV' ? 'iv' : 'checkbox';
+            
+            dateOffset = _calculateDaysOffset(entryDateStr, startDateValue);
         }
+        
         const tbody = document.getElementById("prescription-tbody");
         const newRow = tbody.insertRow();
         newRow.dataset.type = type;
+        newRow.dataset.dateOffset = dateOffset;
 
         const baseCellsHTML = `
             <td class="p-2 text-left align-top min-w-[220px]">
@@ -1683,7 +2013,7 @@
             </td>
             <td class="p-2 text-left align-top min-w-[144px]">${posologie}</td>
             <td class="p-2 text-left align-top min-w-[96px]">${voie}</td>
-            <td class="p-2 text-left align-top" style="min-width: 100px;">${startDate}</td>
+            <td class="p-2 text-left align-top" style="min-width: 100px;">${formattedStartDate}</td>
         `;
 
         newRow.innerHTML = baseCellsHTML;
@@ -1695,7 +2025,6 @@
             timelineCell.classList.add('marker-container');
         }
         
-        // MODIFIÉ : N'ajoute l'écouteur que si l'utilisateur a la permission de "valider"
         if (!userPermissions.isStudent || userPermissions.prescriptions_validate) {
             timelineCell.addEventListener('mousedown', handleIVMouseDown);
         }
@@ -1703,12 +2032,10 @@
         const barsToCreate = [];
         if (fromLoad && bars && Array.isArray(bars)) {
             barsToCreate.push(...bars);
-        } else if (fromLoad && data.left && data.width) { 
-            barsToCreate.push({ left: data.left, width: data.width, title: data.title });
         }
         
         barsToCreate.forEach(barData => {
-            if (barData && barData.left && (barData.width || barData.width === 0)) { // Accepte width 0 pour les marqueurs
+            if (barData && barData.left && (barData.width || barData.width === 0)) {
                 const bar = document.createElement('div');
                 bar.className = 'iv-bar';
                 
@@ -1734,12 +2061,8 @@
             document.getElementById('new-prescription-form').reset();
         }
     }
-    // =================================================================
-    // FIN DE LA MODIFICATION
-    // =================================================================
     
     function addCareDiagramRow() {
-        // NOUVEAU : Check
         if (userPermissions.isStudent && !userPermissions.diagramme) return;
 
         const name = document.getElementById('care-name').value.trim();
@@ -1768,13 +2091,11 @@
         document.getElementById('new-care-form').reset();
     }
 
+    // --- Fonctions IV (inchangées) ---
     function handleIVDblClick(e) {
-        // MODIFIÉ : Check de la permission 'validate' (car c'est une modification de barre)
         if (userPermissions.isStudent && !userPermissions.prescriptions_validate) return;
-
         const bar = e.currentTarget;
         showDeleteConfirmation("Effacer cette barre de perfusion IV ?", () => {
-            
             const cell = bar.parentElement;
             if(cell) {
                 const barId = bar.dataset.barId;
@@ -1782,15 +2103,11 @@
                     cell.querySelectorAll(`.iv-time-label[data-bar-id="${barId}"]`).forEach(label => label.remove());
                 }
             }
-
             bar.remove();
             saveData(activePatientId);
         });
     }
-
     function handleIVMouseDown(e) {
-        // La permission 'prescriptions_validate' est déjà vérifiée avant que l'listener ne soit attaché
-        
         if (e.target.classList.contains('iv-bar-container')) {
             ivInteraction.mode = 'draw';
             const cell = e.target;
@@ -1831,12 +2148,10 @@
             document.body.classList.add('is-drawing-iv');
         
         } else if (e.target.classList.contains('resize-handle')) {
-            
             const bar = e.target.parentElement;
             if (bar.classList.contains('marker-bar')) {
                 return;
             }
-
             ivInteraction.mode = 'resize';
             const cell = bar.parentElement;
             ivInteraction = {
@@ -1863,7 +2178,6 @@
             document.body.classList.add('is-moving-iv');
         }
     }
-
     function handleIVMouseMove(e) {
         if (!ivInteraction.active) return;
         e.preventDefault();
@@ -1875,9 +2189,7 @@
         const intervalWidthPx = cellRect.width / totalIntervals;
 
         if (mode === 'draw' || mode === 'resize') {
-
             if (mode === 'draw' && targetCell.classList.contains('marker-container')) {
-                
                 let rawLeftPx = startLeftPx + dx;
                 const snappedInterval = Math.round(rawLeftPx / intervalWidthPx);
                 let newLeft = snappedInterval * intervalWidthPx;
@@ -1885,33 +2197,25 @@
                 newLeft = Math.max(0, newLeft);
                 newLeft = Math.min(newLeft, cellRect.width - targetBar.offsetWidth); 
                 targetBar.style.left = `${(newLeft / cellRect.width) * 100}%`;
-            
             } else { 
                 let rawWidthPx = startWidth + dx;
-                
                 const snappedIntervals = Math.max(1, Math.round(rawWidthPx / intervalWidthPx));
                 let newWidth = snappedIntervals * intervalWidthPx;
-
                 newWidth = Math.min(newWidth, cellRect.width - targetBar.offsetLeft);
                 targetBar.style.width = `${(newWidth / cellRect.width) * 100}%`;
             }
-
         } else if (mode === 'move') {
             let rawLeftPx = startLeft + dx;
-
             const snappedInterval = Math.round(rawLeftPx / intervalWidthPx);
             let newLeft = snappedInterval * intervalWidthPx;
-            
             newLeft = Math.max(0, newLeft);
             newLeft = Math.min(newLeft, cellRect.width - targetBar.offsetWidth);
             targetBar.style.left = `${(newLeft / cellRect.width) * 100}%`;
         }
         updateIVBarDetails(targetBar, targetCell);
     }
-
     function handleIVMouseUp(e) {
         if (!ivInteraction.active) return;
-
         const { targetBar, targetCell } = ivInteraction;
         if (targetBar && targetCell) {
             const cellRect = targetCell.getBoundingClientRect();
@@ -1925,7 +2229,7 @@
             let finalWidthPx;
             
             if (targetCell.classList.contains('marker-container')) {
-                finalWidthPx = 0; // Largeur de 0px pour le triangle
+                finalWidthPx = 0; 
             } else {
                 const rawWidthPx = targetBar.offsetWidth;
                 const snappedWidthIntervals = Math.max(1, Math.round(rawWidthPx / intervalWidthPx));
@@ -1940,15 +2244,11 @@
 
             updateIVBarDetails(targetBar, targetCell);
         }
-
         document.body.className = document.body.className.replace(/is-(drawing|resizing|moving)-iv/g, '').trim().trim();
         ivInteraction = { active: false, mode: null, targetBar: null, targetCell: null, startX: 0, startLeft: 0, startWidth: 0, startLeftPx: 0 };
         saveData(activePatientId);
     }
-
-    // =================================================================
-    // MODIFIÉ : updateIVBarDetails (Offset supprimé)
-    // =================================================================
+    
     function updateIVBarDetails(bar, cell) {
         if (!bar || !cell) return;
         const tableStartDateStr = document.getElementById('patient-entry-date').value;
@@ -1957,26 +2257,18 @@
         const barId = bar.dataset.barId;
         if (!barId) return; 
 
-        const tableStartDate = new Date(tableStartDateStr);
-        const totalTimelineMillis = 11 * 24 * 60 * 60 * 1000;
-        
-        // --- MODIFICATION : Suppression de l'offset de 3.5h ---
-        const timelineStartTime = tableStartDate.getTime();
-        // --- FIN MODIFICATION ---
-
+        const tableStartDate = new Date(tableStartDateStr + 'T00:00:00');
+        const totalTimelineMinutes = 11 * 24 * 60;
         const startPercent = parseFloat(bar.style.left);
         const widthPercent = parseFloat(bar.style.width);
-        const endPercent = startPercent + widthPercent;
-        
-        const startOffsetMillis = (startPercent / 100) * totalTimelineMillis;
-        const durationMillis = (widthPercent / 100) * totalTimelineMillis;
-        
-        const rawStartDateTime = new Date(timelineStartTime + startOffsetMillis);
-        const rawEndDateTime = new Date(rawStartDateTime.getTime() + durationMillis);
-
+        const startOffsetMinutes = (startPercent / 100) * totalTimelineMinutes;
+        const durationMinutes = (widthPercent / 100) * totalTimelineMinutes;
+        const rawStartDateTime = new Date(tableStartDate.getTime());
+        rawStartDateTime.setMinutes(rawStartDateTime.getMinutes() + startOffsetMinutes);
+        const rawEndDateTime = new Date(rawStartDateTime.getTime());
+        rawEndDateTime.setMinutes(rawEndDateTime.getMinutes() + durationMinutes);
         const startDateTime = roundDateTo15Min(rawStartDateTime);
         const endDateTime = roundDateTo15Min(rawEndDateTime);
-
         const formatTime = (date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
         
         if (cell.classList.contains('marker-container')) {
@@ -2009,6 +2301,7 @@
         startLabel.style.bottom = 'auto';
         startLabel.style.transform = 'translateX(-100%) translateX(-4px)'; 
 
+        const endPercent = startPercent + widthPercent;
         endLabel.style.left = `${endPercent}%`;
         endLabel.style.bottom = '2px';
         endLabel.style.right = 'auto';
@@ -2061,7 +2354,7 @@
         });
     }
 
-    // --- Section Tutoriel (modifiée) ---
+    // --- Section Tutoriel (inchangée) ---
     const tutorialSteps = [
         {
             element: '#patient-list li:first-child button',
@@ -2070,7 +2363,7 @@
         },
         {
             element: '#patient-header-form',
-            text: "Cet en-tête contient les informations principales du patient. Remplissez-le et cliquez sur 'Valider' pour verrouiller les champs et définir la date d'entrée.",
+            text: "Cet en-tête contient les informations principales. La 'Date d'entrée' est cruciale : toutes les autres dates du dossier (observations, prescriptions...) seront automatiquement recalculées à partir de celle-ci.",
             position: 'bottom'
         },
         {
@@ -2090,16 +2383,19 @@
         },
         {
             element: '#import-json-btn',
-            text: "Ce bouton vous permet d'importer un fichier JSON (ancien système) dans la chambre actuelle.",
+            text: "Ce bouton vous permet d'importer un fichier JSON dans la chambre actuelle.",
             position: 'bottom-left'
         },
-        // MODIFIÉ : Texte du tutoriel
+        {
+            element: '#export-json-btn',
+            text: "Et celui-ci vous permet d'exporter le dossier actuel en fichier .json (pour le partager).",
+            position: 'bottom-left'
+        },
         {
             element: '#clear-current-patient-btn',
             text: "Ce bouton efface les données de la chambre actuelle et la réinitialise sur le serveur.",
             position: 'bottom-left'
         },
-        // MODIFIÉ : Texte du tutoriel
         {
             element: 'button[id="clear-all-data-btn"]', 
             text: "Ce bouton réinitialise les 10 chambres du service. Les sauvegardes ne sont pas effacées.",
@@ -2116,7 +2412,19 @@
     let highlightedElement = null;
 
     function startTutorial() {
-        currentStepIndex = 0;
+        currentStepIndex = 0; 
+        
+        tutorialSteps[0] = {
+            element: '#patient-list li:first-child button',
+            text: "Bienvenue ! Voici la liste des patients. Cliquez sur un patient pour ouvrir son dossier. (Vous pouvez remplir le dossier pour voir un nom ici).",
+            position: 'right'
+        };
+        tutorialSteps[1] = {
+            element: '#patient-header-form',
+            text: "Cet en-tête contient les informations principales. La 'Date d'entrée' est cruciale : toutes les autres dates du dossier (observations, prescriptions...) seront automatiquement recalculées à partir de celle-ci.",
+            position: 'bottom'
+        };
+        
         document.getElementById('tutorial-overlay').classList.remove('hidden');
         showTutorialStep(currentStepIndex);
     }
@@ -2156,8 +2464,14 @@
 
         if (!element) {
             if (index === 0) {
-                tutorialSteps[0].element = '#sidebar';
-                tutorialSteps[0].text = "Bienvenue ! Voici la barre latérale où les patients apparaîtront. Pour l'instant, elle est vide. Vous pouvez commencer par remplir les dossiers.";
+                const patientList = document.getElementById('patient-list');
+                if (patientList.children.length > 0 && patientList.firstElementChild.tagName === 'LI') {
+                     tutorialSteps[0].element = '#patient-list li:first-child button';
+                     tutorialSteps[0].text = "Bienvenue ! Voici la liste des patients. Cliquez sur un patient pour ouvrir son dossier. (Vous pouvez remplir le dossier pour voir un nom ici).";
+                } else {
+                    tutorialSteps[0].element = '#sidebar';
+                    tutorialSteps[0].text = "Bienvenue ! Voici la barre latérale où les patients apparaîtront. Pour l'instant, elle est vide ou vous n'avez pas encore accès à une chambre.";
+                }
                 showTutorialStep(index);
             } else {
                 currentStepIndex++;
@@ -2219,6 +2533,5 @@
     
     // Point d'entrée principal de l'application
     initApp(); 
-
 
 })(); // Fin de l'IIFE
