@@ -250,7 +250,7 @@
     function renderStudentTable(students) {
         const tbody = document.getElementById('permissions-tbody');
         const title = document.getElementById('student-list-title');
-        title.textContent = `Gestion des étudiants (${students.length})`;
+        title.textContent = `Invitations(${students.length})`;
 
         // Gérer la limite d'étudiants
         const createBtn = document.getElementById('create-student-submit-btn');
@@ -810,3 +810,4 @@
 
 
 })();
+
