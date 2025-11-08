@@ -1,8 +1,9 @@
-// auth.js
 (function() {
     "use strict";
 
-    const API_URL = 'http://localhost:3000';
+    // MODIFIÉ : L'URL de l'API est maintenant relative.
+    // "http://localhost:3000" a été supprimé.
+    const API_URL = 'https://eidos-api.onrender.com'; 
 
     // Sélection des 3 sections principales
     const loginSection = document.getElementById('login-section');
@@ -87,6 +88,7 @@
         loginBtn.textContent = 'Connexion en cours...';
 
         try {
+            // MODIFIÉ : Utilise API_URL (qui est vide, donc /auth/login)
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -130,6 +132,7 @@
         signupBtn.textContent = 'Inscription en cours...';
 
         try {
+            // MODIFIÉ : Utilise API_URL (qui est vide, donc /auth/signup)
             const response = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -190,6 +193,7 @@
         verifyBtn.textContent = 'Vérification...';
 
         try {
+            // MODIFIÉ : Utilise API_URL (qui est vide, donc /auth/verify)
             const response = await fetch(`${API_URL}/auth/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

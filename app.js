@@ -1,8 +1,11 @@
+// app.js (Modifié)
 // Enveloppe de l'IIFE pour encapsuler le code et éviter la pollution globale
 (function() {
     "use strict"; 
 
-    const API_URL = 'http://localhost:3000'; 
+    // MODIFIÉ : L'URL de l'API est maintenant relative.
+    // "http://localhost:3000" a été supprimé.
+    const API_URL = 'https://eidos-api.onrender.com'; 
 
     // --- Gestion des permissions ---
     let userPermissions = { 
@@ -142,6 +145,7 @@
             const headers = getAuthHeaders();
             delete headers['Content-Type'];
 
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/auth/me`, { headers });
 
             if (handleAuthError(response)) return;
@@ -400,6 +404,7 @@
             const headers = getAuthHeaders(); 
             if (!headers) return;
 
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
                 method: 'POST',
                 headers: headers,
@@ -440,6 +445,7 @@
                 if (!headers) return;
                 delete headers['Content-Type'];
 
+                // MODIFIÉ : Utilise API_URL
                 const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
                     headers: headers
                 });
@@ -799,6 +805,7 @@
             const headers = getAuthHeaders();
             if (!headers) return;
             try {
+                // MODIFIÉ : Utilise API_URL
                 await fetch(`${API_URL}/api/patients/${activePatientId}`, {
                     method: 'POST',
                     headers: headers,
@@ -841,6 +848,7 @@
             const clearPromises = [];
 
             for (const patientId of allChambreIds) {
+                // MODIFIÉ : Utilise API_URL
                 const promise = fetch(`${API_URL}/api/patients/${patientId}`, {
                     method: 'POST',
                     headers: headers,
@@ -945,6 +953,7 @@
             const headers = getAuthHeaders();
             if (!headers) return;
 
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/patients/save`, {
                 method: 'POST',
                 headers: headers,
@@ -1003,6 +1012,7 @@
                     document.getElementById('patient-entry-date').value = jsonData['patient-entry-date'];
                 }
                 
+                // MODIFIÉ : Utilise API_URL
                 const response = await fetch(`${API_URL}/api/patients/${activePatientId}`, {
                     method: 'POST',
                     headers: headers, 
@@ -1055,6 +1065,7 @@
             if (!headers) return;
             delete headers['Content-Type'];
 
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/patients`, { headers: headers });
             if (handleAuthError(response)) return;
 
@@ -1109,6 +1120,7 @@
                 if (!headers) return;
                 delete headers['Content-Type'];
 
+                // MODIFIÉ : Utilise API_URL
                 const response = await fetch(`${API_URL}/api/patients`, {
                     headers: headers
                 });
@@ -1441,6 +1453,7 @@
                         if (!headers) return;
                         delete headers['Content-Type'];
                         
+                        // MODIFIÉ : Utilise API_URL
                         const responseGet = await fetch(`${API_URL}/api/patients/${patientIdToLoadFrom}`, { headers: headers });
                         if (handleAuthError(responseGet)) return;
                         const dossierToLoad = await responseGet.json();
@@ -1459,6 +1472,7 @@
                         headers = getAuthHeaders();
                         if (!headers) return;
 
+                        // MODIFIÉ : Utilise API_URL
                         const responsePost = await fetch(`${API_URL}/api/patients/${patientIdToLoadInto}`, {
                             method: 'POST',
                             headers: headers, 
@@ -1495,6 +1509,7 @@
                         if (!headers) return;
                         delete headers['Content-Type']; 
 
+                        // MODIFIÉ : Utilise API_URL
                         const response = await fetch(`${API_URL}/api/patients/${patientId}`, { 
                             method: 'DELETE',
                             headers: headers
