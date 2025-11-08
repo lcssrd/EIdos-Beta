@@ -1286,15 +1286,23 @@
             pancarteTbody.innerHTML = html;
         }
 
+        // =================================================================
+        // DEBUT MODIFICATION BUG 2 : Diagramme de Soins
+        // =================================================================
         const careDiagramThead = document.getElementById('care-diagram-thead');
         if (careDiagramThead) {
             html = '<tr><th class="p-2 text-left min-w-[220px]">Soin / Surveillance</th>';
-            for(let i=0; i<11; i++) { html += `<th colspan="8" class="border-l">Jour ${i}</th>`;}
+            // MODIFICATION: colspan="3" (au lieu de 8)
+            for(let i=0; i<11; i++) { html += `<th colspan="3" class="border-l">Jour ${i}</th>`;}
             html += '</tr><tr><th class="min-w-[220px]"></th>';
-            const hours = ['0h', '3h', '6h', '9h', '12h', '15h', '18h', '21h'];
+            
+            // MODIFICATION: Heures (Matin, Midi, Soir)
+            const hours = ['Matin', 'Midi', 'Soir'];
+            
             for(let i=0; i<11; i++) { 
                 for (let j = 0; j < hours.length; j++) {
                     const borderClass = (j === 0) ? 'border-l' : '';
+                    // On garde small-col pour le style, mais le CSS va changer
                     html += `<th class="${borderClass} p-1 text-center small-col">${hours[j]}</th>`;
                 }
             }
@@ -1302,6 +1310,9 @@
             html += '</tr>';
             careDiagramThead.innerHTML = html;
         }
+        // =================================================================
+        // FIN MODIFICATION BUG 2
+        // =================================================================
     }
     
     function generateBioRows(title, data) {
@@ -1841,7 +1852,7 @@
         };
         updateHeaders('#prescription-table thead tr:first-child th[colspan="8"]');
         updateHeaders('#pancarte-table thead tr:first-child th[colspan="3"]');
-        updateHeaders('#care-diagram-table thead tr:first-child th[colspan="8"]');
+        updateHeaders('#care-diagram-table thead tr:first-child th[colspan="3"]'); // MODIFIÉ: colspan 3
         if (pancarteChartInstance) updatePancarteChart();
     }
     function changeTab(event, tabId) {
@@ -1916,6 +1927,16 @@
         if (!fromLoad) {
             document.getElementById('new-observation-form').reset();
         }
+        
+        // =================================================================
+        // DEBUT MODIFICATION BUG 1 : Sauvegarde
+        // =================================================================
+        if (!fromLoad) {
+            saveData(activePatientId);
+        }
+        // =================================================================
+        // FIN MODIFICATION BUG 1
+        // =================================================================
     }
     
     function addTransmission(data = null, fromLoad = false) {
@@ -1977,6 +1998,16 @@
         if (!fromLoad) {
             document.getElementById('new-transmission-form-2').reset();
         }
+        
+        // =================================================================
+        // DEBUT MODIFICATION BUG 1 : Sauvegarde
+        // =================================================================
+        if (!fromLoad) {
+            saveData(activePatientId);
+        }
+        // =================================================================
+        // FIN MODIFICATION BUG 1
+        // =================================================================
     }
 
     function addPrescription(data = null, fromLoad = false) {
@@ -2075,6 +2106,16 @@
         if (!fromLoad) {
             document.getElementById('new-prescription-form').reset();
         }
+        
+        // =================================================================
+        // DEBUT MODIFICATION BUG 1 : Sauvegarde
+        // =================================================================
+        if (!fromLoad) {
+            saveData(activePatientId);
+        }
+        // =================================================================
+        // FIN MODIFICATION BUG 1
+        // =================================================================
     }
     
     function addCareDiagramRow() {
@@ -2095,15 +2136,29 @@
             </td>
         `;
         
+        // =================================================================
+        // DEBUT MODIFICATION BUG 2 : 3 colonnes
+        // =================================================================
         for(let i=0; i<11; i++) {
-            for (let j = 0; j < 8; j++) {
+            for (let j = 0; j < 3; j++) { // MODIFICATION: 3 (au lieu de 8)
                 const borderClass = (j === 0) ? 'border-l' : '';
                 cellsHTML += `<td class="${borderClass} p-0 small-col"><input type="checkbox"></td>`;
             }
         }
+        // =================================================================
+        // FIN MODIFICATION BUG 2
+        // =================================================================
         
         newRow.innerHTML = cellsHTML;
         document.getElementById('new-care-form').reset();
+        
+        // =================================================================
+        // DEBUT MODIFICATION BUG 1 : Sauvegarde
+        // =================================================================
+        saveData(activePatientId);
+        // =================================================================
+        // FIN MODIFICATION BUG 1
+        // =================================================================
     }
 
     // --- Fonctions IV (inchangées) ---
