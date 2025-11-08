@@ -434,8 +434,13 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
  * Cible TOUTES les colonnes d'heure dans les en-têtes des
  * tableaux de prescription et de diagramme de soins.
 */
-#prescription-thead .small-col,
-#care-diagram-thead .small-col {
+/* =================================================================
+ * DEBUT MODIFICATION BUG 2 : Centrage Diagramme Soins
+ * =================================================================
+ * La règle ne s'applique plus qu'aux prescriptions.
+ * Le diagramme de soins utilisera le centrage par défaut.
+*/
+#prescription-thead .small-col {
     position: relative; 
     
     /* * Décale le texte (qui est centré dans sa cellule) de 50% de 
@@ -448,3 +453,7 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
     /* Empêche que le texte décalé ne soit coupé */
     overflow: visible; 
 }
+/* =================================================================
+ * FIN MODIFICATION BUG 2
+ * =================================================================
+*/
