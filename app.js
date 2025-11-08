@@ -1354,6 +1354,16 @@
         
         document.getElementById('export-json-btn').addEventListener('click', exportPatientAsJson);
         
+        // =================================================================
+        // DEBUT MODIFICATION : Bouton Refresh
+        // =================================================================
+        document.getElementById('refresh-page-btn').addEventListener('click', () => {
+            location.reload();
+        });
+        // =================================================================
+        // FIN MODIFICATION : Bouton Refresh
+        // =================================================================
+        
         document.getElementById('clear-current-patient-btn').addEventListener('click', clearCurrentPatientData);
         document.getElementById('toggle-fullscreen-btn').addEventListener('click', toggleFullscreen);
 
