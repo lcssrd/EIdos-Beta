@@ -45,8 +45,8 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- Hero Section MODIFIÉ --><section class="bg-gradient-to-br from-teal-500 to-cyan-600 text-white pt-10 pb-24 px-6 text-center">
-        <!-- Logo et Nom EIdos intégrés --><div class="hero-logo-container">
+    <section class="bg-gradient-to-br from-teal-500 to-cyan-600 text-white pt-10 pb-24 px-6 text-center">
+        <div class="hero-logo-container">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
             </svg>
@@ -62,7 +62,7 @@
             Créez des scénarios réalistes et évolutifs pour vos étudiants, en toute sécurité.
         </p>
         <div class="space-x-4">
-            <!-- MODIFIÉ : Texte du bouton --><a href="simul.html" class="px-8 py-4 text-lg font-semibold text-teal-700 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-transform transform hover:scale-105">
+            <a href="simul.html" class="px-8 py-4 text-lg font-semibold text-teal-700 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-transform transform hover:scale-105">
                 <i class="fas fa-sign-in-alt mr-2"></i> Connexion à l'espace de simulation
             </a>
             <a href="auth.html" class="px-8 py-4 text-lg font-semibold text-white bg-cyan-700 rounded-lg shadow-lg hover:bg-cyan-800 transition-transform transform hover:scale-105">
@@ -71,7 +71,7 @@
         </div>
     </section>
 
-    <!-- Problème / Solution --><section class="py-20 bg-white">
+    <section class="py-20 bg-white">
         <div class="container mx-auto px-6 max-w-5xl">
             <h2 class="text-4xl font-bold text-center text-gray-800 mb-12">Le pont entre la théorie et le stage</h2>
             <div class="grid md:grid-cols-3 gap-8 text-center">
@@ -108,12 +108,32 @@
         </div>
     </section>
 
-    <!-- Cas d'usage --><section class="py-20 bg-gray-100">
-        <div class="container mx-auto px-6 max-w-6xl">
+    <section class="py-20 bg-gray-100">
+        <div class="container mx-auto px-6 max-w-5xl text-center">
+            
+            <div class="flex justify-center mb-6">
+                <span class="flex items-center justify-center h-16 w-16 bg-teal-100 text-teal-600 rounded-full text-3xl shadow">
+                    <i class="fas fa-user-md"></i> 
+                </span>
+            </div>
+            
+            <h2 class="text-4xl font-bold text-gray-800 mb-8">L'origine d'EIdos</h2>
+            
+            <p class="text-xl text-gray-700 leading-relaxed max-w-4xl mx-auto">
+                Mon parcours de **cadre de santé infirmier** à l'hôpital m'a confronté aux réalités du terrain. Mais c'est en devenant formateur en IFSI que j'ai identifié un manque critique : nos étudiants apprennent la théorie, mais n'ont aucun outil pour simuler un vrai **Dossier Patient Informatisé (DPI)**.
+            </p>
+            <p class="text-xl text-gray-700 leading-relaxed max-w-4xl mx-auto mt-6">
+                EIdos est né de ce constat. J'ai développé cette plateforme pour une seule raison : permettre aux étudiants de **pratiquer le raisonnement clinique** sur des données réalistes, identiques à celles qu'ils géreront demain en stage.
+            </p>
+
+        </div>
+    </section>
+
+    <section class="py-20 bg-white"> <div class="container mx-auto px-6 max-w-6xl">
             <h2 class="text-4xl font-bold text-center text-gray-800 mb-16">Des possibilités pédagogiques infinies</h2>
             <div class="grid md:grid-cols-2 gap-10">
                 
-                <!-- Cas d'usage 1 --><div class="bg-white p-8 rounded-2xl shadow-xl transform transition-all hover:shadow-2xl hover:-translate-y-1">
+                <div class="bg-white p-8 rounded-2xl shadow-xl transform transition-all hover:shadow-2xl hover:-translate-y-1">
                     <div class="flex items-center mb-5">
                         <span class="flex items-center justify-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-full text-2xl mr-4">
                             <i class="fas fa-chart-line"></i>
@@ -137,7 +157,7 @@
                     <p class="mt-5 text-indigo-700 font-semibold bg-indigo-50 p-3 rounded-lg"><i class="fas fa-lightbulb mr-2"></i>Idéal pour travailler la réévaluation clinique et la priorisation des actions.</p>
                 </div>
 
-                <!-- Cas d'usage 2 --><div class="bg-white p-8 rounded-2xl shadow-xl transform transition-all hover:shadow-2xl hover:-translate-y-1">
+                <div class="bg-white p-8 rounded-2xl shadow-xl transform transition-all hover:shadow-2xl hover:-translate-y-1">
                     <div class="flex items-center mb-5">
                         <span class="flex items-center justify-center h-12 w-12 bg-teal-100 text-teal-600 rounded-full text-2xl mr-4">
                             <i class="fas fa-users"></i>
@@ -165,8 +185,7 @@
         </div>
     </section>
     
-    <!-- Features --><section class="py-20 bg-white">
-        <div class="container mx-auto px-6 max-w-6xl">
+    <section class="py-20 bg-gray-100"> <div class="container mx-auto px-6 max-w-6xl">
             <h2 class="text-4xl font-bold text-center text-gray-800 mb-16">Un outil complet à votre service</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 text-center">
                 <div class="p-4"><i class="fas fa-user-friends text-teal-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Gestion d'étudiants</h4></div>
@@ -181,7 +200,7 @@
         </div>
     </section>
 
-    <!-- Final CTA --><section class="py-20 bg-gray-800 text-white">
+    <section class="py-20 bg-gray-800 text-white">
         <div class="container mx-auto px-6 text-center">
             <h2 class="text-4xl font-bold mb-6">Prêt à transformer votre pédagogie ?</h2>
             <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">Créez votre compte formateur pour commencer à sauvegarder vos scénarios et à gérer vos étudiants.</p>
@@ -191,7 +210,7 @@
         </div>
     </section>
 
-    <!-- Footer --><footer class="bg-gray-900 text-gray-400 py-10">
+    <footer class="bg-gray-900 text-gray-400 py-10">
         <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
             <p class="text-center md:text-left">&copy; 2025 EIdos. Créé par L. Séraudie.</p>
             <div class="space-x-6 mt-4 md:mt-0">
