@@ -2,6 +2,8 @@
 (function() {
     "use strict"; 
 
+    // MODIFIÉ : L'URL de l'API est maintenant relative.
+    // "http://localhost:3000" a été supprimé.
     const API_URL = 'https://eidos-api.onrender.com'; 
 
     // --- Fonctions utilitaires d'authentification (copiées de app.js) ---
@@ -147,7 +149,7 @@
         }
     }
 
-    // MODIFIÉ : Met à jour l'état des boutons d'abonnement avec les NOUVEAUX NOMS
+    // MODIFIÉ : Met à jour l'état des boutons ET des bannières d'abonnement
     function updateSubscriptionButtons(activePlan) {
         const planButtons = {
             'free': document.getElementById('sub-btn-free'),
@@ -156,28 +158,48 @@
             'centre': document.getElementById('sub-btn-centre')
         };
 
-        // Réinitialiser tous les boutons (sauf 'centre' qui est spécial)
+        // Réinitialiser tous les boutons et bannières
         for (const [plan, button] of Object.entries(planButtons)) {
+            
+            // --- Logique pour les boutons (inchangée) ---
             if (plan !== 'centre') {
                 button.disabled = false;
                 button.textContent = 'Choisir ce plan';
                 button.classList.remove('bg-gray-200', 'cursor-not-allowed');
                 // Ré-appliquer les couleurs d'origine
-                if(plan === 'free') button.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-700'); // Modifié pour le style gris
+                if(plan === 'free') button.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-700'); 
                 if(plan === 'independant') button.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
                 if(plan === 'promo') button.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white');
             }
+            
+            // --- NOUVEAU : Cacher la bannière ---
+            const card = button.closest('.card');
+            const banner = card.querySelector('.plan-banner');
+            if (banner) {
+                banner.classList.add('hidden');
+            }
         }
 
-        // Définir le bouton actif
-        if (planButtons[activePlan] && activePlan !== 'centre') {
+        // Définir le bouton ET la bannière actifs
+        if (planButtons[activePlan]) {
             const activeButton = planButtons[activePlan];
-            activeButton.disabled = true;
-            activeButton.textContent = 'Plan actuel';
-            activeButton.classList.add('bg-gray-200', 'cursor-not-allowed', 'text-gray-700'); // Style unifié pour bouton désactivé
-            // Retirer les couleurs
-            if(activePlan === 'independant') activeButton.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
-            if(activePlan === 'promo') activeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+            
+            // --- NOUVEAU : Afficher la bannière active ---
+            const activeCard = activeButton.closest('.card');
+            const activeBanner = activeCard.querySelector('.plan-banner');
+            if (activeBanner) {
+                activeBanner.classList.remove('hidden');
+            }
+
+            // --- Logique pour les boutons (inchangée, mais déplacée) ---
+            if (activePlan !== 'centre') {
+                activeButton.disabled = true;
+                activeButton.textContent = 'Plan actuel';
+                activeButton.classList.add('bg-gray-200', 'cursor-not-allowed', 'text-gray-700'); 
+                // Retirer les couleurs
+                if(activePlan === 'independant') activeButton.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
+                if(activePlan === 'promo') activeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+            }
         }
     }
 
@@ -193,6 +215,7 @@
             const headers = getAuthHeaders();
             delete headers['Content-Type']; // GET request
             
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/account/details`, { headers });
 
             if (handleAuthError(response)) return;
@@ -250,7 +273,7 @@
     function renderStudentTable(students) {
         const tbody = document.getElementById('permissions-tbody');
         const title = document.getElementById('student-list-title');
-        title.textContent = `Invitations(${students.length})`;
+        title.textContent = `Gestion des étudiants (${students.length})`;
 
         // Gérer la limite d'étudiants
         const createBtn = document.getElementById('create-student-submit-btn');
@@ -410,6 +433,7 @@
 
         try {
             const headers = getAuthHeaders();
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/account/invite`, {
                 method: 'POST',
                 headers: headers,
@@ -445,7 +469,7 @@
     }
 
     /**
-     * Gère le changement de mot de passe
+     * Gère la changement de mot de passe
      */
     async function handleChangePassword(e) {
         e.preventDefault();
@@ -460,6 +484,7 @@
 
         try {
             const headers = getAuthHeaders();
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/account/change-password`, {
                 method: 'POST',
                 headers: headers,
@@ -490,6 +515,54 @@
     }
 
     /**
+     * NOUVEAU : Gère le changement d'email
+     */
+    async function handleChangeEmail(e) {
+        e.preventDefault();
+        const newEmail = document.getElementById('new-email').value;
+        const password = document.getElementById('current-password-for-email').value;
+
+        if (!newEmail || !password) {
+            showCustomAlert("Erreur", "Veuillez remplir tous les champs.");
+            return;
+        }
+
+        // Ajout d'une confirmation
+        showDeleteConfirmation(
+            `Êtes-vous sûr de vouloir changer votre email pour "${newEmail}" ? Vous devrez utiliser ce nouvel email pour vous connecter.`,
+            async () => {
+                try {
+                    const headers = getAuthHeaders();
+                    const response = await fetch(`${API_URL}/api/account/change-email`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ newEmail, password })
+                    });
+                    
+                    if (handleAuthError(response)) return;
+
+                    if (!response.ok) {
+                        let errorMsg = "Impossible de changer l'email.";
+                        try {
+                            const errorData = await response.json();
+                            errorMsg = errorData.error || response.statusText;
+                        } catch (e) {
+                            errorMsg = response.statusText;
+                        }
+                        throw new Error(errorMsg);
+                    }
+
+                    showCustomAlert("Succès", "Votre adresse email a été mise à jour. Vous devrez l'utiliser lors de votre prochaine connexion.");
+                    document.getElementById('change-email-form').reset();
+
+                } catch (err) {
+                    showCustomAlert("Erreur", err.message);
+                }
+            }
+        );
+    }
+
+    /**
      * Gère la suppression du compte
      */
     function handleDeleteAccount() {
@@ -498,6 +571,7 @@
             async () => {
                 try {
                     const headers = getAuthHeaders();
+                    // MODIFIÉ : Utilise API_URL
                     const response = await fetch(`${API_URL}/api/account/delete`, {
                         method: 'DELETE',
                         headers: headers
@@ -538,6 +612,7 @@
     async function handleChangeSubscription(newPlan) {
         try {
             const headers = getAuthHeaders();
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/account/change-subscription`, {
                 method: 'POST',
                 headers: headers,
@@ -582,6 +657,7 @@
 
         try {
             const headers = getAuthHeaders();
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/account/permissions`, {
                 method: 'PUT',
                 headers: headers,
@@ -623,6 +699,7 @@
                 async () => {
                     try {
                         const headers = getAuthHeaders();
+                        // MODIFIÉ : Utilise API_URL
                         const response = await fetch(`${API_URL}/api/account/student`, {
                             method: 'DELETE',
                             headers: headers,
@@ -707,6 +784,7 @@
 
         try {
             const headers = getAuthHeaders();
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/account/student/rooms`, {
                 method: 'PUT',
                 headers: headers,
@@ -778,6 +856,7 @@
 
         // Listeners de la section Sécurité
         document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
+        document.getElementById('change-email-form').addEventListener('submit', handleChangeEmail); // <-- NOUVELLE LIGNE
         document.getElementById('delete-account-btn').addEventListener('click', handleDeleteAccount);
         
         // MODIFIÉ : Listeners de la section Abonnement
@@ -808,7 +887,4 @@
     // Lancer l'initialisation
     document.addEventListener('DOMContentLoaded', init);
 
-
 })();
-
-
