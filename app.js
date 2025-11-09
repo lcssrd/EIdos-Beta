@@ -2048,7 +2048,21 @@
 
             const [year, month, day] = startDateValue.split('-');
             formattedStartDate = `${day}/${month}/${year.slice(2)}`;
-            type = voie.trim().toUpperCase() === 'IV' ? 'iv' : 'checkbox';
+            
+            // =================================================================
+            // DEBUT MODIFICATION : Voie "Nasal"
+            // =================================================================
+            const voieUpper = voie.trim().toUpperCase();
+            if (voieUpper === 'IV') {
+                type = 'iv';
+            } else if (voieUpper === 'NASAL') {
+                type = 'nasal'; // Nouveau type
+            } else {
+                type = 'checkbox'; // Type par défaut (marqueur losange)
+            }
+            // =================================================================
+            // FIN MODIFICATION : Voie "Nasal"
+            // =================================================================
             
             dateOffset = _calculateDaysOffset(entryDateStr, startDateValue);
         }
@@ -2077,7 +2091,14 @@
         timelineCell.colSpan = 88; 
         timelineCell.className = 'iv-bar-container';
 
-        if (type !== 'iv') {
+        // =================================================================
+        // DEBUT MODIFICATION : Voie "Nasal"
+        // =================================================================
+        // Seul le type 'checkbox' (Per Os, etc.) reçoit le style "marqueur".
+        if (type === 'checkbox') {
+        // =================================================================
+        // FIN MODIFICATION : Voie "Nasal"
+        // =================================================================
             timelineCell.classList.add('marker-container');
         }
         
@@ -2095,9 +2116,17 @@
                 const bar = document.createElement('div');
                 bar.className = 'iv-bar';
                 
-                if (type !== 'iv') {
-                    bar.classList.add('marker-bar');
+                // =================================================================
+                // DEBUT MODIFICATION : Voie "Nasal"
+                // =================================================================
+                if (type === 'nasal') {
+                    bar.classList.add('nasal-bar'); // Ajoute la classe pour le style vert
+                } else if (type === 'checkbox') {
+                    bar.classList.add('marker-bar'); // Garde le style marqueur
                 }
+                // =================================================================
+                // FIN MODIFICATION : Voie "Nasal"
+                // =================================================================
                 
                 bar.style.left = barData.left;
                 bar.style.width = barData.width;
@@ -2203,9 +2232,21 @@
             const newBar = document.createElement('div');
             newBar.className = 'iv-bar';
             
-            if (cell.classList.contains('marker-container')) {
+            // =================================================================
+            // DEBUT MODIFICATION : Voie "Nasal"
+            // =================================================================
+            // Récupère le type ('iv', 'nasal', 'checkbox') depuis la rangée (tr)
+            const row = cell.closest('tr');
+            const rowType = row ? row.dataset.type : 'checkbox';
+
+            if (rowType === 'nasal') {
+                newBar.classList.add('nasal-bar');
+            } else if (rowType === 'checkbox') {
                 newBar.classList.add('marker-bar');
             }
+            // =================================================================
+            // FIN MODIFICATION : Voie "Nasal"
+            // =================================================================
             
             newBar.style.left = `${(startX / rect.width) * 100}%`;
             newBar.style.width = '0px';
