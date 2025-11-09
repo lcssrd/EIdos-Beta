@@ -251,7 +251,8 @@
             if (form) form.style.display = 'none';
         }
         if (!userPermissions.pancarte) {
-            document.querySelectorAll('#pancarte-table input').forEach(el => el.disabled = true);
+            // S'applique aux deux tableaux de pancarte
+            document.querySelectorAll('#pancarte-table input, #glycemie-table input').forEach(el => el.disabled = true);
         }
         if (!userPermissions.biologie) {
             document.querySelectorAll('#bio-table input').forEach(el => el.disabled = true);
@@ -288,9 +289,23 @@
     const lipidiqueData = { "Cholestérol total (g/L)": "< 2.0", "Triglycérides (g/L)": "< 1.5", "HDL Cholestérol (g/L)": "> 0.4", "LDL Cholestérol (g/L)": "< 1.6" };
     const gdsData = { "pH": "7.35-7.45", "PaCO2 (mmHg)": "35-45", "PaO2 (mmHg)": "80-100", "HCO3- (mmol/L)": "22-26", "SaO2 (%)": "> 95" };
     const inflammationData = { "CRP (mg/L)": "< 5" };
+    
+    // MODIFIÉ : pancarteData ne contient plus Poids ni Glycémie
     const pancarteData = {
-        'Pouls (/min)': [], 'Tension (mmHg)': [], 'Température (°C)': [], 'SpO2 (%)': [], 'Douleur (EVA /10)': []
+        'Pouls (/min)': [], 
+        'Tension (mmHg)': [], 
+        'Température (°C)': [], 
+        'SpO2 (%)': [], 
+        'Douleur (EVA /10)': [],
+        'Poids (kg)': [], // Gardé ici pour la structure du tableau, mais sera géré différemment
+        'Diurèse (L)': []  // Gardé ici pour la structure du tableau, mais sera géré différemment
     };
+    
+    // NOUVEAU : Données pour le tableau de glycémie
+    const glycemieData = {
+        'Glycémie (g/L)': []
+    };
+
 
     function roundDateTo15Min(date) {
         const newDate = new Date(date.getTime()); 
@@ -365,16 +380,28 @@
         });
         state.biologie = bioData;
         
-        // 6. Collecte Pancarte (inchangé)
-        const pancarteData = {};
+        // 6. Collecte Pancarte (MODIFIÉ : collecte séparée)
+        const pancarteTableData = {};
         document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
             const paramName = row.cells[0].textContent.trim();
             if (paramName) {
-                pancarteData[paramName] = [];
-                row.querySelectorAll('input').forEach(input => pancarteData[paramName].push(input.value));
+                pancarteTableData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => pancarteTableData[paramName].push(input.value));
             }
         });
-        state.pancarte = pancarteData;
+        state.pancarte = pancarteTableData; // Concerne Pouls, TA, Temp, SpO2, Douleur, Poids, Diurèse
+        
+        // NOUVEAU : Collecte Glycémie
+        const glycemieTableData = {};
+        document.querySelectorAll('#glycemie-table tbody tr').forEach(row => {
+            const paramName = row.cells[0].textContent.trim();
+             if (paramName) {
+                glycemieTableData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => glycemieTableData[paramName].push(input.value));
+            }
+        });
+        state.glycemie = glycemieTableData; // Concerne Glycémie (g/L)
+
         
         // 7. Collecte Prescriptions (avec offsets)
         state.prescriptions = [];
@@ -558,7 +585,8 @@
             
             // 1. Remplir les inputs simples (inchangé)
             Object.keys(state).forEach(id => {
-                if (id === 'observations' || id === 'transmissions' || id === 'biologie' || id === 'pancarte' || id === 'prescriptions' || id ==='lockButtonStates' || id === 'careDiagramCheckboxes' || id.endsWith('_html')) return;
+                // MODIFIÉ : Ajout 'glycemie' à la liste d'exclusion
+                if (id === 'observations' || id === 'transmissions' || id === 'biologie' || id === 'pancarte' || id === 'glycemie' || id === 'prescriptions' || id ==='lockButtonStates' || id === 'careDiagramCheckboxes' || id.endsWith('_html')) return;
                 const el = document.getElementById(id);
                 if (el) {
                     if (el.type === 'checkbox' || el.type === 'radio') { el.checked = state[id]; } else { el.value = state[id]; }
@@ -692,6 +720,16 @@
                     }
                 });
             }
+
+            // NOUVEAU : Charger Glycémie
+            if (state.glycemie) {
+                document.querySelectorAll('#glycemie-table tbody tr').forEach(row => {
+                    const paramName = row.cells[0].textContent.trim();
+                    if (paramName && state.glycemie && state.glycemie[paramName]) {
+                        row.querySelectorAll('input').forEach((input, index) => { input.value = state.glycemie[paramName][index] || ''; });
+                    }
+                });
+            }
             
             if (entryDateStr) {
                 const entryDate = new Date(entryDateStr);
@@ -759,6 +797,12 @@
         document.querySelectorAll('#prescription-tbody .iv-bar').forEach(bar => {
             updateIVBarDetails(bar, bar.closest('.iv-bar-container'));
         });
+
+        // 6. Rafraîchir les dates des tableaux de pancarte
+        const entryDate = new Date(entryDateStr);
+        if (!isNaN(entryDate.getTime())) {
+            updateDynamicDates(entryDate);
+        }
     }
 
     function exportPatientAsJson() {
@@ -809,15 +853,28 @@
             }
         });
         state.biologie = bioData;
-        const pancarteData = {};
+        
+        // MODIFIÉ : Collecte séparée
+        const pancarteTableData = {};
         document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
             const paramName = row.cells[0].textContent.trim();
             if (paramName) {
-                pancarteData[paramName] = [];
-                row.querySelectorAll('input').forEach(input => pancarteData[paramName].push(input.value));
+                pancarteTableData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => pancarteTableData[paramName].push(input.value));
             }
         });
-        state.pancarte = pancarteData;
+        state.pancarte = pancarteTableData;
+        
+        const glycemieTableData = {};
+        document.querySelectorAll('#glycemie-table tbody tr').forEach(row => {
+            const paramName = row.cells[0].textContent.trim();
+             if (paramName) {
+                glycemieTableData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => glycemieTableData[paramName].push(input.value));
+            }
+        });
+        state.glycemie = glycemieTableData;
+        
         state.prescriptions = [];
         document.querySelectorAll('#prescription-tbody tr').forEach(row => {
             state.prescriptions.push({
@@ -994,15 +1051,28 @@
             }
         });
         state.biologie = bioData;
-        const pancarteData = {};
+        
+        // MODIFIÉ : Collecte séparée
+        const pancarteTableData = {};
         document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
             const paramName = row.cells[0].textContent.trim();
             if (paramName) {
-                pancarteData[paramName] = [];
-                row.querySelectorAll('input').forEach(input => pancarteData[paramName].push(input.value));
+                pancarteTableData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => pancarteTableData[paramName].push(input.value));
             }
         });
-        state.pancarte = pancarteData;
+        state.pancarte = pancarteTableData;
+        
+        const glycemieTableData = {};
+        document.querySelectorAll('#glycemie-table tbody tr').forEach(row => {
+            const paramName = row.cells[0].textContent.trim();
+             if (paramName) {
+                glycemieTableData[paramName] = [];
+                row.querySelectorAll('input').forEach(input => glycemieTableData[paramName].push(input.value));
+            }
+        });
+        state.glycemie = glycemieTableData;
+        
         state.prescriptions = [];
         document.querySelectorAll('#prescription-tbody tr').forEach(row => {
             state.prescriptions.push({
@@ -1262,6 +1332,14 @@
             input.value = '';
             delete input.dataset.dateOffset;
         });
+        
+        // MODIFIÉ : Réinitialise aussi le tableau de glycémie
+        document.getElementById('glycemie-tbody').innerHTML = '';
+        document.getElementById('pancarte-tbody').innerHTML = '';
+        
+        // Recrée les tableaux vides
+        initializeDynamicTables();
+
         calculateAndDisplayIMC();
         if (pancarteChartInstance) pancarteChartInstance.destroy();
     }
@@ -1289,11 +1367,12 @@
     }
 
     // =================================================================
-    // MODIFIÉ : initializeDynamicTables (pancarte 150px)
+    // MODIFIÉ : initializeDynamicTables (gestion pancarte + glycémie)
     // =================================================================
     function initializeDynamicTables() {
         let html = '';
 
+        // --- PRESCRIPTIONS (Inchangé) ---
         const prescriptionThead = document.getElementById('prescription-thead');
         if (prescriptionThead) {
             html = '<tr><th class="p-2 text-left align-bottom min-w-[220px]" rowspan="2">Médicament / Soin</th><th class="p-2 text-left align-bottom min-w-[144px]" rowspan="2">Posologie</th><th class="p-2 text-left align-bottom min-w-[96px]" rowspan="2">Voie</th><th class="p-2 text-left align-bottom" rowspan="2" style="min-width: 100px;">Date de début</th>';
@@ -1309,6 +1388,7 @@
             prescriptionThead.innerHTML = html;
         }
 
+        // --- BIOLOGIE (Inchangé) ---
         const bioThead = document.getElementById('bio-thead');
         if (bioThead) {
             html = '<tr><th class="p-2 text-left w-1/4">Analyse</th><th class="p-2 text-left w-1/4">Valeurs de référence</th>';
@@ -1318,7 +1398,6 @@
             html += '</tr>';
             bioThead.innerHTML = html;
         }
-
         const bioTbody = document.getElementById('bio-tbody');
         if (bioTbody) {
             html = '';
@@ -1331,41 +1410,87 @@
             bioTbody.innerHTML = html;
         }
 
+        // --- PANCARTE (MODIFIÉ) ---
         const pancarteThead = document.getElementById('pancarte-thead');
         if (pancarteThead) {
-            html = '<tr><th class="p-2 text-left" rowspan="2">Paramètres</th>';
+            html = '<tr><th class="p-2 text-left sticky-col" rowspan="2">Paramètres</th>'; // Ajout sticky-col
             for(let i=0; i<11; i++) { html += `<th class="p-2 text-center" colspan="3">Jour ${i}</th>`;}
             html += '</tr><tr>';
-            // --- MODIFICATION ICI ---
+            // MODIFIÉ : Colonnes Matin, Soir, Nuit
             for(let i=0; i<11; i++) { 
                 html += `<th class="p-1" style="min-width: 70px;">Matin</th>`;
                 html += `<th class="p-1" style="min-width: 70px;">Soir</th>`;
                 html += `<th class="p-1" style="min-width: 70px;">Nuit</th>`;
             }
-            // --- FIN MODIFICATION ---
             html += '</tr>';
             pancarteThead.innerHTML = html;
         }
-
         const pancarteTbody = document.getElementById('pancarte-tbody');
         if (pancarteTbody) {
             html = '';
+            // Itère sur la liste pancarteData (qui n'inclut plus Glycémie)
             for (const param in pancarteData) {
-                html += `<tr><td class="p-2 text-left font-semibold">${param}</td>`;
-                let inputHtml = '<input type="text" value="">'; 
+                html += `<tr><td class="p-2 text-left font-semibold sticky-col">${param}</td>`; // Ajout sticky-col
+                
+                let inputHtml = '<input type="text" value="">'; // Default
                 if (param === 'Température (°C)') {
                     inputHtml = '<input type="number" step="0.1" value="">';
+                } else if (param === 'Poids (kg)') {
+                    inputHtml = '<input type="number" step="0.1" value="">';
+                } else if (param === 'Diurèse (L)') {
+                    inputHtml = '<input type="number" step="0.1" value="">';
                 }
-                for(let i=0; i<33; i++) {
-                    // --- MODIFICATION ICI ---
-                    html += `<td class="p-0" style="min-width: 70px;">${inputHtml}</td>`;
-                    // --- FIN MODIFICATION ---
+
+                if (param === 'Poids (kg)' || param === 'Diurèse (L)') {
+                    // 1 input par jour (Matin)
+                    for(let i=0; i<11; i++) {
+                        html += `<td class="p-0" style="min-width: 70px;">${inputHtml}</td>`; // Matin
+                        html += `<td class="p-0 bg-gray-100" colspan="2"></td>`; // Soir + Nuit fusionnés
+                    }
+                } else {
+                    // 3 inputs par jour (Matin, Soir, Nuit)
+                    // Concerne Pouls, Tension, Temp, SpO2, Douleur
+                    for(let i=0; i<33; i++) {
+                        html += `<td class="p-0" style="min-width: 70px;">${inputHtml}</td>`;
+                    }
                 }
                 html += `</tr>`;
             }
             pancarteTbody.innerHTML = html;
         }
+        
+        // --- NOUVEAU : GLYCEMIE TABLE ---
+        const glycemieThead = document.getElementById('glycemie-thead');
+        if (glycemieThead) {
+            html = '<tr><th class="p-2 text-left sticky-col" rowspan="2">Paramètres</th>'; // Ajout sticky-col
+            for(let i=0; i<11; i++) { html += `<th class="p-2 text-center" colspan="3">Jour ${i}</th>`;}
+            html += '</tr><tr>';
+            // MODIFIÉ : Colonnes Matin, Midi, Soir
+            for(let i=0; i<11; i++) { 
+                html += `<th class="p-1" style="min-width: 70px;">Matin</th>`;
+                html += `<th class="p-1" style="min-width: 70px;">Midi</th>`;
+                html += `<th class="p-1" style="min-width: 70px;">Soir</th>`;
+            }
+            html += '</tr>';
+            glycemieThead.innerHTML = html;
+        }
+        const glycemieTbody = document.getElementById('glycemie-tbody');
+        if (glycemieTbody) {
+            html = '';
+            for (const param in glycemieData) {
+                html += `<tr><td class="p-2 text-left font-semibold sticky-col">${param}</td>`; // Ajout sticky-col
+                let inputHtml = '<input type="number" step="0.1" value="">';
+                // 3 inputs par jour
+                for(let i=0; i<33; i++) {
+                    html += `<td class="p-0" style="min-width: 70px;">${inputHtml}</td>`;
+                }
+                html += `</tr>`;
+            }
+            glycemieTbody.innerHTML = html;
+        }
 
+
+        // --- DIAGRAMME DE SOINS (Inchangé) ---
         const careDiagramThead = document.getElementById('care-diagram-thead');
         if (careDiagramThead) {
             html = '<tr><th class="p-2 text-left min-w-[220px]">Soin / Surveillance</th>';
@@ -1433,7 +1558,8 @@
             if (entryDateValue) {
                 const entryDate = new Date(entryDateValue);
                 if (!isNaN(entryDate.getTime())) {
-                    updateDynamicDates(entryDate);
+                    // La fonction updateDynamicDates va maintenant mettre à jour les DEUX tableaux
+                    updateDynamicDates(entryDate); 
                 }
             }
             
@@ -1491,9 +1617,15 @@
             }
         });
 
+        // MODIFIÉ : Ajout du listener pour le tableau de glycémie
         document.getElementById('pancarte-tbody').addEventListener('change', (e) => {
             if (e.target.tagName === 'INPUT') updatePancarteChart();
         });
+        document.getElementById('glycemie-tbody').addEventListener('change', (e) => {
+            // Pas besoin de mettre à jour le graphique pour la glycémie
+            // La sauvegarde se fera via le "debouncedSave" global
+        });
+        
         document.querySelector('main').addEventListener('input', (e) => {
             if (e.target.tagName === 'TEXTAREA' && e.target.classList.contains('info-value')) {
                 autoResize(e.target);
@@ -1913,8 +2045,11 @@
             icon.classList.replace('fa-compress', 'fa-expand');
         }
     }
+    
+    // MODIFIÉ : updateDynamicDates
     function updateDynamicDates(startDate) {
-        const updateHeaders = (selector) => {
+        // Fonction interne pour mettre à jour les en-têtes
+        const updateHeaders = (selector, colSpan) => {
             document.querySelectorAll(selector).forEach((th, index) => {
                 const currentDate = new Date(startDate);
                 currentDate.setDate(startDate.getDate() + index);
@@ -1923,11 +2058,16 @@
                 th.innerHTML = `Jour ${index}<br><span class="text-xs font-normal">${day}/${month}</span>`;
             });
         };
+        
+        // Met à jour les en-têtes des 4 tableaux
         updateHeaders('#prescription-table thead tr:first-child th[colspan="8"]');
         updateHeaders('#pancarte-table thead tr:first-child th[colspan="3"]');
+        updateHeaders('#glycemie-table thead tr:first-child th[colspan="3"]');
         updateHeaders('#care-diagram-table thead tr:first-child th[colspan="8"]');
+        
         if (pancarteChartInstance) updatePancarteChart();
     }
+    
     function changeTab(event, tabId) {
         document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
         const activeSection = document.getElementById(tabId);
@@ -2443,38 +2583,104 @@
         endLabel.style.transform = 'translateX(4px)';
     }
     
+    // MODIFIÉ : updatePancarteChart (Poids et Glycémie retirés, Diurèse modifiée)
     function updatePancarteChart() {
         const table = document.getElementById('pancarte-table');
         const entryDateVal = document.getElementById('patient-entry-date').value;
         const startDate = entryDateVal ? new Date(entryDateVal) : new Date();
+        
+        // MODIFIÉ : Labels pour Matin, Soir, Nuit
         const labels = Array.from({ length: 33 }).map((_, i) => {
             const dayOffset = Math.floor(i / 3);
-            const timeOfDay = ['Matin', 'Soir', 'Nuit'][i % 3];
+            const timeOfDay = ['Matin', 'Soir', 'Nuit'][i % 3]; 
             const currentDate = new Date(startDate);
             currentDate.setDate(startDate.getDate() + dayOffset);
             return `${currentDate.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'})} ${timeOfDay}`;
         });
-        const dataSetsConfig = { 'Pouls (/min)': { yAxisID: 'y1', borderColor: '#ef4444' }, 'Tension (mmHg)': { type: 'bar', yAxisID: 'y', backgroundColor: '#f9731640' }, 'Température (°C)': { yAxisID: 'y3', borderColor: '#3b82f6' }, 'SpO2 (%)': { yAxisID: 'y4', borderColor: '#10b981' }, 'Douleur (EVA /10)': { yAxisID: 'y2', borderColor: '#8b5cf6' }};
+
+        // MODIFIÉ : dataSetsConfig (Poids retiré, Diurèse modifiée)
+        const dataSetsConfig = { 
+            'Pouls (/min)': { yAxisID: 'y1', borderColor: '#ef4444' }, 
+            'Tension (mmHg)': { type: 'bar', yAxisID: 'y', backgroundColor: '#f9731640' }, 
+            'Température (°C)': { yAxisID: 'y3', borderColor: '#3b82f6' }, 
+            'SpO2 (%)': { yAxisID: 'y4', borderColor: '#10b981' }, 
+            'Douleur (EVA /10)': { yAxisID: 'y2', borderColor: '#8b5cf6' },
+            // 'Poids (kg)' est retiré
+            //Suppression de la diurèse dans le graph 'Diurèse (L)': { 
+            //    type: 'bar', 
+            //    yAxisID: 'y6', // Axe dédié
+            //    backgroundColor: '#facc15', // Jaune opaque
+            //    barPercentage: 1.0, 
+            //    categoryPercentage: 1.0 
+            //}
+            // 'Glycémie (g/L)' n'est pas ici
+        };
+
         const datasets = Array.from(table.querySelectorAll('tbody tr')).map(row => {
             const paramName = row.cells[0].textContent.trim();
-            let data = Array.from(row.querySelectorAll('input')).map(input => {
-                if (paramName === 'Tension (mmHg)' && input.value.includes('/')) {
-                    const parts = input.value.split('/');
-                    return [parseFloat(parts[1]), parseFloat(parts[0])];
-                }
-                const value = parseFloat(input.value.replace(',', '.'));
-                return isNaN(value) ? null : value;
-            }); 
-            return { label: paramName, data, type: 'line', tension: 0.2, borderWidth: 2, spanGaps: true, pointBackgroundColor: dataSetsConfig[paramName].borderColor, ...dataSetsConfig[paramName] };
-        });
+            
+            // Filtre les paramètres non désirés (Poids, et tout ce qui n'est pas dans config)
+            if (!dataSetsConfig[paramName]) {
+                return null;
+            }
+            
+            const inputs = Array.from(row.querySelectorAll('input'));
+            let data;
+
+            if (paramName === 'Diurèse (L)') {
+                // Ligne avec 1 seule donnée (11 inputs)
+                data = [];
+                inputs.forEach(input => {
+                    const value = parseFloat(input.value.replace(',', '.'));
+                    data.push(isNaN(value) ? null : value); // Point du Matin
+                    data.push(null); // Point du Soir
+                    data.push(null); // Point du Nuit
+                });
+            } else {
+                // Lignes standard (33 inputs)
+                data = inputs.map(input => {
+                    if (paramName === 'Tension (mmHg)' && input.value.includes('/')) {
+                        const parts = input.value.split('/');
+                        return [parseFloat(parts[1]), parseFloat(parts[0])]; // [min, max]
+                    }
+                    const value = parseFloat(input.value.replace(',', '.'));
+                    return isNaN(value) ? null : value;
+                });
+            }
+             
+            return { 
+                label: paramName, 
+                data, 
+                type: 'line', // type par défaut
+                tension: 0.2, 
+                borderWidth: 2, 
+                spanGaps: true, 
+                pointBackgroundColor: dataSetsConfig[paramName].borderColor || '#000', 
+                ...dataSetsConfig[paramName] // Applique la config (ex: change type en 'bar')
+            };
+        }).filter(ds => ds !== null); // Enlève les lignes filtrées (Poids, Glycémie)
+
         const ctx = document.getElementById('pancarteChart').getContext('2d');
         if (pancarteChartInstance) pancarteChartInstance.destroy();
+        
         pancarteChartInstance = new Chart(ctx, {
-            type: 'bar', data: { labels, datasets },
+            type: 'bar', 
+            data: { labels, datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
+                    // Axe Y principal (Gauche)
                     y: { position: 'left', title: { display: true, text: 'Tension (mmHg)' }, min: 0, max: 200 },
+                    // Axe Diurèse (Gauche) - MODIFIÉ : 'offset: false' (ou absent)
+                    //y6: { 
+                    //    position: 'left', 
+                    //    title: { display: true, text: 'Diurèse (L)' }, 
+                    //    grid: { drawOnChartArea: false }, 
+                    //    min: 0, 
+                    //    max: 10, // Echelle 0-10L
+                    //    ticks: { stepSize: 1 } // Graduation tous les 1L
+                    //},
+                    // Axes Y (Droite)
                     y1: { position: 'right', title: { display: true, text: 'Pouls' }, grid: { drawOnChartArea: false }, min: 0, max: 200 },
                     y2: { position: 'right', title: { display: true, text: 'Douleur' }, grid: { drawOnChartArea: false }, max: 10, min: 0 },
                     y3: { position: 'right', title: { display: true, text: 'Température' }, grid: { drawOnChartArea: false }, min: 36, max: 41, ticks: { stepSize: 0.5 } },
