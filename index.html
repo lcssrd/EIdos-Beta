@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Parkinsans:wght@600&display=swap" rel="stylesheet">
     
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
     <link href="style.css" rel="stylesheet">
 
     <style>
@@ -24,98 +26,116 @@
         .text-shadow {
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        /* Style pour l'intégration du logo dans le hero */
         .hero-logo-container {
             display: flex;
             align-items: center;
-            justify-content: center; /* Centre horizontalement */
-            margin-bottom: 2rem; /* Espace sous le logo */
-            color: white; /* Couleur du logo et texte dans le hero */
-            padding-top: 3rem; /* Pour éviter que le logo soit trop collé en haut */
+            justify-content: center;
+            margin-bottom: 2rem;
+            color: white;
+            padding-top: 3rem;
         }
         .hero-logo-container svg {
-            height: 4rem; /* Plus grand pour le hero */
+            height: 4rem;
             width: 4rem;
-            color: #d1fae5; /* Cyan clair pour le logo */
+            color: #d1fae5;
         }
         .hero-logo-container .font-custom-title {
-            font-size: 3.5rem; /* Plus grand pour le hero */
+            font-size: 3.5rem;
             margin-left: 0.75rem;
-            line-height: 1; /* S'assure que le texte ne déborde pas */
+            line-height: 1;
+        }
+
+        /* NOUVEAU : Classe pour l'effet Glassmorphisme */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25); /* Transparence légère */
+            backdrop-filter: blur(10px); /* L'effet de flou */
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18); /* Bordure subtile */
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); /* Ombre douce */
+        }
+        
+        /* NOUVEAU : Animation de flottement pour les icônes */
+        .icon-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
         }
     </style>
 </head>
-<body class="bg-gray-100">
-
-    <section class="bg-gradient-to-br from-teal-500 to-cyan-600 text-white pt-10 pb-24 px-6 text-center">
-        <div class="hero-logo-container">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
-            </svg>
-            <span class="font-custom-title">EIdos</span>
-        </div>
-        
-        <h1 class="text-5xl md:text-6xl font-custom-title text-shadow mb-6">
-            Arrêtez de <span class="text-cyan-200">décrire</span> le raisonnement clinique.
-            <br>Faites-le <span class="text-cyan-200">pratiquer</span>.
-        </h1>
-        <p class="text-xl md:text-2xl font-light text-cyan-100 max-w-3xl mx-auto mb-10">
-            EIdos est le simulateur de Dossier Patient Informatisé (DPI) conçu pour les formateurs en santé.
-            Créez des scénarios réalistes et évolutifs pour vos étudiants, en toute sécurité.
-        </p>
-        <div class="space-x-4">
-            <a href="simul.html" class="inline-block px-8 py-4 text-lg font-semibold text-teal-700 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105">
-                <i class="fas fa-sign-in-alt mr-2"></i> Connexion à l'espace de simulation
-            </a>
-            <a href="auth.html" class="inline-block px-8 py-4 text-lg font-semibold text-white bg-cyan-700 rounded-lg shadow-lg hover:bg-cyan-800 transition-all duration-300 transform hover:scale-105">
-                <i class="fas fa-user-plus mr-2"></i> Créer un compte Formateur
-            </a>
+<body class="bg-white"> <section class="bg-gradient-to-br from-teal-500 to-cyan-600 text-white pt-10 pb-24 px-6 text-center overflow-hidden">
+        <div data-aos="fade-down">
+            <div class="hero-logo-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
+                </svg>
+                <span class="font-custom-title">EIdos</span>
+            </div>
+            
+            <h1 class="text-5xl md:text-6xl font-custom-title text-shadow mb-6">
+                Arrêtez de <span class="text-cyan-200">décrire</span> le raisonnement clinique.
+                <br>Faites-le <span class="text-cyan-200">pratiquer</span>.
+            </h1>
+            <p class="text-xl md:text-2xl font-light text-cyan-100 max-w-3xl mx-auto mb-10">
+                EIdos est le simulateur de Dossier Patient Informatisé (DPI) conçu pour les formateurs en santé.
+                Créez des scénarios réalistes et évolutifs pour vos étudiants, en toute sécurité.
+            </p>
+            <div class="space-x-4">
+                <a href="simul.html" class="inline-block px-8 py-4 text-lg font-semibold text-teal-700 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Connexion à l'espace de simulation
+                </a>
+                <a href="auth.html" class="inline-block px-8 py-4 text-lg font-semibold text-white bg-cyan-700 rounded-lg shadow-lg hover:bg-cyan-800 transition-all duration-300 transform hover:scale-105">
+                    <i class="fas fa-user-plus mr-2"></i> Créer un compte Formateur
+                </a>
+            </div>
         </div>
     </section>
 
-    <section class="py-20 bg-gradient-to-b from-white to-gray-50">
+    <section class="py-20 bg-gradient-to-b from-white to-cyan-50" data-aos="fade-up">
         <div class="container mx-auto px-6 max-w-5xl">
             <h2 class="text-4xl font-bold text-center text-gray-800 mb-12">Le pont entre la théorie et le stage</h2>
             <div class="grid md:grid-cols-3 gap-8 text-center">
                 
-                <div class="p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <div class="p-6 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 glass-effect" data-aos="fade-up" data-aos-delay="100">
                     <div class="flex justify-center mb-4">
-                        <span class="flex items-center justify-center h-16 w-16 bg-red-100 text-red-600 rounded-full text-3xl shadow">
+                        <span class="flex items-center justify-center h-16 w-16 bg-red-100 text-red-600 rounded-full text-3xl shadow icon-float">
                             <i class="fas fa-file-alt"></i>
                         </span>
                     </div>
                     <h3 class="text-2xl font-semibold mb-3">Le Problème</h3>
-                    <p class="text-gray-600">Les cas papier sont statiques et ne reflètent pas la complexité d'un DPI. Les vrais dossiers en stage sont complexes, chronophages et présentent un risque pour la sécurité des données.</p>
+                    <p class="text-gray-700">Les cas papier sont statiques et ne reflètent pas la complexité d'un DPI. Les vrais dossiers en stage sont complexes, chronophages et présentent un risque pour la sécurité des données.</p>
                 </div>
                 
-                <div class="p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <div class="p-6 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 glass-effect" data-aos="fade-up" data-aos-delay="200">
                     <div class="flex justify-center mb-4">
-                        <span class="flex items-center justify-center h-16 w-16 bg-green-100 text-green-600 rounded-full text-3xl shadow">
+                        <span class="flex items-center justify-center h-16 w-16 bg-green-100 text-green-600 rounded-full text-3xl shadow icon-float" style="animation-delay: 1s;">
                             <i class="fas fa-desktop"></i>
                         </span>
                     </div>
                     <h3 class="text-2xl font-semibold mb-3">La Solution EIdos</h3>
-                    <p class="text-gray-600">Un simulateur réaliste qui imite l'interface et les fonctionnalités d'un vrai DPI. Vos étudiants pratiquent les transmissions, les prescriptions et l'analyse de données dans un environnement contrôlé.</p>
+                    <p class="text-gray-700">Un simulateur réaliste qui imite l'interface et les fonctionnalités d'un vrai DPI. Vos étudiants pratiquent les transmissions, les prescriptions et l'analyse de données dans un environnement contrôlé.</p>
                 </div>
 
-                <div class="p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <div class="p-6 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 glass-effect" data-aos="fade-up" data-aos-delay="300">
                     <div class="flex justify-center mb-4">
-                        <span class="flex items-center justify-center h-16 w-16 bg-blue-100 text-blue-600 rounded-full text-3xl shadow">
+                        <span class="flex items-center justify-center h-16 w-16 bg-blue-100 text-blue-600 rounded-full text-3xl shadow icon-float" style="animation-delay: 2s;">
                             <i class="fas fa-users-cog"></i>
                         </span>
                     </div>
                     <h3 class="text-2xl font-semibold mb-3">Votre Contrôle</h3>
-                    <p class="text-gray-600">Avec EIdos, vous préparez des cas patients et définissez les permissions pour les étudiants. Comme dans un vrai DPI, vous pouvez restreindre les permissions en fonctions des rôles. Ainsi cela permet de guider l'apprentissage.</p>
+                    <p class="text-gray-700">Avec EIdos, vous préparez des cas patients et définissez les permissions pour les étudiants. Comme dans un vrai DPI, vous pouvez restreindre les permissions en fonctions des rôles. Ainsi cela permet de guider l'apprentissage.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section class="py-20 bg-gradient-to-b from-cyan-50 to-white" data-aos="fade-up">
         <div class="container mx-auto px-6 max-w-5xl text-center">
             
             <div class="flex justify-center mb-6">
-                <span class="flex items-center justify-center h-16 w-16 bg-teal-100 text-teal-600 rounded-full text-3xl shadow">
+                <span class="flex items-center justify-center h-16 w-16 bg-teal-100 text-teal-600 rounded-full text-3xl shadow icon-float">
                     <i class="fas fa-user-md"></i> 
                 </span>
             </div>
@@ -132,19 +152,19 @@
         </div>
     </section>
 
-    <section class="py-20 bg-gradient-to-b from-white to-gray-50">
+    <section class="py-20 bg-gradient-to-b from-white to-teal-50" data-aos="fade-up">
         <div class="container mx-auto px-6 max-w-6xl">
             <h2 class="text-4xl font-bold text-center text-gray-800 mb-16">Des possibilités pédagogiques infinies</h2>
             <div class="grid md:grid-cols-2 gap-10">
                 
-                <div class="bg-white p-8 rounded-2xl shadow-xl transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="p-8 rounded-2xl shadow-xl transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 glass-effect" data-aos="fade-up" data-aos-delay="100">
                     <div class="flex items-center mb-5">
                         <span class="flex items-center justify-center h-12 w-12 bg-indigo-100 text-indigo-600 rounded-full text-2xl mr-4">
                             <i class="fas fa-chart-line"></i>
                         </span>
                         <h3 class="text-3xl font-semibold text-indigo-800">Cas 1 : Le Scénario Évolutif</h3>
                     </div>
-                    <p class="text-gray-600 mb-4">
+                    <p class="text-gray-700 mb-4">
                         Évaluez la capacité d'adaptation de vos étudiants face à une situation qui se dégrade ou s'améliore.
                     </p>
                     <ul class="list-decimal list-inside space-y-3 text-gray-700">
@@ -161,14 +181,14 @@
                     <p class="mt-5 text-indigo-700 font-semibold bg-indigo-50 p-3 rounded-lg"><i class="fas fa-lightbulb mr-2"></i>Idéal pour travailler la réévaluation clinique et la priorisation des actions.</p>
                 </div>
 
-                <div class="bg-white p-8 rounded-2xl shadow-xl transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="p-8 rounded-2xl shadow-xl transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 glass-effect" data-aos="fade-up" data-aos-delay="200">
                     <div class="flex items-center mb-5">
                         <span class="flex items-center justify-center h-12 w-12 bg-teal-100 text-teal-600 rounded-full text-2xl mr-4">
                             <i class="fas fa-users"></i>
                         </span>
                         <h3 class="text-3xl font-semibold text-teal-800">Cas 2 : La Continuité des Soins</h3>
                     </div>
-                    <p class="text-gray-600 mb-4">
+                    <p class="text-gray-700 mb-4">
                         Travaillez la communication interprofessionnelle et la traçabilité des informations.
                     </p>
                     <ul class="list-decimal list-inside space-y-3 text-gray-700">
@@ -189,24 +209,24 @@
         </div>
     </section>
     
-    <section class="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section class="py-20 bg-gradient-to-b from-teal-50 to-white" data-aos="fade-up">
         <div class="container mx-auto px-6 max-w-6xl">
             <h2 class="text-4xl font-bold text-center text-gray-800 mb-16">Un outil complet à votre service</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 text-center">
                 
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-user-friends text-teal-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Gestion d'étudiants</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-pills text-indigo-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Prescriptions (IV, PO...)</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-notes-medical text-rose-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Observations Médicales</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-calendar-alt text-rose-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Diagramme de Soins</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-exchange-alt text-green-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Transmissions Ciblées</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-vial text-purple-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Résultats de Biologie</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-chart-line text-orange-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Pancarte de Constantes</h4></div>
-                <div class="p-4 transform transition-all duration-300 hover:scale-110"><i class="fas fa-lock text-gray-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Gestion des Permissions</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="50"><i class="fas fa-user-friends text-teal-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Gestion d'étudiants</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="100"><i class="fas fa-pills text-indigo-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Prescriptions (IV, PO...)</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="150"><i class="fas fa-notes-medical text-rose-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Observations Médicales</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="200"><i class="fas fa-calendar-alt text-rose-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Diagramme de Soins</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="250"><i class="fas fa-exchange-alt text-green-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Transmissions Ciblées</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="300"><i class="fas fa-vial text-purple-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Résultats de Biologie</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="350"><i class="fas fa-chart-line text-orange-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Pancarte de Constantes</h4></div>
+                <div class="p-4 transform transition-all duration-300 hover:scale-110" data-aos="fade-up" data-aos-delay="400"><i class="fas fa-lock text-gray-600 text-4xl mb-3"></i><h4 class="text-lg font-semibold">Gestion des Permissions</h4></div>
             </div>
         </div>
     </section>
 
-    <section class="py-20 bg-gradient-to-b from-gray-800 to-gray-900 text-white">
+    <section class="py-20 bg-gradient-to-b from-gray-800 to-gray-900 text-white" data-aos="fade-up">
         <div class="container mx-auto px-6 text-center">
             <h2 class="text-4xl font-bold mb-6">Prêt à transformer votre pédagogie ?</h2>
             <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">Créez votre compte formateur pour commencer à sauvegarder vos scénarios et à gérer vos étudiants.</p>
@@ -226,6 +246,14 @@
             </div>
         </div>
     </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800, // Durée des animations
+            once: true, // L'animation ne se joue qu'une fois
+        });
+    </script>
 
 </body>
 </html>
