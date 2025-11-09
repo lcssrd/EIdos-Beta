@@ -76,10 +76,7 @@
                         <button id="export-json-btn" type="button" title="Exporter en .json" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-file-export text-white"></i>
                         </button>
-
-                        <button id="refresh-page-btn" type="button" title="Rafraîchir les données" class="p-2 rounded-full hover:bg-white/20 transition-colors">
-                            <i class="fas fa-sync-alt text-white fa-beat"></i>
-                        </button>
+                        
                         <input type="file" id="import-file" accept=".json" class="hidden"> 
                         
                         <button id="clear-current-patient-btn" type="button" title="Effacer le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
@@ -198,7 +195,15 @@
                             </div>
                         </div>
                         <div id="observations" class="content-section">
-                            <div class="card p-6"><h2 class="card-header">Suivi Médical</h2><div id="observations-list" class="space-y-8 mt-4"></div></div>
+                            <div class="card p-6 relative">
+                                <h2 class="card-header">Suivi Médical</h2>
+                                <button type="button" id="sort-observations-btn" data-sort-order="desc" 
+                                        class="absolute top-6 right-6 text-gray-500 hover:text-teal-600 transition-colors p-1 rounded-md" 
+                                        title="Trier (Plus récent en haut)">
+                                    <i class="fas fa-sort-amount-down"></i>
+                                </button>
+                                <div id="observations-list" class="space-y-8 mt-4"></div>
+                            </div>
                             <div class="card p-6">
                                 <h2 class="card-header">Ajouter une observation médicale</h2>
                                 <form id="new-observation-form" class="space-y-4">
@@ -248,7 +253,15 @@
                              </div>
                         </div>
                         <div id="transmissions" class="content-section">
-                            <div class="card p-6"><h2 class="card-header">Transmissions Soignantes</h2><div id="transmissions-list-ide" class="space-y-8 mt-4"></div></div>
+                            <div class="card p-6 relative">
+                                <h2 class="card-header">Transmissions Soignantes</h2>
+                                <button type="button" id="sort-transmissions-btn" data-sort-order="desc" 
+                                        class="absolute top-6 right-6 text-gray-500 hover:text-teal-600 transition-colors p-1 rounded-md" 
+                                        title="Trier (Plus récent en haut)">
+                                    <i class="fas fa-sort-amount-down"></i>
+                                </button>
+                                <div id="transmissions-list-ide" class="space-y-8 mt-4"></div>
+                            </div>
                             <div class="card p-6">
                                 <h2 class="card-header">Ajouter une transmission</h2>
                                 <form id="new-transmission-form-2" class="space-y-4">
@@ -362,5 +375,3 @@
     
 </body>
 </html>
-
-
