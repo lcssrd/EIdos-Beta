@@ -434,13 +434,8 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
  * Cible TOUTES les colonnes d'heure dans les en-têtes des
  * tableaux de prescription et de diagramme de soins.
 */
-/* =================================================================
- * DEBUT MODIFICATION BUG 2 : Centrage Diagramme Soins
- * =================================================================
- * La règle ne s'applique plus qu'aux prescriptions.
- * Le diagramme de soins utilisera le centrage par défaut.
-*/
-#prescription-thead .small-col {
+#prescription-thead .small-col,
+#care-diagram-thead .small-col {
     position: relative; 
     
     /* * Décale le texte (qui est centré dans sa cellule) de 50% de 
@@ -453,7 +448,43 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
     /* Empêche que le texte décalé ne soit coupé */
     overflow: visible; 
 }
-/* =================================================================
- * FIN MODIFICATION BUG 2
- * =================================================================
+
+/*
+ * NOUVEAU : Colonne "sticky" (fixe) pour les tableaux de pancarte
+ * S'applique à la première cellule (th et td) de chaque ligne
+ * dans les tableaux #pancarte-table et #glycemie-table.
 */
+#pancarte-table th:first-child,
+#pancarte-table td:first-child,
+#glycemie-table th:first-child,
+#glycemie-table td:first-child {
+    position: -webkit-sticky;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+}
+
+/* Assure que l'en-tête sticky (Jour 1, Jour 2...) passe au-dessus 
+   de la colonne de paramètre sticky */
+#pancarte-table thead th,
+#glycemie-table thead th {
+    z-index: 11;
+}
+
+/* Assure que la cellule du coin (Paramètres) est au-dessus de tout */
+#pancarte-table thead tr:first-child th:first-child,
+#glycemie-table thead tr:first-child th:first-child {
+    z-index: 12;
+}
+
+/* Assure un fond opaque pour les cellules sticky pour 
+   cacher le contenu qui défile en dessous */
+#pancarte-table td:first-child,
+#glycemie-table td:first-child {
+    background-color: white;
+}
+
+#pancarte-table thead th:first-child,
+#glycemie-table thead th:first-child {
+    background-color: #f9fafb; /* Correspond à bg-gray-100 */
+}
