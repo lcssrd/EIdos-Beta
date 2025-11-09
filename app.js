@@ -429,6 +429,84 @@
         }
     }
 
+    // =================================================================
+    // NOUVELLES FONCTIONS DE TRI
+    // =================================================================
+
+    /**
+     * Applique le tri à une liste (observations ou transmissions) 
+     * en fonction de l'état de son bouton de tri.
+     * @param {'observations' | 'transmissions'} type - Le type de liste à trier.
+     */
+    function applySort(type) {
+        const btnId = `sort-${type}-btn`;
+        const listId = (type === 'observations') ? 'observations-list' : 'transmissions-list-ide';
+        
+        const button = document.getElementById(btnId);
+        const list = document.getElementById(listId);
+        
+        if (!button || !list) return;
+
+        // Lit l'ordre de tri actuel depuis le bouton
+        const sortOrder = button.dataset.sortOrder;
+        
+        // Récupère tous les éléments de la liste
+        const items = Array.from(list.querySelectorAll('.timeline-item'));
+        
+        // Trie les éléments en se basant sur leur data-date-offset
+        items.sort((a, b) => {
+            const offsetA = parseInt(a.dataset.dateOffset, 10);
+            const offsetB = parseInt(b.dataset.dateOffset, 10);
+            
+            if (sortOrder === 'desc') {
+                // Plus récent en haut (offset le plus grand)
+                return offsetB - offsetA; 
+            } else {
+                // Plus ancien en haut (offset le plus petit)
+                return offsetA - offsetB;
+            }
+        });
+
+        // Ré-insère les éléments dans le DOM dans le bon ordre
+        items.forEach(item => list.appendChild(item));
+    }
+
+    /**
+     * Bascule l'ordre de tri (ASC/DESC) pour les observations ou les transmissions.
+     * @param {'observations' | 'transmissions'} type - Le type de liste à trier.
+     */
+    function toggleSort(type) {
+        const btnId = `sort-${type}-btn`;
+        const button = document.getElementById(btnId);
+        const icon = button.querySelector('i');
+        
+        if (!button || !icon) return;
+
+        // Détermine le nouvel ordre
+        const currentOrder = button.dataset.sortOrder;
+        const newOrder = (currentOrder === 'desc') ? 'asc' : 'desc';
+        
+        // Met à jour l'état et l'icône du bouton
+        button.dataset.sortOrder = newOrder;
+        if (newOrder === 'desc') {
+            button.title = "Trier (Plus récent en haut)";
+            icon.classList.remove('fa-sort-amount-up');
+            icon.classList.add('fa-sort-amount-down');
+        } else {
+            button.title = "Trier (Plus ancien en haut)";
+            icon.classList.remove('fa-sort-amount-down');
+            icon.classList.add('fa-sort-amount-up');
+        }
+
+        // Applique le nouveau tri
+        applySort(type);
+    }
+
+    // =================================================================
+    // MISES À JOUR DES FONCTIONS EXISTANTES
+    // =================================================================
+
+
     async function loadData(patientId) {
         if (!patientId) return;
         
@@ -507,6 +585,7 @@
                     
                     addObservation({ ...obsData, dateOffset: dateOffset, formattedDate: formattedDate }, true);
                 });
+                applySort('observations'); // AJOUTÉ : Applique le tri après le chargement
             }
 
             // 3. Charger les Transmissions (avec rétro-compatibilité)
@@ -527,6 +606,7 @@
                     
                     addTransmission({ ...transData, dateOffset: dateOffset, formattedDate: formattedDate }, true);
                 });
+                applySort('transmissions'); // AJOUTÉ : Applique le tri après le chargement
             }
 
             // 4. Charger le Diagramme de Soins (inchangé)
@@ -1286,23 +1366,15 @@
             pancarteTbody.innerHTML = html;
         }
 
-        // =================================================================
-        // DEBUT MODIFICATION BUG 2 : Diagramme de Soins
-        // =================================================================
         const careDiagramThead = document.getElementById('care-diagram-thead');
         if (careDiagramThead) {
             html = '<tr><th class="p-2 text-left min-w-[220px]">Soin / Surveillance</th>';
-            // MODIFICATION: colspan="3" (au lieu de 8)
-            for(let i=0; i<11; i++) { html += `<th colspan="3" class="border-l">Jour ${i}</th>`;}
+            for(let i=0; i<11; i++) { html += `<th colspan="8" class="border-l">Jour ${i}</th>`;}
             html += '</tr><tr><th class="min-w-[220px]"></th>';
-            
-            // MODIFICATION: Heures (Matin, Midi, Soir)
-            const hours = ['Matin', 'Midi', 'Soir'];
-            
+            const hours = ['0h', '3h', '6h', '9h', '12h', '15h', '18h', '21h'];
             for(let i=0; i<11; i++) { 
                 for (let j = 0; j < hours.length; j++) {
                     const borderClass = (j === 0) ? 'border-l' : '';
-                    // On garde small-col pour le style, mais le CSS va changer
                     html += `<th class="${borderClass} p-1 text-center small-col">${hours[j]}</th>`;
                 }
             }
@@ -1310,9 +1382,6 @@
             html += '</tr>';
             careDiagramThead.innerHTML = html;
         }
-        // =================================================================
-        // FIN MODIFICATION BUG 2
-        // =================================================================
     }
     
     function generateBioRows(title, data) {
@@ -1354,16 +1423,6 @@
         
         document.getElementById('export-json-btn').addEventListener('click', exportPatientAsJson);
         
-        // =================================================================
-        // DEBUT MODIFICATION : Bouton Refresh
-        // =================================================================
-        document.getElementById('refresh-page-btn').addEventListener('click', () => {
-            location.reload();
-        });
-        // =================================================================
-        // FIN MODIFICATION : Bouton Refresh
-        // =================================================================
-        
         document.getElementById('clear-current-patient-btn').addEventListener('click', clearCurrentPatientData);
         document.getElementById('toggle-fullscreen-btn').addEventListener('click', toggleFullscreen);
 
@@ -1398,6 +1457,10 @@
         document.getElementById('add-prescription-btn').addEventListener('click', () => addPrescription(null, false));
         document.getElementById('add-transmission-btn').addEventListener('click', () => addTransmission(null, false));
         document.getElementById('add-care-diagram-btn').addEventListener('click', addCareDiagramRow);
+
+        // AJOUTÉ : Listeners pour les nouveaux boutons de tri
+        document.getElementById('sort-observations-btn').addEventListener('click', () => toggleSort('observations'));
+        document.getElementById('sort-transmissions-btn').addEventListener('click', () => toggleSort('transmissions'));
 
         document.getElementById('observations-list').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('button[title*="Supprimer"]');
@@ -1862,7 +1925,7 @@
         };
         updateHeaders('#prescription-table thead tr:first-child th[colspan="8"]');
         updateHeaders('#pancarte-table thead tr:first-child th[colspan="3"]');
-        updateHeaders('#care-diagram-table thead tr:first-child th[colspan="3"]'); // MODIFIÉ: colspan 3
+        updateHeaders('#care-diagram-table thead tr:first-child th[colspan="8"]');
         if (pancarteChartInstance) updatePancarteChart();
     }
     function changeTab(event, tabId) {
@@ -1933,20 +1996,28 @@
         item.querySelector('h3').textContent = `${formattedDate} - ${author.toUpperCase()}`;
         item.querySelector('p').textContent = text;
         
-        document.getElementById('observations-list').prepend(item);
+        // MODIFIÉ : Logique d'insertion
+        const list = document.getElementById('observations-list');
+
+        if (fromLoad) {
+            // Pendant le chargement, on ajoute toujours à la fin.
+            // La fonction applySort() s'occupera de l'ordre à la fin.
+            list.appendChild(item); 
+        } else {
+            // Lors d'un ajout manuel, on respecte l'ordre de tri actuel.
+            const sortBtn = document.getElementById('sort-observations-btn');
+            const sortOrder = sortBtn ? sortBtn.dataset.sortOrder : 'desc';
+
+            if (sortOrder === 'desc') {
+                list.prepend(item); // "Plus récent en haut"
+            } else {
+                list.appendChild(item); // "Plus ancien en haut"
+            }
+        }
+        
         if (!fromLoad) {
             document.getElementById('new-observation-form').reset();
         }
-        
-        // =================================================================
-        // DEBUT MODIFICATION BUG 1 : Sauvegarde
-        // =================================================================
-        if (!fromLoad) {
-            saveData(activePatientId);
-        }
-        // =================================================================
-        // FIN MODIFICATION BUG 1
-        // =================================================================
     }
     
     function addTransmission(data = null, fromLoad = false) {
@@ -2004,20 +2075,27 @@
             .replace(/Résultat :/g, '<br><strong class="text-gray-900">Résultat :</strong>');
         item.querySelector('p').innerHTML = formattedText;
         
-        document.getElementById('transmissions-list-ide').prepend(item);
+        // MODIFIÉ : Logique d'insertion
+        const list = document.getElementById('transmissions-list-ide');
+
+        if (fromLoad) {
+            // Pendant le chargement, on ajoute toujours à la fin.
+            list.appendChild(item);
+        } else {
+            // Lors d'un ajout manuel, on respecte l'ordre de tri actuel.
+            const sortBtn = document.getElementById('sort-transmissions-btn');
+            const sortOrder = sortBtn ? sortBtn.dataset.sortOrder : 'desc';
+
+            if (sortOrder === 'desc') {
+                list.prepend(item); // "Plus récent en haut"
+            } else {
+                list.appendChild(item); // "Plus ancien en haut"
+            }
+        }
+        
         if (!fromLoad) {
             document.getElementById('new-transmission-form-2').reset();
         }
-        
-        // =================================================================
-        // DEBUT MODIFICATION BUG 1 : Sauvegarde
-        // =================================================================
-        if (!fromLoad) {
-            saveData(activePatientId);
-        }
-        // =================================================================
-        // FIN MODIFICATION BUG 1
-        // =================================================================
     }
 
     function addPrescription(data = null, fromLoad = false) {
@@ -2116,16 +2194,6 @@
         if (!fromLoad) {
             document.getElementById('new-prescription-form').reset();
         }
-        
-        // =================================================================
-        // DEBUT MODIFICATION BUG 1 : Sauvegarde
-        // =================================================================
-        if (!fromLoad) {
-            saveData(activePatientId);
-        }
-        // =================================================================
-        // FIN MODIFICATION BUG 1
-        // =================================================================
     }
     
     function addCareDiagramRow() {
@@ -2146,29 +2214,15 @@
             </td>
         `;
         
-        // =================================================================
-        // DEBUT MODIFICATION BUG 2 : 3 colonnes
-        // =================================================================
         for(let i=0; i<11; i++) {
-            for (let j = 0; j < 3; j++) { // MODIFICATION: 3 (au lieu de 8)
+            for (let j = 0; j < 8; j++) {
                 const borderClass = (j === 0) ? 'border-l' : '';
                 cellsHTML += `<td class="${borderClass} p-0 small-col"><input type="checkbox"></td>`;
             }
         }
-        // =================================================================
-        // FIN MODIFICATION BUG 2
-        // =================================================================
         
         newRow.innerHTML = cellsHTML;
         document.getElementById('new-care-form').reset();
-        
-        // =================================================================
-        // DEBUT MODIFICATION BUG 1 : Sauvegarde
-        // =================================================================
-        saveData(activePatientId);
-        // =================================================================
-        // FIN MODIFICATION BUG 1
-        // =================================================================
     }
 
     // --- Fonctions IV (inchangées) ---
@@ -2613,5 +2667,6 @@
     
     // Point d'entrée principal de l'application
     initApp(); 
+
 
 })(); // Fin de l'IIFE
