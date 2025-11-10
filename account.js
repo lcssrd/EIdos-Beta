@@ -149,7 +149,7 @@
         }
     }
 
-    // MODIFIÉ : Gère la nouvelle couleur "Free" et le style du bouton "Actuel"
+    // MODIFIÉ : Logique complète pour la cohérence des couleurs et l'état actif
     function updateSubscriptionButtons(activePlan, quoteUrl, quotePrice) {
         const planButtons = {
             'free': document.getElementById('sub-btn-free'),
@@ -158,122 +158,101 @@
             'centre': document.getElementById('sub-btn-centre')
         };
         
-        // --- Réinitialiser toutes les cartes ---
-        document.querySelectorAll('#content-subscription .card').forEach(card => {
-            // Cacher le badge
-            const badge = card.querySelector('.js-active-plan-badge');
-            if (badge) {
-                badge.classList.add('hidden');
+        // Définition des styles pour chaque plan (actif et inactif)
+        const planStyles = {
+            'free': {
+                borderActive: 'border-yellow-300',
+                badgeActive: ['bg-yellow-300', 'text-yellow-800'],
+                btnActive: ['bg-yellow-100', 'text-yellow-800', 'font-semibold'],
+                btnInactive: ['bg-yellow-50', 'hover:bg-yellow-100', 'text-yellow-700']
+            },
+            'independant': {
+                borderActive: 'border-teal-600',
+                badgeActive: ['bg-teal-600', 'text-white'],
+                btnActive: ['bg-teal-100', 'text-teal-800', 'font-semibold'],
+                btnInactive: ['bg-teal-600', 'hover:bg-teal-700', 'text-white']
+            },
+            'promo': {
+                borderActive: 'border-blue-600',
+                badgeActive: ['bg-blue-600', 'text-white'],
+                btnActive: ['bg-blue-100', 'text-blue-800', 'font-semibold'],
+                btnInactive: ['bg-blue-600', 'hover:bg-blue-700', 'text-white']
+            },
+            'centre': {
+                borderActive: 'border-indigo-600',
+                badgeActive: ['bg-indigo-600', 'text-white'],
+                btnActive: ['bg-indigo-100', 'text-indigo-800', 'font-semibold'],
+                // 'centre' a une logique inactive spéciale (devis ou contact)
+                btnInactiveQuote: ['bg-green-600', 'hover:bg-green-700', 'text-white'],
+                btnInactiveContact: ['bg-indigo-600', 'hover:bg-indigo-700', 'text-white']
             }
-            // Retirer les classes de surbrillance
-            card.classList.remove('shadow-xl', 'border-teal-600', 'border-2');
-            card.classList.add('hover:scale-[1.02]', 'hover:shadow-xl'); // Rétablir l'effet de survol
-        });
+        };
 
-
-        // --- Réinitialiser tous les boutons (sauf 'centre') ---
+        // --- 1. Réinitialiser TOUTES les cartes et TOUS les boutons ---
         for (const [plan, button] of Object.entries(planButtons)) {
-            if (plan !== 'centre') {
-                button.disabled = false;
-                button.innerHTML = 'Choisir ce plan'; // Utiliser innerHTML pour écraser l'icône
-                
-                // Retirer toutes les classes de statut (actif/inactif)
-                button.classList.remove(
-                    'bg-gray-200', 'cursor-not-allowed', // Ancien style "désactivé"
-                    'bg-teal-100', 'text-teal-800', 'font-semibold', // Nouveau style "actif"
-                    'text-white', // Style de bouton payant
-                    'bg-yellow-50', 'hover:bg-yellow-100', 'text-yellow-700', // Style "Free"
-                    'bg-teal-600', 'hover:bg-teal-700', // Style "Indépendant"
-                    'bg-blue-600', 'hover:bg-blue-700' // Style "Promo"
-                );
-                
-                // Ré-appliquer les couleurs d'origine
-                if(plan === 'free') {
-                    button.classList.add('bg-yellow-50', 'hover:bg-yellow-100', 'text-yellow-700');
-                } else if(plan === 'independant') {
-                    button.classList.add('bg-teal-600', 'hover:bg-teal-700', 'text-white');
-                } else if(plan === 'promo') {
-                    button.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white');
-                }
-            }
-        }
+            const card = button.closest('.card');
+            const badge = card.querySelector('.js-active-plan-badge');
+            
+            // Réinitialiser la carte
+            card.classList.remove('shadow-xl', 'border-2', ...Object.values(planStyles).map(s => s.borderActive));
+            card.classList.add('hover:scale-[1.02]', 'hover:shadow-xl');
+            
+            // Cacher le badge
+            badge.classList.add('hidden');
+            badge.classList.remove(...Object.values(planStyles).flatMap(s => s.badgeActive)); // Retire toutes les couleurs de badge
+            
+            // Réinitialiser le bouton
+            button.disabled = false;
+            button.innerHTML = 'Choisir ce plan';
+            button.classList.remove(
+                ...Object.values(planStyles).flatMap(s => s.btnActive),
+                ...Object.values(planStyles).flatMap(s => s.btnInactive),
+                ...(planStyles.centre.btnInactiveQuote),
+                ...(planStyles.centre.btnInactiveContact),
+                'cursor-not-allowed'
+            );
 
-        // --- Définir le bouton actif (pour free, independant, promo) ---
-        if (planButtons[activePlan] && activePlan !== 'centre') {
-            const activeButton = planButtons[activePlan];
-            
-            // --- Mise en surbrillance de la carte ---
-            const activeCard = activeButton.closest('.card');
-            if (activeCard) {
-                const badge = activeCard.querySelector('.js-active-plan-badge');
-                if (badge) {
-                    badge.classList.remove('hidden');
+            // Appliquer le style INACTIF correct
+            if (plan === 'centre') {
+                if (quoteUrl) {
+                    button.innerHTML = `Activer votre devis (${quotePrice || 'Voir devis'})`;
+                    button.classList.add(...planStyles.centre.btnInactiveQuote);
+                    button.onclick = () => { window.location.href = quoteUrl; };
+                } else {
+                    button.innerHTML = 'Demander un devis';
+                    button.classList.add(...planStyles.centre.btnInactiveContact);
+                    button.onclick = () => { switchTab('contact'); };
                 }
-                activeCard.classList.add('shadow-xl', 'border-teal-600', 'border-2');
-                activeCard.classList.remove('hover:scale-[1.02]', 'hover:shadow-xl'); 
+            } else {
+                button.classList.add(...planStyles[plan].btnInactive);
             }
-            
-            // --- MODIFIÉ : Appliquer le nouveau style "Plan actuel" ---
-            activeButton.disabled = true;
-            activeButton.innerHTML = '<i class="fas fa-check mr-2"></i> Plan actuel';
-            
-            // Retirer les couleurs conflictuelles
-            if(activePlan === 'free') activeButton.classList.remove('bg-yellow-50', 'hover:bg-yellow-100', 'text-yellow-700');
-            if(activePlan === 'independant') activeButton.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'text-white');
-            if(activePlan === 'promo') activeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
-            
-            // Ajouter les nouvelles classes de statut
-            activeButton.classList.add('bg-teal-100', 'text-teal-800', 'font-semibold', 'cursor-not-allowed'); 
         }
         
-        // --- Logique spécifique pour le bouton "Centre" ---
-        const centreButton = planButtons.centre;
-        if (activePlan === 'centre') {
-            
-             // --- Mise en surbrillance de la carte ---
-            const activeCard = centreButton.closest('.card');
-            if (activeCard) {
-                const badge = activeCard.querySelector('.js-active-plan-badge');
-                if (badge) {
-                    badge.classList.remove('hidden');
-                }
-                activeCard.classList.add('shadow-xl', 'border-teal-600', 'border-2');
-                activeCard.classList.remove('hover:scale-[1.02]', 'hover:shadow-xl'); 
-            }
-            
-            // --- MODIFIÉ : Appliquer le nouveau style "Plan actuel" ---
-            centreButton.disabled = true;
-            centreButton.innerHTML = '<i class="fas fa-check mr-2"></i> Plan Actuel';
-            
-            // Retirer toutes les autres couleurs
-            centreButton.classList.remove(
-                'bg-gray-200', 'text-gray-700', // Ancien style "désactivé" / "Nous contacter"
-                'bg-indigo-600', 'hover:bg-indigo-700', // Style "Nous contacter"
-                'bg-green-600', 'hover:bg-green-700', // Style "Activer devis"
-                'text-white'
-            );
-            
-            // Ajouter les nouvelles classes de statut
-            centreButton.classList.add('bg-teal-100', 'text-teal-800', 'font-semibold', 'cursor-not-allowed');
+        // --- 2. Appliquer le style ACTIF au plan sélectionné ---
+        if (planButtons[activePlan]) {
+            const styles = planStyles[activePlan];
+            const activeButton = planButtons[activePlan];
+            const activeCard = activeButton.closest('.card');
+            const activeBadge = activeCard.querySelector('.js-active-plan-badge');
 
-        } else if (quoteUrl) {
-            // Un devis est en attente
-            centreButton.disabled = false;
-            centreButton.innerHTML = `Activer votre devis (${quotePrice || 'Voir devis'})`;
-            centreButton.classList.remove('bg-gray-200', 'cursor-not-allowed', 'bg-indigo-600', 'hover:bg-indigo-700', 'bg-teal-100', 'text-teal-800', 'font-semibold');
-            centreButton.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white');
-            centreButton.onclick = () => {
-                window.location.href = quoteUrl; // Redirige vers le lien de paiement
-            };
-        } else {
-            // Comportement par défaut : Demander un devis
-            centreButton.disabled = false;
-            centreButton.innerHTML = 'Demander un devis';
-            centreButton.classList.remove('bg-gray-200', 'cursor-not-allowed', 'bg-green-600', 'hover:bg-green-700', 'bg-teal-100', 'text-teal-800', 'font-semibold');
-            centreButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white');
-            centreButton.onclick = () => {
-                switchTab('contact'); // Ouvre l'onglet contact
-            };
+            // Mettre la carte en surbrillance
+            activeCard.classList.add('shadow-xl', 'border-2', styles.borderActive);
+            activeCard.classList.remove('hover:scale-[1.02]', 'hover:shadow-xl'); // Supprimer le hover
+
+            // Afficher et colorer le badge
+            activeBadge.classList.remove('hidden');
+            activeBadge.classList.add(...styles.badgeActive);
+            
+            // Styliser le bouton comme "Actif"
+            activeButton.disabled = true;
+            activeButton.innerHTML = '<i class="fas fa-check mr-2"></i> Plan actuel';
+            activeButton.classList.remove(...Object.values(planStyles).flatMap(s => s.btnInactive)); // Nettoyer
+            activeButton.classList.add(...styles.btnActive, 'cursor-not-allowed');
+            
+            // Le plan 'Centre' n'a pas besoin de .onclick_handler quand il est actif
+            if (activePlan === 'centre') {
+                activeButton.onclick = null; 
+            }
         }
     }
 
