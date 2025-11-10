@@ -1384,6 +1384,15 @@
         mainContent.scrollTo({ top: 0, behavior: 'smooth' });
 
         applyPermissions();
+        
+        updateAgeDisplay();
+        updateJourHosp(); 
+        calculateAndDisplayIMC();
+        updateAllergyHighlight(); // <-- AJOUTER CETTE LIGNE
+
+        setTimeout(() => {
+            document.querySelectorAll('textarea.info-value').forEach(autoResize);
+        
     }
 
     // =================================================================
@@ -1956,6 +1965,30 @@
         }
         autoResize(imcEl);
     }
+    // Met en surbrillance le champ Allergies s'il est rempli.
+    function updateAllergyHighlight() {
+        const allergyTextarea = document.getElementById('atcd-allergies');
+        if (!allergyTextarea) return; // Sécurité
+
+        // On cible le parent '.info-item' pour appliquer le style
+        const allergyParentDiv = allergyTextarea.closest('.info-item');
+        if (!allergyParentDiv) return; 
+
+        // Vérifie si la valeur, une fois les espaces blancs retirés, n'est pas vide
+        const hasAllergies = allergyTextarea.value.trim().length > 0;
+
+        if (hasAllergies) {
+            allergyParentDiv.classList.add('highlight-orange');
+        } else {
+            allergyParentDiv.classList.remove('highlight-orange');
+        }
+    }
+
+    function updateJourHosp() {
+        const entryDateEl = document.getElementById('patient-entry-date');
+
+
+    
     function updateJourHosp() {
         const entryDateEl = document.getElementById('patient-entry-date');
         const jourHospEl = document.getElementById('patient-jour-hosp');
@@ -2923,3 +2956,4 @@
 
 
 })(); // Fin de l'IIFE
+
