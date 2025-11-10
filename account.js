@@ -673,6 +673,44 @@
             showCustomAlert("Erreur", err.message);
         }
     }
+    
+    /**
+     * NOUVEAU : Gère la demande de changement d'e-mail
+     */
+    async function handleChangeEmail(e) {
+        e.preventDefault();
+        
+        const newEmail = document.getElementById('new-email').value;
+        const password = document.getElementById('current-password-for-email').value;
+        
+        if (!newEmail || !password) {
+            showCustomAlert("Erreur", "Veuillez remplir tous les champs.");
+            return;
+        }
+        
+        try {
+            const headers = getAuthHeaders();
+            const response = await fetch(`${API_URL}/api/account/request-change-email`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ newEmail: newEmail, password: password })
+            });
+
+            if (handleAuthError(response)) return;
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Impossible de traiter la demande.");
+            }
+            
+            showCustomAlert("Demande envoyée", `Un e-mail de vérification a été envoyé à ${newEmail}. Veuillez cliquer sur le lien pour confirmer le changement.`);
+            document.getElementById('change-email-form').reset();
+
+        } catch (err) {
+            showCustomAlert("Erreur", err.message);
+        }
+    }
+
 
     /**
      * Gère la suppression du compte
@@ -977,6 +1015,7 @@
 
         // Listeners de la section Sécurité
         document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
+        document.getElementById('change-email-form').addEventListener('submit', handleChangeEmail); // NOUVEAU
         document.getElementById('delete-account-btn').addEventListener('click', handleDeleteAccount);
         
         // MODIFIÉ : Listeners de la section Abonnement
