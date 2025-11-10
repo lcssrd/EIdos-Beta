@@ -494,4 +494,22 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
 #pancarte-table thead th:first-child,
 #glycemie-table thead th:first-child {
     background-color: #f9fafb; /* Correspond à bg-gray-100 */
+
+}
+
+/**Style pour la mise en surbrillance des champs critiques (ex: Allergies)
+*/
+.info-item.highlight-orange {
+    /* Utilise les couleurs "orange" de Tailwind */
+    background-color: #fff7ed; /* bg-orange-50 */
+    border-color: #fb923c;   /* border-orange-400 */
+    
+    /* Augmente légèrement la visibilité de la bordure */
+    border-width: 2px; 
+}
+
+/* Rend l'étiquette plus visible aussi */
+.info-item.highlight-orange .info-label {
+    font-weight: 700; /* bold */
+    color: #c2410c; /* text-orange-700 */
 }
