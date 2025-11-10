@@ -2286,7 +2286,16 @@
 
             const [year, month, day] = startDateValue.split('-');
             formattedStartDate = `${day}/${month}/${year.slice(2)}`;
-            type = voie.trim().toUpperCase() === 'IV' ? 'iv' : 'checkbox';
+
+            const voieUpper = voie.trim().toUpperCase();
+            if (voieUpper === 'IV') {
+                type = 'iv';
+            } else if (voieUpper === 'NASALE') {
+                type = 'nasale';
+            } else {
+                type = 'checkbox';
+            }
+
             
             dateOffset = _calculateDaysOffset(entryDateStr, startDateValue);
         }
@@ -2333,10 +2342,12 @@
                 const bar = document.createElement('div');
                 bar.className = 'iv-bar';
                 
-                if (type !== 'iv') {
+                if (type === 'nasale') {
+                    bar.classList.add('nasale-bar');
+                } else if (type === 'checkbox') {
                     bar.classList.add('marker-bar');
                 }
-                
+
                 bar.style.left = barData.left;
                 bar.style.width = barData.width;
                 bar.title = barData.title || '';
@@ -2417,7 +2428,11 @@
             const newBar = document.createElement('div');
             newBar.className = 'iv-bar';
             
-            if (cell.classList.contains('marker-container')) {
+            const cellType = cell.dataset.type; // On lit le type de la cellule
+            
+            if (cellType === 'nasale') {
+                newBar.classList.add('nasale-bar');
+            } else if (cell.classList.contains('marker-container')) { // (Implicitement type === 'checkbox')
                 newBar.classList.add('marker-bar');
             }
             
