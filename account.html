@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>EIdos - Gestion de compte</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -95,28 +95,52 @@
                     <section id="content-security" class="account-section active">
                         <h1 class="text-3xl font-bold text-gray-800 mb-6">Sécurité</h1>
                         
-                        <div class="card p-6">
-                            <h2 class="card-header header-teal">Changer le mot de passe</h2>
-                            <form id="change-password-form" class="mt-6 space-y-4">
-                                <div>
-                                    <label for="current-password" class="block text-sm font-medium text-gray-700">Mot de passe actuel</label>
-                                    <input type="password" id="current-password" class="styled-input mt-1" required>
-                                </div>
-                                <div>
-                                    <label for="new-password" class="block text-sm font-medium text-gray-700">Nouveau mot de passe</label>
-                                    <input type="password" id="new-password" class="styled-input mt-1" required>
-                                </div>
-                                <div>
-                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirmer le nouveau mot de passe</label>
-                                    <input type="password" id="confirm-password" class="styled-input mt-1" required>
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
-                                        Mettre à jour le mot de passe
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            
+                            <div class="card p-6">
+                                <h2 class="card-header header-teal">Changer le mot de passe</h2>
+                                <form id="change-password-form" class="mt-6 space-y-4">
+                                    <div>
+                                        <label for="current-password" class="block text-sm font-medium text-gray-700">Mot de passe actuel</label>
+                                        <input type="password" id="current-password" class="styled-input mt-1" required>
+                                    </div>
+                                    <div>
+                                        <label for="new-password" class="block text-sm font-medium text-gray-700">Nouveau mot de passe</label>
+                                        <input type="password" id="new-password" class="styled-input mt-1" required>
+                                    </div>
+                                    <div>
+                                        <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirmer le nouveau mot de passe</label>
+                                        <input type="password" id="confirm-password" class="styled-input mt-1" required>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
+                                            Mettre à jour le mot de passe
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="card p-6">
+                                <h2 class="card-header header-teal">Changer l'adresse e-mail</h2>
+                                <form id="change-email-form" class="mt-6 space-y-4">
+                                    <p class="text-sm text-gray-600">Un lien de vérification sera envoyé à votre nouvelle adresse. Le changement ne sera effectif qu'après avoir cliqué sur ce lien.</p>
+                                    <div>
+                                        <label for="new-email" class="block text-sm font-medium text-gray-700">Nouvelle adresse e-mail</label>
+                                        <input type="email" id="new-email" class="styled-input mt-1" required>
+                                    </div>
+                                    <div>
+                                        <label for="current-password-for-email" class="block text-sm font-medium text-gray-700">Mot de passe actuel (pour confirmer)</label>
+                                        <input type="password" id="current-password-for-email" class="styled-input mt-1" required>
+                                    </div>
+                                    
+                                    <div class="flex justify-end">
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
+                                            Demander le changement
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            </div>
 
                         <div class="card p-6 mt-8 border-red-300">
                             <h2 class="card-header header-rose">Zone de danger</h2>
