@@ -73,14 +73,20 @@
     showSignupLink.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(signupSection);
+        // MODIFIÉ : Met à jour le hash dans l'URL sans recharger
+        window.history.pushState(null, '', '#signup');
     });
     showLoginLink1.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(loginSection);
+         // MODIFIÉ : Met à jour le hash dans l'URL sans recharger
+        window.history.pushState(null, '', '#login');
     });
     showLoginLink2.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(loginSection);
+         // MODIFIÉ : Met à jour le hash dans l'URL sans recharger
+        window.history.pushState(null, '', '#login');
     });
 
     // --- Gestionnaires de formulaires ---
@@ -274,7 +280,15 @@
         }
     }
     
-    // NOUVEAU : Lancer la vérification du token au chargement de la page
+    // NOUVEAU : Gère le hash dans l'URL au chargement
+    function checkForHash() {
+        if (window.location.hash === '#signup') {
+            showSection(signupSection);
+        }
+    }
+
+    // Lancer les vérifications au chargement de la page
     checkForInvitationToken();
+    checkForHash(); // MODIFIÉ : Ajout de cette ligne
 
 })();
