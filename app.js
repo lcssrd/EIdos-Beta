@@ -766,6 +766,7 @@
         updateAgeDisplay();
         updateJourHosp(); 
         calculateAndDisplayIMC();
+        updateAllergyHighlight(); // <-- APPEL AJOUTÉ
 
         setTimeout(() => { isLoadingData = false; }, 0);
     }
@@ -1361,6 +1362,7 @@
         initializeDynamicTables();
 
         calculateAndDisplayIMC();
+        updateAllergyHighlight(); // <-- APPEL AJOUTÉ
         if (pancarteChartInstance) pancarteChartInstance.destroy();
     }
 
@@ -1384,15 +1386,6 @@
         mainContent.scrollTo({ top: 0, behavior: 'smooth' });
 
         applyPermissions();
-        
-        updateAgeDisplay();
-        updateJourHosp(); 
-        calculateAndDisplayIMC();
-        updateAllergyHighlight(); // <-- AJOUTER CETTE LIGNE
-
-        setTimeout(() => {
-            document.querySelectorAll('textarea.info-value').forEach(autoResize);
-        
     }
 
     // =================================================================
@@ -1663,13 +1656,14 @@
         document.getElementById('vie-poids').addEventListener('input', calculateAndDisplayIMC);
         document.getElementById('vie-taille').addEventListener('input', calculateAndDisplayIMC);
 
+        // --- NOUVEL AJOUT ---
+        // Met à jour la surbrillance des allergies en temps réel
         const allergyTextarea = document.getElementById('atcd-allergies');
         if (allergyTextarea) {
             allergyTextarea.addEventListener('input', updateAllergyHighlight);
         }
+        // --- FIN DE L'AJOUT ---
 
-
-        
         document.addEventListener('mousemove', handleIVMouseMove);
         document.addEventListener('mouseup', handleIVMouseUp);
 
@@ -1972,7 +1966,10 @@
         }
         autoResize(imcEl);
     }
-    // Met en surbrillance le champ Allergies s'il est rempli.
+
+    /**
+     * NOUVEAU : Met en surbrillance le champ Allergies s'il est rempli.
+     */
     function updateAllergyHighlight() {
         const allergyTextarea = document.getElementById('atcd-allergies');
         if (!allergyTextarea) return; // Sécurité
@@ -1991,11 +1988,6 @@
         }
     }
 
-    function updateJourHosp() {
-        const entryDateEl = document.getElementById('patient-entry-date');
-
-
-    
     function updateJourHosp() {
         const entryDateEl = document.getElementById('patient-entry-date');
         const jourHospEl = document.getElementById('patient-jour-hosp');
@@ -2072,6 +2064,7 @@
     function deletePrescription(button) {
         const row = button.closest('tr');
         if (row) {
+            
             // --- MODIFICATION DÉBUT ---
             // Déterminer le message en fonction du type de prescription
             const prescriptionType = row.dataset.type;
@@ -2084,6 +2077,7 @@
             
             // Utiliser le message dynamique
             showDeleteConfirmation(message, () => {
+            // --- MODIFICATION FIN ---
                 row.remove();
                 saveData(activePatientId);
             });
@@ -2961,7 +2955,4 @@
     initApp(); 
 
 
-
 })(); // Fin de l'IIFE
-
-
