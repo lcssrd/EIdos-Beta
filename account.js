@@ -157,6 +157,20 @@
             'promo': document.getElementById('sub-btn-promo'),
             'centre': document.getElementById('sub-btn-centre')
         };
+        
+        // --- NOUVELLE LOGIQUE : Réinitialiser toutes les cartes ---
+        document.querySelectorAll('#content-subscription .card').forEach(card => {
+            // Cacher le badge
+            const badge = card.querySelector('.js-active-plan-badge');
+            if (badge) {
+                badge.classList.add('hidden');
+            }
+            // Retirer les classes de surbrillance
+            card.classList.remove('shadow-xl', 'border-teal-600', 'border-2');
+            card.classList.add('hover:scale-[1.02]', 'hover:shadow-xl'); // Rétablir l'effet de survol
+        });
+        // --- FIN NOUVELLE LOGIQUE ---
+
 
         // Réinitialiser tous les boutons (sauf 'centre')
         for (const [plan, button] of Object.entries(planButtons)) {
@@ -174,6 +188,19 @@
         // Définir le bouton actif (pour free, independant, promo)
         if (planButtons[activePlan] && activePlan !== 'centre') {
             const activeButton = planButtons[activePlan];
+            
+            // --- NOUVELLE LOGIQUE : Mise en surbrillance de la carte ---
+            const activeCard = activeButton.closest('.card');
+            if (activeCard) {
+                const badge = activeCard.querySelector('.js-active-plan-badge');
+                if (badge) {
+                    badge.classList.remove('hidden');
+                }
+                activeCard.classList.add('shadow-xl', 'border-teal-600', 'border-2');
+                activeCard.classList.remove('hover:scale-[1.02]', 'hover:shadow-xl'); // Retirer l'effet de survol
+            }
+            // --- FIN NOUVELLE LOGIQUE ---
+            
             activeButton.disabled = true;
             activeButton.textContent = 'Plan actuel';
             activeButton.classList.add('bg-gray-200', 'cursor-not-allowed', 'text-gray-700'); 
@@ -185,6 +212,19 @@
         // --- Logique spécifique pour le bouton "Centre" ---
         const centreButton = planButtons.centre;
         if (activePlan === 'centre') {
+            
+             // --- NOUVELLE LOGIQUE : Mise en surbrillance de la carte ---
+            const activeCard = centreButton.closest('.card');
+            if (activeCard) {
+                const badge = activeCard.querySelector('.js-active-plan-badge');
+                if (badge) {
+                    badge.classList.remove('hidden');
+                }
+                activeCard.classList.add('shadow-xl', 'border-teal-600', 'border-2');
+                activeCard.classList.remove('hover:scale-[1.02]', 'hover:shadow-xl'); // Retirer l'effet de survol
+            }
+            // --- FIN NOUVELLE LOGIQUE ---
+            
             centreButton.disabled = true;
             centreButton.textContent = 'Plan Actuel';
             centreButton.classList.add('bg-gray-200', 'cursor-not-allowed', 'text-gray-700');
