@@ -2032,7 +2032,18 @@
     function deletePrescription(button) {
         const row = button.closest('tr');
         if (row) {
-            showDeleteConfirmation("Êtes-vous sûr de vouloir supprimer cette prescription ?", () => {
+            // --- MODIFICATION DÉBUT ---
+            // Déterminer le message en fonction du type de prescription
+            const prescriptionType = row.dataset.type;
+            let message = "Êtes-vous sûr de vouloir supprimer ce traitement ?"; // Message par défaut
+            
+            if (prescriptionType === 'iv') {
+                message = "Êtes-vous sûr de vouloir supprimer cette perfusion ?"; // Message spécifique pour IV
+            }
+            // Les types 'nasale' et 'checkbox' utiliseront le message "traitement"
+            
+            // Utiliser le message dynamique
+            showDeleteConfirmation(message, () => {
                 row.remove();
                 saveData(activePatientId);
             });
@@ -2908,6 +2919,7 @@
     
     // Point d'entrée principal de l'application
     initApp(); 
+
 
 
 })(); // Fin de l'IIFE
