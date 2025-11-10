@@ -1663,6 +1663,13 @@
         document.getElementById('vie-poids').addEventListener('input', calculateAndDisplayIMC);
         document.getElementById('vie-taille').addEventListener('input', calculateAndDisplayIMC);
 
+        const allergyTextarea = document.getElementById('atcd-allergies');
+        if (allergyTextarea) {
+            allergyTextarea.addEventListener('input', updateAllergyHighlight);
+        }
+
+
+        
         document.addEventListener('mousemove', handleIVMouseMove);
         document.addEventListener('mouseup', handleIVMouseUp);
 
@@ -2956,4 +2963,5 @@
 
 
 })(); // Fin de l'IIFE
+
 
