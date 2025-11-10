@@ -37,6 +37,29 @@
             text-align: center;
         }
 
+        /* --- NOUVEAU : Style pour la bannière du plan --- */
+        #content-subscription .card {
+            position: relative; /* Nécessaire pour positionner la bannière */
+            overflow: hidden; /* Garde les coins arrondis propres */
+        }
+        
+        .plan-banner {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #0d9488; /* bg-teal-700 (Couleur active) */
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.25rem 2rem; /* py-1 px-8 */
+            border-bottom-left-radius: 0.5rem; /* rounded-b-lg */
+            border-bottom-right-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        /* --- FIN NOUVEAU --- */
+
         /* Cacher les sections inactives */
         .account-section {
             display: none;
@@ -70,9 +93,6 @@
                 <button type="button" id="tab-subscription" class="account-tab-btn">
                     <i class="fas fa-rocket"></i> Abonnement
                 </button>
-                <button type="button" id="tab-centre" class="account-tab-btn" style="display: none;">
-                    <i class="fas fa-building"></i> Gestion du Centre
-                </button>
                 <button type="button" id="tab-invitations" class="account-tab-btn">
                     <i class="fas fa-users"></i> Gestion des étudiants
                 </button>
@@ -95,29 +115,53 @@
                     <section id="content-security" class="account-section active">
                         <h1 class="text-3xl font-bold text-gray-800 mb-6">Sécurité</h1>
                         
-                        <div class="card p-6">
-                            <h2 class="card-header header-teal">Changer le mot de passe</h2>
-                            <form id="change-password-form" class="mt-6 space-y-4">
-                                <div>
-                                    <label for="current-password" class="block text-sm font-medium text-gray-700">Mot de passe actuel</label>
-                                    <input type="password" id="current-password" class="styled-input mt-1" required>
-                                </div>
-                                <div>
-                                    <label for="new-password" class="block text-sm font-medium text-gray-700">Nouveau mot de passe</label>
-                                    <input type="password" id="new-password" class="styled-input mt-1" required>
-                                </div>
-                                <div>
-                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirmer le nouveau mot de passe</label>
-                                    <input type="password" id="confirm-password" class="styled-input mt-1" required>
-                                </div>
-                                <div class="flex justify-end">
-                                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
-                                        Mettre à jour le mot de passe
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                            <div class="card p-6">
+                                <h2 class="card-header header-teal">Changer le mot de passe</h2>
+                                <form id="change-password-form" class="mt-6 space-y-4">
+                                    <div>
+                                        <label for="current-password" class="block text-sm font-medium text-gray-700">Mot de passe actuel</label>
+                                        <input type="password" id="current-password" class="styled-input mt-1" required>
+                                    </div>
+                                    <div>
+                                        <label for="new-password" class="block text-sm font-medium text-gray-700">Nouveau mot de passe</label>
+                                        <input type="password" id="new-password" class="styled-input mt-1" required>
+                                    </div>
+                                    <div>
+                                        <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirmer le nouveau mot de passe</label>
+                                        <input type="password" id="confirm-password" class="styled-input mt-1" required>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
+                                            Mettre à jour le mot de passe
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
 
+                            <div class="card p-6">
+                                <h2 class="card-header header-teal">Changer l'adresse email</h2>
+                                <form id="change-email-form" class="mt-6 space-y-4">
+                                    <div>
+                                        <label for="new-email" class="block text-sm font-medium text-gray-700">Nouvelle adresse email</label>
+                                        <input type="email" id="new-email" class="styled-input mt-1" required>
+                                    </div>
+                                    <div>
+                                        <label for="current-password-for-email" class="block text-sm font-medium text-gray-700">Mot de passe actuel (pour confirmation)</label>
+                                        <input type="password" id="current-password-for-email" class="styled-input mt-1" required>
+                                    </div>
+                                    <div class="pt-10"> <p class="text-xs text-gray-500 mb-4">Vous devrez utiliser ce nouvel email pour vous connecter. Votre email actuel sera écrasé.</p>
+                                        <div class="flex justify-end">
+                                            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
+                                                Mettre à jour l'email
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                        </div>
                         <div class="card p-6 mt-8 border-red-300">
                             <h2 class="card-header header-rose">Zone de danger</h2>
                             <div class="mt-6">
@@ -145,6 +189,9 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8 items-start">
                             
                             <div class="card bg-white p-6 flex flex-col border-t-4 border-gray-400 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <div class="plan-banner hidden">
+                                    <i class="fas fa-check-circle mr-2"></i> Plan Actuel
+                                </div>
                                 <h3 class="text-2xl font-semibold text-gray-800">Free</h3>
                                 <p class="text-4xl font-extrabold my-4">Gratuit</p>
                                 <p class="text-gray-500 mb-6 min-h-[4rem]">Pour la découverte et l'utilisation basique.</p>
@@ -168,6 +215,9 @@
                             </div>
 
                             <div class="card bg-white p-6 flex flex-col border-t-4 border-teal-600 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <div class="plan-banner hidden">
+                                    <i class="fas fa-check-circle mr-2"></i> Plan Actuel
+                                </div>
                                 <h3 class="text-2xl font-semibold text-teal-700">Indépendant</h3>
                                 <p class="text-4xl font-extrabold my-4 text-gray-900">19€ <span class="text-lg font-normal text-gray-500">/ mois</span></p>
                                 <p class="text-gray-500 mb-6 min-h-[4rem]">Pour formateurs solo ou en test.</p>
@@ -191,6 +241,9 @@
                             </div>
                             
                             <div class="card bg-white p-6 flex flex-col border-t-4 border-blue-600 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <div class="plan-banner hidden">
+                                    <i class="fas fa-check-circle mr-2"></i> Plan Actuel
+                                </div>
                                 <h3 class="text-2xl font-semibold text-blue-700">Promo</h3>
                                 <p class="text-4xl font-extrabold my-4 text-gray-900">49€ <span class="text-lg font-normal text-gray-500">/ mois</span></p>
                                 <p class="text-gray-500 mb-6 min-h-[4rem]">Pour gérer une promotion ou classe complète.</p>
@@ -214,6 +267,9 @@
                             </div>
 
                             <div class="card bg-white p-6 flex flex-col border-t-4 border-indigo-600 h-full transition-all duration-200 hover:scale-[1.02] hover:shadow-xl">
+                                <div class="plan-banner hidden">
+                                    <i class="fas fa-check-circle mr-2"></i> Plan Actuel
+                                </div>
                                 <h3 class="text-2xl font-semibold text-indigo-700">Centre</h3>
                                 <p class="text-4xl font-extrabold my-4 text-gray-900">Sur devis</p>
                                 <p class="text-gray-500 mb-6 min-h-[4rem]">Pour les centres de formation (IFSI, etc).</p>
@@ -231,51 +287,15 @@
                                         <span>Support prioritaire</span>
                                     </li>
                                 </ul>
-                                <button id="sub-btn-centre" type="button" class="mt-8 w-full py-3 px-4 rounded-lg font-semibold text-gray-700 bg-gray-200 sub-plan-btn transition-all">
+                                <button id="sub-btn-centre" type="button" class="mt-8 w-full py-3 px-4 rounded-lg font-semibold text-gray-700 bg-gray-200 cursor-not-allowed" disabled>
                                     Nous contacter
                                 </button>
                             </div>
                         </div>
-                    </section>
-                    
-                    <section id="content-centre" class="account-section">
-                        <h1 class="text-3xl font-bold text-gray-800 mb-6">Gestion du Centre</h1>
-                        
-                        <div class="card p-6">
-                            <h2 class="card-header header-indigo">Statut de l'Abonnement</h2>
-                            <div class="mt-6">
-                                <p class="text-lg">Vous gérez l'abonnement <strong id="centre-plan-name" class="text-indigo-600">...</strong>.</p>
-                                <p id="centre-plan-details" class="text-gray-600 mt-2">Chargement des détails...</p>
-                            </div>
-                        </div>
-            
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                            <div class="card p-6">
-                                <h2 class="card-header header-indigo">Inviter un nouveau formateur</h2>
-                                <form id="invite-formateur-form" class="mt-6 space-y-4">
-                                    <p class="text-sm text-gray-600">Invitez un collègue à rejoindre votre centre. Il pourra créer ses propres cas et gérer ses propres étudiants, tout en bénéficiant de votre abonnement "Centre".</p>
-                                    <div>
-                                        <label for="invite-email" class="block text-sm font-medium text-gray-700">Adresse e-mail du formateur</label>
-                                        <input type="email" id="invite-email" class="styled-input mt-1" required placeholder="collegue@ifsi.fr">
-                                    </div>
-                                    <div class="flex justify-end">
-                                        <button type="submit" id="invite-formateur-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                                            <i class="fas fa-paper-plane mr-2"></i> Envoyer l'invitation
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                            
-                            <div class="card p-6">
-                                <h2 class="card-header header-indigo">Formateurs rattachés</h2>
-                                <div id="formateurs-list-container" class="mt-4 space-y-2">
-                                    <p id="formateurs-loading" class="text-sm text-gray-500">Chargement...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                        </section>
+
                     <section id="content-invitations" class="account-section">
-                        <h1 class="text-3xl font-bold text-gray-800 mb-6">Invitations et Gestion (Étudiants)</h1>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-6">Invitations et Gestion</h1>
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             
@@ -373,7 +393,7 @@
                                 </button>
                             </div>
 
-                            <div class="card bg-white p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-t-4 border-blue-600">
+                            <div class="card p-8 flex flex-col items-center text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-t-4 border-blue-600">
                                 <span class="flex items-center justify-center h-16 w-16 bg-blue-100 text-blue-600 rounded-full text-3xl mb-6">
                                     <i class="fab fa-linkedin"></i>
                                 </span>

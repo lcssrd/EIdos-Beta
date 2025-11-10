@@ -1,9 +1,9 @@
+// auth.js
 (function() {
     "use strict";
 
-    // MODIFIÉ : L'URL de l'API est maintenant relative.
-    // "http://localhost:3000" a été supprimé.
-    const API_URL = 'https://eidos-api.onrender.com'; 
+    // MODIFIÉ : Assurez-vous que c'est bien l'URL de VOTRE API Render
+    const API_URL = 'https://eidos-api.onrender.com';
 
     // Sélection des 3 sections principales
     const loginSection = document.getElementById('login-section');
@@ -25,41 +25,16 @@
     let selectedPlan = 'free'; // 'free' par défaut
 
     planCards.forEach(card => {
-        // Sélectionner 'free' par défaut
         if (card.dataset.plan === 'free') {
             card.classList.add('selected');
         }
-
         card.addEventListener('click', () => {
             planCards.forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             selectedPlan = card.dataset.plan;
         });
     });
-    
-    // --- NOUVEAU : Gestion du token d'invitation ---
-    let invitationToken = null;
-    
-    function checkForInvitationToken() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('invitation_token');
-        
-        if (token) {
-            invitationToken = token;
-            console.log("Token d'invitation détecté :", invitationToken);
-            
-            // Basculer automatiquement vers l'inscription
-            showSection(signupSection);
-            
-            // Optionnel : Masquer la sélection de plan si l'invitation la définit
-            // (Pour l'instant, on la laisse, mais on enverra le token)
-            // const planSelectionUI = document.getElementById('signup-form').querySelector('.grid.grid-cols-4.gap-3').parentNode;
-            // if (planSelectionUI) {
-            //     planSelectionUI.innerHTML = '<p class="text-center text-indigo-600 font-medium">Vous avez été invité à rejoindre un centre de formation.</p>';
-            // }
-        }
-    }
-    // --- FIN NOUVEAU ---
+    // --- FIN ---
 
 
     // --- Gestionnaires d'affichage ---
@@ -73,14 +48,17 @@
     showSignupLink.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(signupSection);
+        window.location.hash = 'signup'; // Ajoute le hash à l'URL
     });
     showLoginLink1.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(loginSection);
+        history.pushState("", document.title, window.location.pathname + window.location.search); // Supprime le hash
     });
     showLoginLink2.addEventListener('click', (e) => {
         e.preventDefault();
         showSection(loginSection);
+        history.pushState("", document.title, window.location.pathname + window.location.search); // Supprime le hash
     });
 
     // --- Gestionnaires de formulaires ---
@@ -95,9 +73,6 @@
         verifyForm.addEventListener('submit', handleVerify);
     }
 
-    /**
-     * Gère la soumission du formulaire de connexion (Inchangé)
-     */
     async function handleLogin(e) {
         e.preventDefault();
         
@@ -111,7 +86,6 @@
         loginBtn.textContent = 'Connexion en cours...';
 
         try {
-            // MODIFIÉ : Utilise API_URL (qui est vide, donc /auth/login)
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -126,7 +100,6 @@
 
             if (data.token) {
                 localStorage.setItem('authToken', data.token);
-                // MODIFIÉ : Redirige vers simul.html
                 window.location.href = 'simul.html';
             } else {
                 throw new Error('Aucun token reçu du serveur.');
@@ -140,9 +113,6 @@
         }
     }
 
-    /**
-     * Gère la soumission du formulaire d'inscription (MODIFIÉ)
-     */
     async function handleSignup(e) {
         e.preventDefault();
 
@@ -154,29 +124,12 @@
         errorMsg.classList.add('hidden');
         signupBtn.disabled = true;
         signupBtn.textContent = 'Inscription en cours...';
-        
-        // --- NOUVEAU : Préparer le corps de la requête ---
-        const requestBody = {
-            email: email,
-            password: password,
-            plan: selectedPlan
-        };
-        
-        // S'il y a un token d'invitation, on l'ajoute
-        // Le backend l'utilisera pour lier l'utilisateur à l'organisation
-        // et ignorer le 'selectedPlan' au profit du plan de l'organisation.
-        if (invitationToken) {
-            requestBody.token = invitationToken;
-        }
-        // --- FIN NOUVEAU ---
 
         try {
-            // MODIFIÉ : Utilise API_URL (qui est vide, donc /auth/signup)
             const response = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // MODIFIÉ : Envoie le requestBody (qui contient le token si présent)
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({ email, password, plan: selectedPlan })
             });
 
             const data = await response.json();
@@ -189,7 +142,6 @@
             document.getElementById('verify-email').value = email;
             document.getElementById('verify-email-display').textContent = email;
             
-            // Affiche le code de test (pour la démo)
             const testCodeDisplay = document.getElementById('test-code-display');
             if (data._test_code) {
                 testCodeDisplay.textContent = `(Code pour test : ${data._test_code})`;
@@ -197,18 +149,11 @@
             }
 
             showSection(verifySection);
-            signupForm.reset(); // Vider le formulaire d'inscription
+            signupForm.reset(); 
 
-            // Réinitialiser la sélection de plan au cas où l'utilisateur revient en arrière
             planCards.forEach(c => c.classList.remove('selected'));
             planCards[0].classList.add('selected');
             selectedPlan = 'free';
-            
-            // NOUVEAU : Effacer le token de l'URL pour éviter de le réutiliser
-            if (invitationToken) {
-                window.history.replaceState({}, document.title, window.location.pathname);
-                invitationToken = null;
-            }
 
 
         } catch (err) {
@@ -220,9 +165,6 @@
         }
     }
     
-    /**
-     * Gère la soumission du formulaire de vérification (Inchangé)
-     */
     async function handleVerify(e) {
         e.preventDefault();
 
@@ -238,7 +180,6 @@
         verifyBtn.textContent = 'Vérification...';
 
         try {
-            // MODIFIÉ : Utilise API_URL (qui est vide, donc /auth/verify)
             const response = await fetch(`${API_URL}/auth/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -251,14 +192,11 @@
                 throw new Error(data.error || 'Erreur lors de la vérification');
             }
 
-            // Succès !
             successMsg.textContent = 'Compte vérifié avec succès ! Vous pouvez maintenant vous connecter.';
             successMsg.classList.remove('hidden');
             
-            // Cacher le code de test
             document.getElementById('test-code-display').classList.add('hidden');
             
-            // Rediriger vers la connexion après 2 secondes
             setTimeout(() => {
                 showSection(loginSection);
                 verifyForm.reset();
@@ -273,8 +211,25 @@
             verifyBtn.textContent = 'Vérifier';
         }
     }
+
+    // --- NOUVEAU : Gestion du hash au chargement ---
     
-    // NOUVEAU : Lancer la vérification du token au chargement de la page
-    checkForInvitationToken();
+    /**
+     * Vérifie le hash de l'URL et affiche la bonne section.
+     */
+    function handleHashChange() {
+        const hash = window.location.hash;
+        if (hash === '#signup') {
+            showSection(signupSection);
+        } else {
+            showSection(loginSection); // Par défaut, on montre le login
+        }
+    }
+
+    // Écoute les changements de hash (si l'utilisateur clique sur Précédent/Suivant)
+    window.addEventListener('hashchange', handleHashChange);
+
+    // Vérifie le hash au premier chargement de la page
+    document.addEventListener('DOMContentLoaded', handleHashChange);
 
 })();

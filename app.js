@@ -140,12 +140,12 @@
     }
     // -----------------------------------------------------------
 
-    // MODIFIÉ : Gère les rôles 'etudiant', 'formateur', 'owner' et 'user'
     async function loadUserPermissions() {
         try {
             const headers = getAuthHeaders();
             delete headers['Content-Type'];
 
+            // MODIFIÉ : Utilise API_URL
             const response = await fetch(`${API_URL}/api/auth/me`, { headers });
 
             if (handleAuthError(response)) return;
@@ -155,16 +155,14 @@
 
             const userData = await response.json();
             
-            userPermissions.subscription = userData.subscription || 'free'; // Default personal plan
+            userPermissions.subscription = userData.subscription || 'free';
             userPermissions.allowedRooms = userData.allowedRooms || []; 
 
             if (userData.role === 'etudiant' && userData.permissions) {
-                // --- C'est un Étudiant ---
                 userPermissions = {
                     ...userPermissions, 
                     ...userData.permissions,
-                    isStudent: true,
-                    role: 'etudiant'
+                    isStudent: true
                 };
                 
                 if (userPermissions.allowedRooms.length > 0) {
@@ -174,38 +172,23 @@
                 } else {
                     patients = []; 
                 }
-                console.log(`Compte étudiant chargé. ${patients.length} chambres autorisées.`);
-
+                
+                console.log(`Compte étudiant chargé (Plan: ${userPermissions.subscription}). ${patients.length} chambres autorisées.`);
             } else {
-                // --- C'est un Formateur, Propriétaire, ou Indépendant ---
-                patients = [...defaultPatients];
-                let effectivePlan = userData.subscription || 'free';
-                let role = userData.role || 'user';
-                
-                // Si rattaché à une organisation, hérite du plan de l'orga
-                if ((role === 'formateur' || role === 'owner') && userData.organisation) {
-                    effectivePlan = userData.organisation.plan;
-                }
-                
+                patients = [...defaultPatients]; 
                 userPermissions = { 
-                    isStudent: false,
-                    role: role,
-                    subscription: effectivePlan,
-                    // Tous les formateurs/propriétaires ont toutes les permissions de l'UI
-                    header: true, admin: true, vie: true, observations: true, 
-                    prescriptions_add: true, prescriptions_delete: true, prescriptions_validate: true,
-                    transmissions: true, pancarte: true, diagramme: true, biologie: true
+                    ...userPermissions, 
+                    isStudent: false 
                 };
-                console.log(`Compte ${role} chargé (Plan: ${effectivePlan}). Tous droits activés.`);
+                console.log(`Compte formateur chargé (Plan: ${userPermissions.subscription}). Tous droits activés.`);
             }
         } catch (err) {
             console.error(err);
-            userPermissions = { isStudent: false, subscription: 'free', allowedRooms: [], role: 'user' }; // Fallback
+            userPermissions = { isStudent: false, subscription: 'free', allowedRooms: [] };
             patients = [...defaultPatients]; 
             showCustomAlert("Erreur de permissions", "Impossible de vérifier les permissions du compte. Les droits par défaut sont appliqués.");
         }
     }
-
 
     function disableSectionInputs(containerId) {
         const container = document.getElementById(containerId);
@@ -226,10 +209,7 @@
             if (saveBtn) saveBtn.style.display = 'none';
         }
 
-        // Si ce n'est pas un étudiant, on n'applique aucune restriction (tout est visible)
         if (!userPermissions.isStudent) return;
-
-        // --- Ce qui suit ne s'applique QU'AUX ÉTUDIANTS ---
 
         const studentForbiddenButtons = [
             '#save-patient-btn',
@@ -2626,8 +2606,7 @@
             'SpO2 (%)': { yAxisID: 'y4', borderColor: '#10b981' }, 
             'Douleur (EVA /10)': { yAxisID: 'y2', borderColor: '#8b5cf6' },
             // 'Poids (kg)' est retiré
-            // 'Diurèse (L)' est retiré
-            //'Diurèse (L)': { 
+            //Suppression de la diurèse dans le graph 'Diurèse (L)': { 
             //    type: 'bar', 
             //    yAxisID: 'y6', // Axe dédié
             //    backgroundColor: '#facc15', // Jaune opaque
@@ -2692,7 +2671,7 @@
                 scales: {
                     // Axe Y principal (Gauche)
                     y: { position: 'left', title: { display: true, text: 'Tension (mmHg)' }, min: 0, max: 200 },
-                    // Axe Diurèse (Gauche) - supprimé : 'offset: false' (ou absent)
+                    // Axe Diurèse (Gauche) - MODIFIÉ : 'offset: false' (ou absent)
                     //y6: { 
                     //    position: 'left', 
                     //    title: { display: true, text: 'Diurèse (L)' }, 
