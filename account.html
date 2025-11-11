@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=1280">
     <title>EIdos - Gestion de compte</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -368,6 +368,8 @@
                                             <th class="p-2 text-center" title="Permet de modifier l'onglet Mode de Vie & ATCD">Vie & ATCD</th>
                                             <th class="p-2 text-center" title="Permet d'ajouter/supprimer des observations">Observations</th>
                                             
+                                            <th class="p-2 text-center" title="Permet d'ajouter/supprimer des comptes rendus">Comptes Rendus</th>
+                                            
                                             <th class="p-2 text-center" title="Permet d'ajouter une nouvelle prescription">Prescr. (Ajout)</th>
                                             <th class="p-2 text-center" title="Permet de supprimer une prescription">Prescr. (Suppr.)</th>
                                             <th class="p-2 text-center" title="Permet de placer/déplacer les marqueurs de prise (losanges/barres)">Prescr. (Valid.)</th>
@@ -379,12 +381,12 @@
                                             
                                             <th class="p-2 text-center">Chambres</th>
                                             
-                                            <th class="p-2 text-center">Actions</th>
+                                            <th class="p-2 text-center" colspan="15">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="permissions-tbody">
                                         <tr>
-                                            <td colspan="14" class="p-4 text-center text-gray-500">Vous n'avez pas encore créé de compte étudiant.</td>
+                                            <td colspan="15" class="p-4 text-center text-gray-500">Vous n'avez pas encore créé de compte étudiant.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -454,6 +456,11 @@
             </form>
         </div>
     </div>
+    
+    <script src="apiService.js"></script>
+    <script src="utils.js"></script>
+    <script src="uiService.js"></script>
+    <script src="patientService.js"></script>
     <script src="account.js"></script>
 
 </body>

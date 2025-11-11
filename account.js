@@ -436,14 +436,17 @@
 
 
         if (students.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="14" class="p-4 text-center text-gray-500">Vous n'avez pas encore créé de compte étudiant.</td></tr>`; // MODIFIÉ: colspan 14
+            // MODIFICATION : Colspan mis à jour à 15
+            tbody.innerHTML = `<tr><td colspan="15" class="p-4 text-center text-gray-500">Vous n'avez pas encore créé de compte étudiant.</td></tr>`;
             return;
         }
 
         let html = '';
         
+        // MODIFICATION : Ajout de 'comptesRendus' à la liste
         const permissionsList = [
             'header', 'admin', 'vie', 'observations', 
+            'comptesRendus',
             'prescriptions_add', 'prescriptions_delete', 'prescriptions_validate',
             'transmissions', 'pancarte', 'diagramme', 'biologie'
         ];

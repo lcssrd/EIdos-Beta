@@ -75,6 +75,7 @@ body {
 .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
 .timeline-dot.dot-rose { background-color: #f43f5e; }
 .timeline-dot.dot-green { background-color: #22c55e; }
+
 .diagram th, .diagram td { border: 1px solid #e5e7eb; padding: 0.5rem; vertical-align: middle; }
 .diagram input[type="checkbox"] { height: 1.1rem; width: 1.1rem; accent-color: #3b82f6; }
 .diagram thead { font-size: 0.8rem; background-color: #f9fafb; color: #374151; }
@@ -144,7 +145,8 @@ textarea.info-value {
     white-space: pre-wrap;
 }
 
-#custom-confirm-modal #custom-confirm-box {
+#custom-confirm-modal #custom-confirm-box,
+#cr-modal #cr-modal-box { /* AJOUTÉ : Appliquer la transition à la nouvelle modale */
     transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 }
 #sidebar {
@@ -205,13 +207,6 @@ textarea.info-value {
     cursor: move;
     z-index: 10;
 }
-
-.iv-bar.nasale-bar {
-    background-color: #f97316; /* bg-orange-500 */
-    border: 1px solid #c2410c; /* border-orange-700 */
-}
-
-
 .resize-handle {
     position: absolute;
     right: -2px;
@@ -494,22 +489,58 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
 #pancarte-table thead th:first-child,
 #glycemie-table thead th:first-child {
     background-color: #f9fafb; /* Correspond à bg-gray-100 */
-
 }
 
-/**Style pour la mise en surbrillance des champs critiques (ex: Allergies)
+/* * MODIFICATION : STYLES POUR LES CARTES DE COMPTES RENDUS
 */
-.info-item.highlight-orange {
-    /* Utilise les couleurs "orange" de Tailwind */
-    background-color: #fff7ed; /* bg-orange-50 */
-    border-color: #fb923c;   /* border-orange-400 */
-    
-    /* Augmente légèrement la visibilité de la bordure */
-    border-width: 2px; 
+.cr-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #e5e7eb; /* border-gray-200 */
+    border-radius: 0.75rem; /* rounded-xl */
+    background-color: white;
+    /* MODIFICATION : Ombre par défaut supprimée */
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
-
-/* Rend l'étiquette plus visible aussi */
-.info-item.highlight-orange .info-label {
-    font-weight: 700; /* bold */
-    color: #c2410c; /* text-orange-700 */
+.cr-card:hover {
+    /* MODIFICATION : Ombre et soulèvement accentués */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    border-color: #d1d5db; /* border-gray-300 */
+}
+.cr-card:focus {
+    outline: 2px solid #be123c; /* focus:ring-rose-700 (couleur de l'onglet) */
+    outline-offset: 2px;
+}
+.cr-card-icon {
+    flex-shrink: 0;
+    width: 2.5rem; /* w-10 */
+    height: 2.5rem; /* h-10 */
+    border-radius: 9999px; /* rounded-full */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem; /* text-lg */
+    margin-right: 0.75rem; /* mr-3 */
+}
+.cr-card-title {
+    font-weight: 600; /* font-semibold */
+    color: #1f2937; /* text-gray-900 */
+    text-align: left;
+    flex-grow: 1;
+}
+.cr-check-icon {
+    position: absolute;
+    top: 0.5rem; /* top-2 */
+    right: 0.5rem; /* right-2 */
+    font-size: 1.25rem; /* text-xl */
+    color: #16a34a; /* text-green-600 */
+}
+/* Pour masquer la coche si elle a la classe .hidden */
+.cr-check-icon.hidden {
+    display: none;
 }

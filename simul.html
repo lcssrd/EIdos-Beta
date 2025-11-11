@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=1280">
     <title>EIdos - Dossier Patient Informatisé</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -114,14 +114,16 @@
 
                 <div id="tabs-nav-container" class="card p-2">
                        <nav id="tabs-nav" class="flex flex-wrap w-full gap-2" aria-label="Tabs">
-                            <button type="button" data-tab-id="administratif" data-color="teal"><i class="fas fa-user-circle mr-2"></i>Administratif</button>
-                            <button type="button" data-tab-id="mode-de-vie" data-color="blue"><i class="fas fa-home mr-2"></i>Vie & ATCD</button>
-                            <button type="button" data-tab-id="observations" data-color="rose"><i class="fas fa-notes-medical mr-2"></i>Observations Médicales</button>
-                            <button type="button" data-tab-id="prescriptions" data-color="indigo"><i class="fas fa-pills mr-2"></i>Prescriptions</button>
-                            <button type="button" data-tab-id="transmissions" data-color="green"><i class="fas fa-exchange-alt mr-2"></i>Transmissions</button>
-                            <button type="button" data-tab-id="pancarte" data-color="orange"><i class="fas fa-chart-line mr-2"></i>Pancarte</button>
-                            <button type="button" data-tab-id="diagramme" data-color="rose"><i class="fas fa-calendar-alt mr-2"></i>Diagramme Soins</button>
-                            <button type="button" data-tab-id="biologie" data-color="purple"><i class="fas fa-vial mr-2"></i>Résultats Biologiques</button>
+                            <button type="button" data-tab-id="administratif" data-color="teal" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-teal-900 border-teal-300 bg-gradient-to-br from-teal-200 to-green-200 shadow-inner"><i class="fas fa-user-circle mr-2"></i>Administratif</button>
+                            <button type="button" data-tab-id="mode-de-vie" data-color="blue" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-home mr-2"></i>Vie & ATCD</button>
+                            <button type="button" data-tab-id="observations" data-color="rose" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-notes-medical mr-2"></i>Observations Médicales</button>
+                            <button type="button" data-tab-id="prescriptions" data-color="indigo" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-pills mr-2"></i>Prescriptions</button>
+                            <button type="button" data-tab-id="transmissions" data-color="green" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-exchange-alt mr-2"></i>Transmissions</button>
+                            <button type="button" data-tab-id="pancarte" data-color="orange" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-chart-line mr-2"></i>Pancarte</button>
+                            <button type="button" data-tab-id="diagramme" data-color="rose" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-calendar-alt mr-2"></i>Diagramme Soins</button>
+                            <button type="button" data-tab-id="biologie" data-color="purple" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-vial mr-2"></i>Résultats Biologiques</button>
+                            
+                            <button type="button" data-tab-id="comptes-rendus" data-color="blue" class="min-h-[4rem] py-2 px-2 text-sm font-medium rounded-lg border focus:outline-none transition-all ease-in-out duration-300 flex-1 flex items-center justify-center text-center text-gray-600 bg-white border-gray-200 hover:bg-gray-100"><i class="fas fa-file-alt mr-2"></i>Comptes rendus</button>
                        </nav>
                 </div>
             </div>
@@ -216,6 +218,7 @@
                                 </form>
                             </div>
                         </div>
+                        
                         <div id="prescriptions" class="content-section">
                             <div class="card p-6">
                                  <h2 class="card-header">Prescriptions Médicales</h2>
@@ -239,7 +242,7 @@
                                          <input type="text" id="med-posologie" class="styled-input mt-1">
                                      </div>
                                      <div>
-                                         <label for="med-voie" class="block text-sm font-medium text-gray-700">Voie (IV / PO / Nasale)</label>
+                                         <label for="med-voie" class="block text-sm font-medium text-gray-700">Voie</label>
                                          <input type="text" id="med-voie" class="styled-input mt-1">
                                      </div>
                                      <div>
@@ -338,6 +341,58 @@
                                 </form>
                              </div>
                         </div>
+                        
+                        <div id="comptes-rendus" class="content-section">
+                            <div class="card p-6">
+                                <h2 class="card-header">Comptes Rendus</h2>
+                                <div id="cr-card-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                                    
+                                    <button type="button" class="cr-card" data-cr-id="cr-hospitalisation" data-cr-title="Compte rendu d’hospitalisation antérieure">
+                                        <div class="cr-card-icon bg-orange-100 text-orange-600"><i class="fas fa-hospital-user"></i></div>
+                                        <span class="cr-card-title">CR d’hospitalisation antérieure</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+                                    
+                                    <button type="button" class="cr-card" data-cr-id="cr-medecin-traitant" data-cr-title="Lettre du médecin traitant">
+                                        <div class="cr-card-icon bg-blue-100 text-blue-600"><i class="fas fa-user-md"></i></div>
+                                        <span class="cr-card-title">Lettre du médecin traitant</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+
+                                    <button type="button" class="cr-card" data-cr-id="cr-consultation" data-cr-title="Compte rendu de consultation">
+                                        <div class="cr-card-icon bg-indigo-100 text-indigo-600"><i class="fas fa-stethoscope"></i></div>
+                                        <span class="cr-card-title">Compte rendu de consultation</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+
+                                    <button type="button" class="cr-card" data-cr-id="cr-imagerie" data-cr-title="Compte rendu d’imagerie">
+                                        <div class="cr-card-icon bg-gray-100 text-gray-600"><i class="fas fa-x-ray"></i></div>
+                                        <span class="cr-card-title">Compte rendu d’imagerie</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+
+                                    <button type="button" class="cr-card" data-cr-id="cr-operatoire" data-cr-title="Compte rendu opératoire">
+                                        <div class="cr-card-icon bg-rose-100 text-rose-600"><i class="fas fa-briefcase-medical"></i></div>
+                                        <span class="cr-card-title">Compte rendu opératoire</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+                                    
+                                    <button type="button" class="cr-card" data-cr-id="cr-anesthesie" data-cr-title="Compte rendu d’anesthésie">
+                                        <div class="cr-card-icon bg-cyan-100 text-cyan-600"><i class="fas fa-procedures"></i></div>
+                                        <span class="cr-card-title">Compte rendu d’anesthésie</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+                                    
+                                    <button type="button" class="cr-card" data-cr-id="cr-sortie" data-cr-title="Lettre de sortie / Ordonnance">
+                                        <div class="cr-card-icon bg-green-100 text-green-600"><i class="fas fa-envelope-open-text"></i></div>
+                                        <span class="cr-card-title">Lettre de sortie / Ordonnance</span>
+                                        <div class="cr-check-icon hidden"><i class="fas fa-check-circle"></i></div>
+                                    </button>
+
+                                </div>
+                            </div>
+                        </div>
+                        
                     </div>
                 </main>
             </div>
@@ -372,6 +427,21 @@
         </div>
     </div>
 
+    <div id="cr-modal" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center hidden" style="z-index: 10000;">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl m-4 transform transition-all scale-95 opacity-0" id="cr-modal-box">
+            <h3 class="text-lg font-bold text-gray-800" id="cr-modal-title">Éditer le compte rendu</h3>
+            <input type="hidden" id="cr-modal-active-id">
+            
+            <textarea id="cr-modal-textarea" class="styled-input mt-4 w-full h-96" rows="15" placeholder="Saisissez le compte rendu ici..."></textarea>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cr-modal-close-btn" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">Fermer</button>
+                
+                <button id="cr-modal-save-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
     <div id="tutorial-overlay" class="hidden">
         <div id="tutorial-step-box">
             <p id="tutorial-text" class="text-gray-700 text-sm mb-4">Ceci est une étape du tutoriel.</p>
@@ -382,6 +452,10 @@
         </div>
     </div>
 
+    <script src="apiService.js"></script>
+    <script src="utils.js"></script>
+    <script src="uiService.js"></script>
+    <script src="patientService.js"></script>
     <script src="app.js"></script>
     
 </body>
