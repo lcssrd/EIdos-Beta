@@ -39,12 +39,9 @@
      */
     function setupBaseEventListeners() {
         
-        // --- MODIFIÉ ---
-        // Appelle la nouvelle fonction de déconnexion centralisée
         document.getElementById('logout-btn')?.addEventListener('click', () => {
             patientService.logout();
         });
-        // --- FIN MODIFICATION ---
 
         document.getElementById('account-management-btn')?.addEventListener('click', (e) => {
             if (patientService.getUserPermissions().isStudent) {
@@ -112,6 +109,15 @@
         const mainContent = document.querySelector('main');
         mainContent.addEventListener('input', patientService.debouncedSave);
         mainContent.addEventListener('change', patientService.debouncedSave);
+
+        // --- CORRECTION AJOUTÉE ---
+        // Attache aussi les écouteurs à l'en-tête, qui est en dehors de <main>
+        const headerContent = document.getElementById('patient-header-form');
+        if (headerContent) {
+            headerContent.addEventListener('input', patientService.debouncedSave);
+            headerContent.addEventListener('change', patientService.debouncedSave);
+        }
+        // --- FIN CORRECTION ---
 
         // --- Mises à jour auto de l'UI (Header & Vie) ---
         document.getElementById('patient-entry-date').addEventListener('input', () => {
@@ -227,7 +233,7 @@
 
             if (loadBtn) {
                 const id = loadBtn.dataset.patientId;
-                const name = loadBtn.closest('.flex').querySelector('p').textContent.trim(); // Modifié pour marcher avec les icônes
+                const name = loadBtn.closest('.flex').querySelector('p').textContent.trim();
                 patientService.loadCaseIntoCurrentPatient(id, name);
             }
             if (deleteBtn) {
