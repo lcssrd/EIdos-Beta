@@ -71,6 +71,17 @@ body {
 .info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
 .info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
 
+/* --- NOUVEAU : Style pour la case Allergies lorsque remplie --- */
+.info-item.allergy-warning {
+    background-color: #fffaf0; /* Tailwind 'orange-50' */
+    border-color: #fdba74; /* Tailwind 'orange-300' */
+}
+.info-item.allergy-warning .info-label {
+    color: #c2410c; /* Tailwind 'orange-700' */
+    font-weight: 600;
+}
+/* --- FIN NOUVEAU --- */
+
 .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
 .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
 .timeline-dot.dot-rose { background-color: #f43f5e; }
@@ -98,12 +109,20 @@ input[type=number] {
 }
 .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
 
-.styled-input {
+.styled-input, select.styled-input { /* AJOUT : 'select.styled-input' */
     background-color: #f9fafb; border: 1px solid #d1d5db; transition: all 0.2s ease-in-out;
     padding: 0.5rem 0.75rem; border-radius: 0.375rem;
     width: 100%;
+    -webkit-appearance: none; /* AJOUT : Pour normaliser le style des selects */
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* AJOUT : Flèche du select */
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem; /* AJOUT : Espace pour la flèche */
 }
-.styled-input:focus {
+.styled-input:focus, select.styled-input:focus { /* AJOUT : 'select.styled-input:focus' */
     outline: 2px solid #3b82f6; outline-offset: -1px;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); border-color: #3b82f6;
 }
@@ -418,6 +437,13 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
     
     /* 3. Centrer le carré sur lui-même ET le pivoter */
     transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* * NOUVEAU : STYLE POUR LES BARRES RESPIRATOIRES (ORANGE)
+*/
+.iv-bar.iv-bar-respi {
+    background-color: #f59e0b; /* bg-amber-500 */
+    border-color: #b45309; /* border-amber-700 */
 }
 
 

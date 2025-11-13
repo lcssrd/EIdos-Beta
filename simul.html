@@ -243,8 +243,12 @@
                                      </div>
                                      <div>
                                          <label for="med-voie" class="block text-sm font-medium text-gray-700">Voie</label>
-                                         <input type="text" id="med-voie" class="styled-input mt-1">
-                                     </div>
+                                         <select id="med-voie" class="styled-input mt-1">
+                                             <option value="Per Os">Per Os</option>
+                                             <option value="IV">IV</option>
+                                             <option value="Respiratoire">Respiratoire</option>
+                                         </select>
+                                         </div>
                                      <div>
                                          <label for="med-start-date" class="block text-sm font-medium text-gray-700">Date de début</label>
                                          <input type="date" id="med-start-date" class="styled-input mt-1">
@@ -452,6 +456,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="apiService.js"></script>
     <script src="utils.js"></script>
     <script src="uiService.js"></script>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan de Projet EIdos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style pour la ligne de la timeline */
+        .timeline-line {
+            position: absolute;
+            left: 1.25rem; /* Aligné sur le centre de l'icône de phase */
+            top: 1.25rem;
+            bottom: 0;
+            width: 4px;
+            background-color: #cbd5e1; /* bg-gray-300 */
+            z-index: 0;
+        }
+        /* S'assure que le contenu passe au-dessus de la ligne */
+        .timeline-content {
+            position: relative;
+            z-index: 10;
+        }
+        /* Style pour l'icône de phase */
+        .timeline-icon {
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem; /* w-11 */
+            height: 2.75rem; /* h-11 */
+            background-color: white;
+            border-radius: 9999px; /* rounded-full */
+            border-width: 4px;
+            border-color: #0d9488; /* border-teal-600 */
+            z-index: 20;
+        }
+        
+        /* --- Styles pour le toggle personnalisé et la persistance --- */
+        /* Cache la checkbox par défaut */
+        .task-checkbox {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* Style du conteneur du toggle */
+        .toggle-container {
+            position: relative;
+            display: inline-block;
+            width: 52px; /* Largeur */
+            height: 28px; /* Hauteur */
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        /* Fond du toggle */
+        .toggle-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e5e7eb; /* bg-gray-200 */
+            border-radius: 9999px; /* rounded-full */
+            transition: background-color 0.2s ease;
+        }
+        
+        /* Cercle du toggle */
+        .toggle-dot {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 9999px; /* rounded-full */
+            transition: transform 0.2s ease;
+        }
+        
+        /* État coché */
+        .task-checkbox:checked + .toggle-container .toggle-bg {
+            background-color: #0d9488; /* bg-teal-600 */
+        }
+        
+        .task-checkbox:checked + .toggle-container .toggle-dot {
+            transform: translateX(24px); /* Déplacement du cercle */
+        }
+        
+        /* Style pour le contenu de la tâche (le bug "grisé") */
+        .task-content {
+            transition: opacity 0.2s ease, text-decoration 0.2s ease;
+        }
+        
+        .task-checkbox:checked ~ .task-content {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        /* Style pour les boutons de déplacement */
+        .reorder-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .reorder-controls button {
+            transition: background-color 0.2s;
+        }
+        .reorder-controls button:hover {
+            background-color: #e0f2f1; /* teal-50 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+
+    <div class="container mx-auto max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        
+        <div class="p-8 bg-gradient-to-br from-teal-500 to-cyan-600 text-white">
+            <h1 class="text-4xl font-extrabold">Plan de Projet EIdos</h1>
+            <p class="text-lg text-cyan-100 mt-2">De Render au Produit Commercial (SaaS)</p>
+        </div>
+
+        <div class="p-6 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-3">Stratégie d'Hébergement Recommandée</h3>
+            <div class="flex flex-wrap gap-4">
+                <div class="flex-1 min-w-[200px] p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-bold text-teal-700">Frontend (Vercel / Netlify)</h4>
+                    <p class="text-sm text-gray-600">Hébergement statique, déploiement continu depuis Git, CDN global. (Gratuit)</p>
+                </div>
+                <div class="flex-1 min-w-[200px] p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-bold text-teal-700">Backend (Render)</h4>
+                    <p class="text-sm text-gray-600">Hébergement de l'API Node.js, gestion facile des variables d'env. (Plan payant)</p>
+                </div>
+                <div class="flex-1 min-w-[200px] p-4 bg-gray-50 rounded-lg border">
+                    <h4 class="font-bold text-teal-700">Base de Données (Mongo Atlas)</h4>
+                    <p class="text-sm text-gray-600">Base de données managée, indépendante du backend. (Gratuit/Payant)</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6 md:px-10 border-b border-gray-200">
+            <details class="bg-gray-50 rounded-lg border border-gray-200">
+                <summary class="p-5 flex justify-between items-center cursor-pointer">
+                    <h2 class="text-2xl font-bold text-teal-700">
+                        <i class="fas fa-calculator mr-3"></i>
+                        Analyse Financière Prévisionnelle
+                    </h2>
+                    <i class="fas fa-chevron-down text-teal-600"></i>
+                </summary>
+                <div class="p-6 border-t border-gray-200">
+                    <p class="text-sm text-gray-600 mb-4">En tant que votre expert-comptable pour ce projet, voici une estimation prudente des coûts mensuels (hors taxes) pour lancer EIdos en production, basée sur la stack technique recommandée.</p>
+                    
+                    <h4 class="font-bold text-gray-800 mt-6 mb-2">1. Coûts Fixes Mensuels (Charges d'exploitation)</h4>
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-2">Poste de Dépense</th>
+                                <th class="p-2">Service</th>
+                                <th class="p-2">Coût (Min.)</th>
+                                <th class="p-2">Coût (Recommandé)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr>
+                                <td class="p-2 font-medium">Hébergement Backend</td>
+                                <td class="p-2">Render (Plan Starter)</td>
+                                <td class="p-2">~ 7 €</td>
+                                <td class="p-2">~ 7 €</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 font-medium">Hébergement Frontend</td>
+                                <td class="p-2">Vercel (Plan Hobby)</td>
+                                <td class="p-2">0 €</td>
+                                <td class="p-2">0 €</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 font-medium">Base de Données</td>
+                                <td class="p-2">Mongo Atlas (M0 / M2)</td>
+                                <td class="p-2">0 €</td>
+                                <td class="p-2">~ 8 €</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 font-medium">Nom de Domaine (.fr)</td>
+                                <td class="p-2">OVH (ou autre)</td>
+                                <td class="p-2">~ 0.60 €</td>
+                                <td class="p-2">~ 0.60 €</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 font-medium">Service d'emails</td>
+                                <td class="p-2">Brevo (Plan Gratuit)</td>
+                                <td class="p-2">0 €</td>
+                                <td class="p-2">0 €</td>
+                            </tr>
+                            <tr class="font-bold bg-gray-50">
+                                <td class="p-2" colspan="2">Total Mensuel Fixe (HT)</td>
+                                <td class="p-2 text-blue-600">~ 7.60 € / mois</td>
+                                <td class="p-2 text-teal-600">~ 15.60 € / mois</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="text-xs text-gray-500 mt-2"><b>Recommandation :</b> Démarrer avec le plan "Recommandé" (~15.60€) est plus prudent. Le plan M0 "gratuit" de Mongo Atlas n'est pas fait pour la production et peut s'endormir.</p>
+
+                    <h4 class="font-bold text-gray-800 mt-6 mb-2">2. Coûts Variables (Commission)</h4>
+                    <p class="text-sm text-gray-600">Ces coûts ne s'appliquent que lorsque vous réalisez une vente.</p>
+                    <ul class="list-disc list-inside text-sm text-gray-600 mt-2 pl-4">
+                        <li><b>Stripe (Paiement) :</b> ~ 1.5% + 0.25 € par transaction (pour les cartes européennes). Ce coût est directement prélevé sur vos revenus.</li>
+                    </ul>
+
+                    <h4 class="font-bold text-gray-800 mt-6 mb-2">3. Coûts Uniques (Investissement Initial)</h4>
+                    <p class="text-sm text-gray-600">Ce sont les frais de démarrage, à ne payer qu'une fois.</p>
+                     <ul class="list-disc list-inside text-sm text-gray-600 mt-2 pl-4">
+                        <li><b>Nom de Domaine (Paiement Annuel) :</b> ~ 7 €</li>
+                        <li><b>Création d'entreprise :</b> 0 € (si Auto-Entreprise) à ~ 250 € (si SASU/EURL).</li>
+                        <li><b>Rédaction CGU/Mentions Légales :</b> 0 € (si rédigé par vous-même) à 300 € - 1000 € (si rédigé par un juriste, ce qui est fortement recommandé pour un SaaS).</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+
+
+        <div class="p-6 md:p-10">
+            <div class="relative">
+                <div class="timeline-line hidden md:block"></div>
+
+                <div class="relative pl-0 md:pl-16 pb-12" id="phase-1-container">
+                    <div class="timeline-icon hidden md:flex">
+                        <span class="text-xl font-bold text-teal-600">1</span>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="flex items-center mb-1">
+                            <span class="md:hidden flex items-center justify-center w-8 h-8 mr-3 rounded-full border-4 border-teal-600 text-lg font-bold text-teal-600">1</span>
+                            <h2 class="text-3xl font-bold text-teal-700">Phase 1 : Évolution & Fiabilisation</h2>
+                        </div>
+                        <span class="ml-0 md:ml-1 inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-800 ring-1 ring-inset ring-orange-200">
+                            <i class="fas fa-server mr-2"></i>
+                            Environnement Actuel (Render)
+                        </span>
+
+                        <ul class="mt-6 space-y-4 task-list" id="task-list-1">
+                            </ul>
+                         <button onclick="addTask(1)" class="mt-4 w-full flex items-center justify-center p-3 text-sm font-medium rounded-lg text-teal-600 border border-dashed border-teal-300 hover:bg-teal-50 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter une nouvelle tâche à la Phase 1
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative pl-0 md:pl-16 pb-12" id="phase-2-container">
+                    <div class="timeline-icon hidden md:flex">
+                        <span class="text-xl font-bold text-teal-600">2</span>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="flex items-center mb-1">
+                            <span class="md:hidden flex items-center justify-center w-8 h-8 mr-3 rounded-full border-4 border-teal-600 text-lg font-bold text-teal-600">2</span>
+                            <h2 class="text-3xl font-bold text-teal-700">Phase 2 : Monétisation & Légal</h2>
+                        </div>
+                        <span class="ml-0 md:ml-1 inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-800 ring-1 ring-inset ring-orange-200">
+                            <i class="fas fa-server mr-2"></i>
+                            Environnement Actuel (Render)
+                        </span>
+
+                        <ul class="mt-6 space-y-4 task-list" id="task-list-2">
+                             </ul>
+                        <button onclick="addTask(2)" class="mt-4 w-full flex items-center justify-center p-3 text-sm font-medium rounded-lg text-teal-600 border border-dashed border-teal-300 hover:bg-teal-50 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter une nouvelle tâche à la Phase 2
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative pl-0 md:pl-16 pb-12" id="phase-3-container">
+                    <div class="timeline-icon hidden md:flex">
+                        <span class="text-xl font-bold text-teal-600">3</span>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="flex items-center mb-1">
+                            <span class="md:hidden flex items-center justify-center w-8 h-8 mr-3 rounded-full border-4 border-teal-600 text-lg font-bold text-teal-600">3</span>
+                            <h2 class="text-3xl font-bold text-teal-700">Phase 3 : Infrastructure & Pré-production</h2>
+                        </div>
+                        <span class="ml-0 md:ml-1 inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 ring-1 ring-inset ring-blue-200">
+                            <i class="fas fa-network-wired mr-2"></i>
+                            Migration de l'Infrastructure
+                        </span>
+
+                        <ul class="mt-6 space-y-4 task-list" id="task-list-3">
+                             </ul>
+                        <button onclick="addTask(3)" class="mt-4 w-full flex items-center justify-center p-3 text-sm font-medium rounded-lg text-teal-600 border border-dashed border-teal-300 hover:bg-teal-50 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter une nouvelle tâche à la Phase 3
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative pl-0 md:pl-16 pb-12" id="phase-4-container">
+                    <div class="timeline-icon hidden md:flex">
+                        <i class="fas fa-rocket text-xl text-teal-600"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="flex items-center mb-1">
+                            <span class="md:hidden flex items-center justify-center w-8 h-8 mr-3 rounded-full border-4 border-teal-600"><i class="fas fa-rocket text-lg text-teal-600"></i></span>
+                            <h2 class="text-3xl font-bold text-teal-700">Phase 4 : Lancement (Go-Live)</h2>
+                        </div>
+                        <span class="ml-0 md:ml-1 inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 ring-1 ring-inset ring-green-200">
+                            <i class="fas fa-power-off mr-2"></i>
+                            En Production
+                        </span>
+
+                        <ul class="mt-6 space-y-4 task-list" id="task-list-4">
+                             </ul>
+                         <button onclick="addTask(4)" class="mt-4 w-full flex items-center justify-center p-3 text-sm font-medium rounded-lg text-teal-600 border border-dashed border-teal-300 hover:bg-teal-50 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter une nouvelle tâche à la Phase 4
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const STORAGE_PREFIX = 'eidos_project_plan_phase_';
+        let taskIdCounter = 1; // Compteur pour les nouvelles tâches
+
+        // Définition des tâches initiales (elles seront chargées si pas de données dans localStorage)
+        const initialTasks = {
+            1: [
+                { id: 'task-1-1', title: 'Correction du Bug "Per Os"', description: 'Modifier <code>app.js</code> (fonction <code>deletePrescription</code>) pour afficher un message de confirmation dynamique (ex: "supprimer ce traitement ?") au lieu de "supprimer cette perfusion ?" pour les traitements non-IV.', iconClass: 'fas fa-bug text-red-500' },
+                { id: 'task-1-2', title: 'Implémentation du Service d\'Email', description: 'Migrer de <code>ethereal.email</code> vers un service transactionnel (ex: <strong>Brevo</strong> ou <strong>Mailgun</strong>). Remplacer toutes les simulations par de vrais <code>transporter.sendMail</code>.', iconClass: 'fas fa-envelope-circle-check text-blue-500' },
+                { id: 'task-1-3', title: 'Mise en évidence des Allergies', description: 'Modifier l\'interface (<code>simul.html</code>) pour que le champ "Allergies" apparaisse <strong>en surbrillance orangée</strong> (comme demandé) si des allergies sont renseignées pour le cas patient.', iconClass: 'fas fa-exclamation-triangle text-orange-500' },
+                { id: 'task-1-4', title: 'Ajout d\'une Date de Fin de Prescription', description: 'Modifier le formulaire d\'ajout de traitement pour inclure un champ optionnel "Date de fin". Mettre à jour le modèle de données (Backend) et la logique d\'affichage (<code>app.js</code>) pour gérer les prescriptions actives vs. terminées.', iconClass: 'fas fa-calendar-times text-gray-500' },
+                { id: 'task-1-5', title: 'Intégration de l\'onglet "Comptes Rendus"', description: 'Développement d\'un nouveau module complet pour centraliser les documents du cas : imagerie, actes techniques, observations spécialisées.', iconClass: 'fas fa-file-medical text-blue-500' },
+                { id: 'task-1-6', title: 'Gestion de l\'Impression du Dossier Patient', description: 'Ajouter une fonctionnalité d\'impression (via CSS d\'impression) sur <code>simul.html</code> pour générer une version PDF propre du dossier patient.', iconClass: 'fas fa-print text-gray-500' },
+                { id: 'task-1-7', title: 'Correction des Horaires dans le Diagramme de Soins', description: 'Corriger la logique d\'affichage des horaires des soins planifiés pour qu\'ils correspondent exactement aux valeurs saisies.', iconClass: 'fas fa-clock text-red-500' }
+            ],
+            2: [
+                { id: 'task-2-1', title: 'Implémentation des CGU (Légal)', description: 'Rédiger les CGU (incluant RGPD, responsabilité). Créer une page <code>cgu.html</code> et ajouter une <strong>checkbox d\'acceptation obligatoire</strong> sur <code>auth.html</code>.', iconClass: 'fas fa-gavel text-gray-500' },
+                { id: 'task-2-2', title: 'Intégration de Stripe (Paiement)', description: 'Implémenter le flux de paiement pour les plans payants. Créer une route <code>POST /api/payments/create-checkout-session</code> et le webhook <code>POST /api/webhook/payment-received</code>.', iconClass: 'fab fa-stripe-s text-indigo-500' }
+            ],
+            3: [
+                { id: 'task-3-1', title: 'Mise en Place de l\'Hébergement', description: 'Acheter le nom de domaine, déployer le Frontend sur <strong>Vercel</strong> et passer le Backend sur <strong>Render</strong> en plan "Starter".', iconClass: 'fas fa-server text-gray-500' },
+                { id: 'task-3-2', title: 'Configuration des Domaines (DNS)', description: 'Faire pointer <code>www.eidos.fr</code> vers <strong>Vercel</strong> et <code>api.eidos.fr</code> vers <strong>Render</strong> (enregistrements CNAME).', iconClass: 'fas fa-globe text-gray-500' },
+                { id: 'task-3-3', title: 'Mise à Jour du Code', description: 'Dans <code>app.js</code>, <code>auth.js</code>, et <code>account.js</code>, remplacer l\'URL de l\'API par : <code>const API_URL = \'https://api.eidos.fr\';</code>', iconClass: 'fas fa-code-branch text-gray-500' },
+                { id: 'task-3-4', title: 'Test de Pré-production', description: 'Naviguer sur <code>https://www.eidos.fr</code> et tester <strong>l\'intégralité du flux</strong> (inscription, validation par email, paiement Stripe en mode test, activation du plan).', iconClass: 'fas fa-vial text-gray-500' }
+            ],
+            4: [
+                { id: 'task-4-1', title: 'Configuration de Production', description: 'Basculer les comptes <strong>Stripe</strong> et <strong>Brevo/Mailgun</strong> du mode "Test" au mode "Live". Mettre à jour les variables d\'environnement sur Render.', iconClass: 'fas fa-toggle-on text-green-500' },
+                { id: 'task-4-2', title: 'Nettoyage des Outils de Test', description: 'Supprimer les fonctionnalités de test. Dans <code>simul.html</code>, supprimer les boutons "Import JSON" et "Export JSON".', iconClass: 'fas fa-broom text-gray-500' },
+                { id: 'task-4-3', title: 'Lancement Officiel', description: 'L\'application est prête. Communiquer l\'adresse <code>https://www.eidos.fr</code> aux utilisateurs et clients.', iconClass: 'fas fa-check-circle text-green-500' }
+            ]
+        };
+        
+        /**
+         * Génère le HTML pour une tâche et attache les listeners.
+         * Note: Cette fonction retourne un élément DOM, pas une simple chaîne de caractères.
+         */
+        function createTaskElement(task) {
+            const checkedAttr = task.isChecked ? 'checked' : '';
+            const html = `
+                <li class="bg-white p-5 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow" data-task-id="${task.id}">
+                    <div class="flex items-start gap-4">
+                        <input type="checkbox" id="${task.id}" class="task-checkbox peer" ${checkedAttr}>
+                        <label for="${task.id}" class="toggle-container"><div class="toggle-bg"></div><div class="toggle-dot"></div></label>
+                        
+                        <div class="flex-1 task-content">
+                            <label for="${task.id}" class="cursor-pointer">
+                                <h4 class="flex items-center text-lg font-bold text-gray-800" contenteditable="true">
+                                    <i class="${task.iconClass} w-6 text-center mr-3"></i>
+                                    ${task.title}
+                                </h4>
+                                <p class="text-sm text-gray-600 mt-2 pl-9" contenteditable="true">
+                                    ${task.description}
+                                </p>
+                            </label>
+                        </div>
+                        <div class="reorder-controls">
+                            <button class="reorder-up w-8 h-8 rounded-full bg-gray-100 text-teal-600" title="Monter"><i class="fas fa-chevron-up text-sm"></i></button>
+                            <button class="reorder-down w-8 h-8 rounded-full bg-gray-100 text-teal-600" title="Descendre"><i class="fas fa-chevron-down text-sm"></i></button>
+                            <button class="delete-task w-8 h-8 rounded-full bg-red-100 text-red-600" title="Supprimer la tâche"><i class="fas fa-trash text-sm"></i></button>
+                        </div>
+                    </div>
+                </li>
+            `;
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html.trim();
+            const taskElement = tempDiv.firstChild;
+            
+            attachTaskListeners(taskElement);
+            return taskElement;
+        }
+
+        /**
+         * Attache tous les listeners nécessaires à un élément de tâche donné.
+         * @param {HTMLElement} taskElement - L'élément LI de la tâche.
+         */
+        function attachTaskListeners(taskElement) {
+            const list = taskElement.parentElement;
+            const phaseNumber = list ? parseInt(list.id.replace('task-list-', ''), 10) : null;
+            
+            // Checkbox and Editable Content listeners
+            taskElement.querySelector('.task-checkbox').addEventListener('change', saveAllPhaseStates);
+            taskElement.querySelectorAll('[contenteditable="true"]').forEach(elem => {
+                elem.addEventListener('blur', saveAllPhaseStates);
+                elem.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        elem.blur();
+                    }
+                });
+            });
+            
+            // Reorder and Delete listeners (Fixing the issue)
+            taskElement.querySelector('.reorder-up').addEventListener('click', () => moveTask(taskElement, 'up'));
+            taskElement.querySelector('.reorder-down').addEventListener('click', () => moveTask(taskElement, 'down'));
+            taskElement.querySelector('.delete-task').addEventListener('click', () => deleteTask(taskElement));
+        }
+
+        /**
+         * Sauvegarde l'état complet (ordre, contenu, coches) d'une phase.
+         * @param {number} phaseNumber - Numéro de la phase.
+         */
+        function savePhaseState(phaseNumber) {
+            const list = document.getElementById(`task-list-${phaseNumber}`);
+            if (!list) return;
+
+            const tasks = Array.from(list.querySelectorAll('li[data-task-id]'));
+            const state = tasks.map(task => {
+                const id = task.getAttribute('data-task-id');
+                const isChecked = task.querySelector(`#${id}`).checked;
+                const title = task.querySelector('h4').innerText.trim();
+                const description = task.querySelector('p').innerText.trim();
+                const iconElement = task.querySelector('h4 i');
+                const iconClass = iconElement ? iconElement.className : 'fas fa-tasks text-gray-500'; 
+                
+                return { id, isChecked, title, description, iconClass };
+            });
+
+            localStorage.setItem(`${STORAGE_PREFIX}${phaseNumber}`, JSON.stringify(state));
+        }
+
+        /**
+         * Restaure l'état d'une phase au chargement.
+         * @param {number} phaseNumber - Numéro de la phase.
+         */
+        function loadPhaseState(phaseNumber) {
+            const list = document.getElementById(`task-list-${phaseNumber}`);
+            if (!list) return;
+
+            // 1. Déterminer l'état à charger (localStorage ou initialTasks)
+            let state;
+            const savedState = localStorage.getItem(`${STORAGE_PREFIX}${phaseNumber}`);
+            if (savedState) {
+                state = JSON.parse(savedState);
+            } else {
+                // Si pas de sauvegarde, utiliser les tâches initiales et initialiser le compteur
+                state = initialTasks[phaseNumber] || [];
+                state.forEach(task => task.isChecked = false); // Les initiales sont décochées par défaut
+            }
+
+            list.innerHTML = ''; // Nettoyer la liste existante
+
+            // 2. Créer et insérer les éléments, et mettre à jour le compteur
+            state.forEach(task => {
+                const taskElement = createTaskElement(task);
+                list.appendChild(taskElement);
+                
+                if (task.id.startsWith('new-task-')) {
+                    const number = parseInt(task.id.replace('new-task-', ''), 10);
+                    if (number >= taskIdCounter) {
+                        taskIdCounter = number + 1;
+                    }
+                }
+            });
+        }
+        
+        /** Sauvegarde l'état de toutes les phases. */
+        function saveAllPhaseStates() {
+             for (let i = 1; i <= 4; i++) {
+                savePhaseState(i);
+            }
+        }
+        
+        /**
+         * Ajoute une nouvelle tâche à une phase.
+         * @param {number} phaseNumber - Numéro de la phase.
+         */
+        window.addTask = function(phaseNumber) {
+            const list = document.getElementById(`task-list-${phaseNumber}`);
+            const newTaskId = `new-task-${taskIdCounter++}`;
+            const newTaskData = {
+                id: newTaskId,
+                title: 'Nouvelle Tâche (à éditer)',
+                description: 'Décrivez ici l\'objectif de cette nouvelle tâche.',
+                isChecked: false,
+                iconClass: 'fas fa-tasks text-gray-500'
+            };
+            
+            const newTaskElement = createTaskElement(newTaskData);
+            list.appendChild(newTaskElement);
+            
+            savePhaseState(phaseNumber);
+            newTaskElement.querySelector('h4').focus();
+        };
+
+        /**
+         * Déplace une tâche vers le haut ou vers le bas.
+         * @param {HTMLElement} currentTask - L'élément LI de la tâche.
+         * @param {string} direction - 'up' ou 'down'.
+         */
+        window.moveTask = function(currentTask, direction) {
+            const list = currentTask.parentElement;
+            
+            if (direction === 'up' && currentTask.previousElementSibling) {
+                list.insertBefore(currentTask, currentTask.previousElementSibling);
+            } else if (direction === 'down' && currentTask.nextElementSibling) {
+                list.insertBefore(currentTask.nextElementSibling, currentTask);
+            } else {
+                return; 
+            }
+
+            const phaseNumber = parseInt(list.id.replace('task-list-', ''), 10);
+            savePhaseState(phaseNumber);
+        };
+        
+        /**
+         * Supprime une tâche.
+         * @param {HTMLElement} currentTask - L'élément LI de la tâche à supprimer.
+         */
+        window.deleteTask = function(currentTask) {
+            if (!confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) {
+                return;
+            }
+            
+            const list = currentTask.parentElement;
+            currentTask.remove();
+            
+            const phaseNumber = parseInt(list.id.replace('task-list-', ''), 10);
+            savePhaseState(phaseNumber);
+        };
+
+        // Initialisation : Charger l'état de toutes les phases au démarrage
+        document.addEventListener('DOMContentLoaded', () => {
+            for (let i = 1; i <= 4; i++) {
+                loadPhaseState(i);
+            }
+        });
+    </script>
+</body>
+</html>

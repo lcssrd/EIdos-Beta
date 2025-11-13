@@ -3,22 +3,11 @@
 
     // --- État de l'application ---
     
-    // Contient l'objet 'user' complet de l'API (permissions, rôle, etc.)
     let userPermissions = {}; 
-    
-    // Contient la liste des chambres (ex: [{id: 'chambre_101', room: '101'}, ...])
     let patientList = []; 
-    
-    // L'ID du patient actuellement affiché (ex: 'chambre_101')
     let activePatientId = null;
-    
-    // L'objet complet (dossierData) du patient actuellement affiché
     let currentPatientState = {};
-    
-    // Un drapeau pour empêcher les sauvegardes pendant un chargement
     let isLoadingData = false;
-    
-    // Pour la sauvegarde automatique
     let saveTimeout;
 
     /**
@@ -32,7 +21,6 @@
 
         // 1. Inputs simples (Header, Admin, Vie, ATCD)
         document.querySelectorAll('input[id], textarea[id]').forEach(el => {
-            // Exclure les champs de formulaire qui ne font pas partie de l'état
             if (el.id.startsWith('new-') || el.id.startsWith('cr-modal-') || el.type === 'file') {
                 return;
             }
@@ -61,8 +49,7 @@
             });
         });
         
-        // 4. Comptes Rendus (Nouvelle logique : stocke l'état actuel)
-        // On préserve l'état existant (currentPatientState)
+        // 4. Comptes Rendus
         state.comptesRendus = currentPatientState.comptesRendus || {};
 
         // 5. Diagramme de Soins
@@ -75,7 +62,7 @@
         document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
             const offset = utils.calculateDaysOffset(entryDateStr, input.value);
             bioData.dateOffsets.push(offset);
-            input.dataset.dateOffset = offset; // Assure que le DOM est à jour
+            input.dataset.dateOffset = offset;
         });
         document.querySelectorAll('#bio-table tbody tr').forEach(row => {
             if (row.cells.length > 1 && row.cells[0].classList.contains('font-semibold')) { 
@@ -147,9 +134,8 @@
         uiService.fillPrescriptionsFromState(state, entryDateStr);
         uiService.fillBioFromState(state, entryDateStr);
         uiService.fillPancarteFromState(state);
-        uiService.fillCrCardsFromState(state.comptesRendus); // Nouvelle fonction pour les cartes
+        uiService.fillCrCardsFromState(state.comptesRendus);
         
-        // Mettre à jour les affichages calculés
         uiService.updateAgeDisplay();
         uiService.updateJourHosp(); 
         uiService.calculateAndDisplayIMC();
@@ -160,6 +146,33 @@
         }
     }
 
+    // --- AJOUT : Gestionnaire de mise à jour WebSocket ---
+    
+    /**
+     * Appelé par apiService lorsqu'une mise à jour est reçue.
+     * @param {Object} dossierData - Le nouvel état complet du dossier.
+     */
+    function handleDossierUpdate(dossierData) {
+        console.log("Mise à jour du dossier reçue, application à l'UI...");
+        
+        // Empêche une sauvegarde de se déclencher PENDANT le rafraîchissement
+        isLoadingData = true; 
+        
+        currentPatientState = dossierData;
+        loadPatientDataIntoUI(dossierData);
+        
+        // Met à jour le nom dans la sidebar si nécessaire
+        const nomUsage = dossierData['patient-nom-usage'] || '';
+        const prenom = dossierData['patient-prenom'] || '';
+        let patientName = `${nomUsage} ${prenom}`.trim();
+        if (!patientName && activePatientId.startsWith('chambre_')) {
+            patientName = `Chambre ${activePatientId.split('_')[1]}`;
+        }
+        uiService.updateSidebarEntryName(activePatientId, patientName);
+
+        // Réactive la sauvegarde
+        isLoadingData = false;
+    }
 
     // --- Fonctions de Service (exposées) ---
 
@@ -171,18 +184,15 @@
         try {
             const userData = await apiService.fetchUserPermissions();
             
-            // Stocker les permissions
             userPermissions.subscription = userData.subscription || 'free';
             userPermissions.allowedRooms = userData.allowedRooms || []; 
 
             if (userData.role === 'etudiant' && userData.permissions) {
                 userPermissions = { ...userPermissions, ...userData.permissions, isStudent: true, role: 'etudiant' };
-                // Les étudiants voient seulement leurs chambres autorisées
                 patientList = userPermissions.allowedRooms
                     .map(roomId => ({ id: roomId, room: roomId.split('_')[1] }))
                     .sort((a, b) => a.room.localeCompare(b.room));
             } else {
-                // Formateurs / Propriétaires / Indépendants
                 let effectivePlan = userData.subscription || 'free';
                 let role = userData.role || 'user';
                 if ((role === 'formateur' || role === 'owner') && userData.organisation) {
@@ -196,7 +206,6 @@
                     transmissions: true, pancarte: true, diagramme: true, biologie: true,
                     comptesRendus: true
                 };
-                // Les formateurs voient les 10 chambres par défaut
                 patientList = Array.from({ length: 10 }, (_, i) => ({
                     id: `chambre_${101 + i}`,
                     room: `${101 + i}`
@@ -216,6 +225,16 @@
             document.getElementById('patient-list').innerHTML = '<li class="p-2 text-sm text-gray-500">Aucune chambre ne vous a été assignée.</li>';
             document.getElementById('main-content-wrapper').innerHTML = '<div class="p-8 text-center text-gray-600">Aucune chambre ne vous a été assignée. Veuillez contacter votre formateur.</div>';
             document.querySelectorAll('#main-header button').forEach(btn => btn.disabled = true);
+            
+            // --- AJOUT : Connecter le WebSocket même si pas de chambre ---
+            // Cela permet de recevoir des mises à jour si on nous assigne une chambre plus tard
+            // (Bien que l'UI ne le reflète pas encore sans recharger)
+            if (userPermissions.subscription !== 'free') {
+                 apiService.connectWebSocket();
+                 apiService.onDossierUpdated(handleDossierUpdate);
+            }
+            // --- FIN AJOUT ---
+            
             return; // Bloquer l'initialisation
         }
 
@@ -229,6 +248,15 @@
 
         // 5. Charger la liste des patients dans la sidebar
         await loadPatientList();
+        
+        // --- AJOUT : Connexion au WebSocket ---
+        // Se connecte au WebSocket SEULEMENT si ce n'est pas un plan 'free'
+        if (userPermissions.subscription !== 'free') {
+            apiService.connectWebSocket();
+            // Met en place l'écouteur pour les mises à jour
+            apiService.onDossierUpdated(handleDossierUpdate);
+        }
+        // --- FIN AJOUT ---
 
         // 6. Charger le patient actif
         await switchPatient(activePatientId, true); // true = skipSave
@@ -266,27 +294,35 @@
             await saveCurrentPatientData();
         }
         
+        // --- AJOUT : Gestion des "Rooms" WebSocket ---
+        if (userPermissions.subscription !== 'free') {
+            // Quitte l'ancienne room (si elle existe)
+            if (activePatientId) {
+                apiService.leaveDossier(activePatientId);
+            }
+            // Rejoint la nouvelle room
+            apiService.joinDossier(newPatientId);
+        }
+        // --- FIN AJOUT ---
+        
         isLoadingData = true;
         activePatientId = newPatientId;
         localStorage.setItem('activePatientId', newPatientId); 
         
         uiService.resetForm(); 
         
-        // Charger les données depuis l'API
         try {
             currentPatientState = await apiService.fetchPatientData(newPatientId);
         } catch (error) {
             console.error(`Échec du chargement du patient ${newPatientId}`, error);
-            currentPatientState = {}; // Revenir à un état vide en cas d'erreur
+            currentPatientState = {};
         }
         
-        // Remplir l'UI avec les nouvelles données
         loadPatientDataIntoUI(currentPatientState);
         
         uiService.updateSidebarActiveState(newPatientId);
         document.getElementById('main-content-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
         
-        // Ré-appliquer les permissions (surtout pour les étudiants)
         uiService.applyPermissions(userPermissions);
         
         isLoadingData = false;
@@ -304,11 +340,11 @@
         currentPatientState = state; // Met à jour l'état local
         
         try {
+            // Cette fonction POST déclenchera la diffusion WebSocket côté serveur
             await apiService.saveChamberData(activePatientId, state, state.sidebar_patient_name);
             uiService.updateSidebarEntryName(activePatientId, state.sidebar_patient_name);
         } catch (error) {
             console.error("Échec de la sauvegarde automatique :", error);
-            // Ne pas montrer d'alerte pour ne pas déranger l'utilisateur
         }
     }
     
@@ -319,7 +355,7 @@
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
             saveCurrentPatientData();
-        }, 500);
+        }, 500); // 500ms de délai
     }
     
     /**
@@ -357,6 +393,7 @@
         let savedPatients = [];
         try {
             const allPatients = await apiService.fetchPatientList();
+            // NOTE : Vous pourriez ici séparer 'save_' et 'template_'
             savedPatients = allPatients.filter(p => p.patientId.startsWith('save_'));
         } catch (error) {
             uiService.showCustomAlert("Erreur", "Impossible de charger la liste des dossiers sauvegardés.");
@@ -376,21 +413,20 @@
 
         uiService.showDeleteConfirmation(message, async () => {
             try {
-                // 1. Récupérer les données de la sauvegarde
                 const dossierToLoad = await apiService.fetchPatientData(patientIdToLoadFrom);
                 if (!dossierToLoad || Object.keys(dossierToLoad).length === 0) {
                     uiService.showCustomAlert("Erreur", "Le dossier que vous essayez de charger est vide.");
                     return;
                 }
 
-                // 2. Écraser la chambre active avec ces données
+                // Cette sauvegarde va déclencher un broadcast WebSocket à tous les autres
                 const patientName = dossierToLoad.sidebar_patient_name;
                 await apiService.saveChamberData(activePatientId, dossierToLoad, patientName);
 
-                // 3. Rafraîchir l'interface
+                // Recharge l'interface pour l'utilisateur actuel
                 uiService.hideLoadPatientModal();
                 await switchPatient(activePatientId, true); // true = skipSave
-                await loadPatientList(); // Mettre à jour la sidebar
+                await loadPatientList(); 
                 uiService.showCustomAlert("Chargement réussi", `Le dossier de "${patientName}" a été chargé dans la chambre ${roomToLoadInto}.`);
 
             } catch (err) {
@@ -408,7 +444,7 @@
         uiService.showDeleteConfirmation(`Êtes-vous sûr de vouloir supprimer la sauvegarde "${patientName}" ? Cette action est irréversible.`, async () => {
             try {
                 await apiService.deleteSavedCase(patientIdToDelete);
-                await openLoadPatientModal(); // Rafraîchit la liste dans la modale
+                await openLoadPatientModal();
             } catch (err) {
                 uiService.showCustomAlert("Erreur", `Impossible de supprimer la sauvegarde: ${err.message}`);
             }
@@ -427,10 +463,9 @@
         try {
             const patientName = jsonData.sidebar_patient_name || `Chambre ${activePatientId.split('_')[1]}`;
             
-            // Sauvegarde les nouvelles données dans la chambre active
+            // Cette sauvegarde déclenchera un broadcast
             await apiService.saveChamberData(activePatientId, jsonData, patientName);
             
-            // Recharge l'interface
             await switchPatient(activePatientId, true); 
             await loadPatientList();
             uiService.showCustomAlert("Importation réussie", `Le fichier a été importé dans la chambre ${activePatientId.split('_')[1]}.`);
@@ -480,7 +515,7 @@
         
         const message = `Êtes-vous sûr de vouloir effacer les données de la chambre ${activePatientId.split('_')[1]} ? Les données sauvegardées sur le serveur pour cette chambre seront aussi réinitialisées.`;
         uiService.showDeleteConfirmation(message, async () => {
-            currentPatientState = {}; // Efface l'état local
+            currentPatientState = {};
             uiService.resetForm();
             
             if (userPermissions.subscription === 'free') {
@@ -488,6 +523,7 @@
             }
             
             try {
+                // Cette sauvegarde (d'un objet vide) déclenchera un broadcast
                 await apiService.saveChamberData(activePatientId, {}, `Chambre ${activePatientId.split('_')[1]}`);
                 uiService.updateSidebarEntryName(activePatientId, `Chambre ${activePatientId.split('_')[1]}`);
             } catch (err) {
@@ -513,23 +549,40 @@
             }
             
             try {
+                // Ceci déclenchera 10 broadcasts, un pour chaque chambre
                 const allChamberIds = patientList.map(p => p.id);
                 await apiService.clearAllChamberData(allChamberIds);
-                await loadPatientList(); // Rafraîchit la sidebar
+                await loadPatientList();
                 uiService.showCustomAlert("Opération réussie", "Toutes les chambres ont été réinitialisées.");
             } catch (err) {
                  uiService.showCustomAlert("Erreur", "Une erreur est survenue lors de la réinitialisation.");
             }
         });
     }
+    
+    // --- NOUVEAU : Fonction de déconnexion ---
+    
+    /**
+     * Gère la déconnexion de l'utilisateur.
+     */
+    function logout() {
+        // Se déconnecte du WebSocket
+        if (userPermissions.subscription !== 'free') {
+            apiService.disconnectWebSocket();
+        }
+        
+        // Vide le localStorage
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('activePatientId');
+        localStorage.removeItem('activeTab');
+        
+        // Redirige
+        window.location.href = 'auth.html';
+    }
+
 
     // --- Fonctions de logique métier (Comptes Rendus) ---
 
-    /**
-     * Récupère le texte pour une carte CR spécifique depuis l'état.
-     * @param {string} crId - L'ID de la carte (ex: 'cr-consultation').
-     * @returns {string} Le texte du compte rendu.
-     */
     function getCrText(crId) {
         if (currentPatientState.comptesRendus && currentPatientState.comptesRendus[crId]) {
             return currentPatientState.comptesRendus[crId];
@@ -537,11 +590,6 @@
         return '';
     }
 
-    /**
-     * Gère le clic sur "Enregistrer" dans la modale CR.
-     * @param {string} crId - L'ID de la carte.
-     * @param {string} crText - Le nouveau texte.
-     */
     function handleCrModalSave(crId, crText) {
         if (!currentPatientState.comptesRendus) {
             currentPatientState.comptesRendus = {};
@@ -549,11 +597,10 @@
         
         currentPatientState.comptesRendus[crId] = crText;
         
-        // Mettre à jour la coche
         uiService.updateCrCardCheckmark(crId, crText && crText.trim() !== '');
         
         uiService.closeCrModal();
-        debouncedSave(); // Déclencher une sauvegarde
+        debouncedSave();
     }
     
     // --- Exposition du service ---
@@ -583,7 +630,10 @@
         
         // Logique métier
         getCrText,
-        handleCrModalSave
+        handleCrModalSave,
+        
+        // NOUVEAU
+        logout
     };
 
 })();

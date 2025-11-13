@@ -1,13 +1,15 @@
 (function() {
     "use strict";
 
-    // La seule constante de ce fichier
     const API_URL = 'https://eidos-api.onrender.com';
+    
+    // --- AJOUT : Instance de Socket.io ---
+    let socket = null; 
+    // --- FIN AJOUT ---
 
     // --- Fonctions d'authentification "privées" ---
-    // (Elles ne sont pas exposées sur window.apiService, 
-    // mais sont utilisées par les autres fonctions de ce fichier)
-
+    
+    // MODIFIÉ : Cette fonction est maintenant centrale
     function getAuthToken() {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -39,8 +41,8 @@
         return false;
     }
 
-    // --- Fonctions API "publiques" ---
-    // (Celles-ci seront exposées sur window.apiService)
+    // --- Fonctions API "publiques" (HTTP) ---
+    // (Toutes vos fonctions fetch... restent INCHANGÉES)
 
     /**
      * Récupère les permissions et les données de l'utilisateur connecté.
@@ -48,7 +50,7 @@
      */
     async function fetchUserPermissions() {
         try {
-            const token = getAuthToken(); // On a besoin du token mais pas de 'Content-Type'
+            const token = getAuthToken();
             if (!token) return;
 
             const response = await fetch(`${API_URL}/api/auth/me`, {
@@ -62,11 +64,10 @@
             return await response.json();
         } catch (err) {
             console.error(err);
-            // Redirige en cas d'erreur grave
             if (err.message.includes("Token non trouvé")) {
                 window.location.href = 'auth.html';
             }
-            throw err; // Propage l'erreur pour que le code appelant puisse réagir
+            throw err;
         }
     }
 
@@ -77,7 +78,7 @@
     async function fetchPatientList() {
         try {
             const headers = getAuthHeaders();
-            delete headers['Content-Type']; // Pas de body
+            delete headers['Content-Type']; 
 
             const response = await fetch(`${API_URL}/api/patients`, { headers });
             if (handleAuthError(response)) return;
@@ -100,7 +101,7 @@
     async function fetchPatientData(patientId) {
         try {
             const headers = getAuthHeaders();
-            delete headers['Content-Type']; // Pas de body
+            delete headers['Content-Type']; 
 
             const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
                 headers: headers
@@ -111,18 +112,18 @@
             if (!response.ok) {
                 if (response.status === 404) {
                     console.log(`Dossier ${patientId} non trouvé sur le serveur, initialisation.`);
-                    return {}; // Retourne un état vide si 404
+                    return {}; 
                 } else {
                     throw new Error('Erreur réseau lors du chargement des données.');
                 }
             }
-            return await response.json(); // Retourne le 'dossierData'
+            return await response.json(); 
         } catch (err) {
             console.error("Erreur de chargement des données:", err);
             if (err.message.includes("Token non trouvé")) {
                 window.location.href = 'auth.html';
             }
-            return {}; // Retourne un état vide en cas d'erreur
+            return {};
         }
     }
 
@@ -213,7 +214,7 @@
         
         try {
             const headers = getAuthHeaders();
-            delete headers['Content-Type']; // Pas de body
+            delete headers['Content-Type']; 
             if (!headers) return;
 
             const response = await fetch(`${API_URL}/api/patients/${patientId}`, { 
@@ -265,17 +266,112 @@
         }
     }
 
+    // --- NOUVELLES FONCTIONS : GESTION WEBSOCKET ---
+
+    /**
+     * Initialise la connexion WebSocket vers le serveur.
+     * @returns {Promise<void>}
+     */
+    function connectWebSocket() {
+        // Vérifie si io() est disponible (doit être chargé dans simul.html)
+        if (typeof io === 'undefined') {
+            console.error("La bibliothèque client Socket.io n'est pas chargée.");
+            return;
+        }
+        
+        const token = getAuthToken();
+        if (!token) return; // Sécurité
+
+        console.log("Tentative de connexion au WebSocket...");
+
+        // Se connecte à l'URL racine du serveur
+        socket = io(API_URL, {
+            auth: {
+                token: token // Envoie le token JWT pour l'authentification
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('✅ Connecté au serveur WebSocket avec ID:', socket.id);
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('Erreur de connexion WebSocket:', err.message);
+            // Gérer les erreurs d'authentification ici
+            if (err.message.includes("Authentification échouée")) {
+                handleAuthError({ status: 401 }); // Redirige vers le login
+            }
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.warn('Déconnecté du WebSocket:', reason);
+        });
+    }
+
+    /**
+     * Ferme la connexion WebSocket.
+     */
+    function disconnectWebSocket() {
+        if (socket) {
+            socket.disconnect();
+            socket = null;
+        }
+    }
+
+    /**
+     * Demande au serveur de rejoindre la "room" d'un dossier.
+     * @param {string} patientId - L'ID du dossier à rejoindre.
+     */
+    function joinDossier(patientId) {
+        if (socket && patientId) {
+            socket.emit('join_dossier', patientId);
+        }
+    }
+
+    /**
+     * Demande au serveur de quitter la "room" d'un dossier.
+     * @param {string} patientId - L'ID du dossier à quitter.
+     */
+    function leaveDossier(patientId) {
+        if (socket && patientId) {
+            socket.emit('leave_dossier', patientId);
+        }
+    }
+
+    /**
+     * Met en place l'écouteur pour les mises à jour de dossier.
+     * @param {function} callback - La fonction à appeler lorsque 'dossier_updated' est reçu.
+     */
+    function onDossierUpdated(callback) {
+        if (socket) {
+            // S'assure de supprimer les anciens écouteurs pour éviter les doublons
+            socket.off('dossier_updated'); 
+            
+            socket.on('dossier_updated', (dossierData) => {
+                console.log("Mise à jour reçue du serveur via WebSocket !");
+                callback(dossierData);
+            });
+        }
+    }
 
     // --- Exposition du service ---
     
     window.apiService = {
+        // Fonctions HTTP (inchangées)
         fetchUserPermissions,
         fetchPatientList,
         fetchPatientData,
         saveChamberData,
         saveCaseData,
         deleteSavedCase,
-        clearAllChamberData
+        clearAllChamberData,
+
+        // NOUVELLES fonctions WebSocket
+        connectWebSocket,
+        disconnectWebSocket,
+        joinDossier,
+        leaveDossier,
+        onDossierUpdated
     };
 
 })();

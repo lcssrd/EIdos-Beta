@@ -364,13 +364,33 @@
     }
 
     // --- Fonctions de Gestion de l'UI (Formulaires & Données) ---
+    
+    // --- NOUVEAU : Fonction pour styliser la case allergie ---
+    /**
+     * Vérifie le contenu de la case "Allergies" et applique/retire le style orange.
+     */
+    function updateAllergyWarning() {
+        const allergyInput = document.getElementById('atcd-allergies');
+        if (!allergyInput) return;
+        
+        const infoItem = allergyInput.closest('.info-item');
+        if (!infoItem) return;
+
+        if (allergyInput.value && allergyInput.value.trim() !== '') {
+            infoItem.classList.add('allergy-warning');
+        } else {
+            infoItem.classList.remove('allergy-warning');
+        }
+    }
+    // --- FIN NOUVEAU ---
 
     /**
      * Réinitialise l'ensemble du formulaire principal.
      */
     function resetForm() {
-        document.querySelectorAll('#patient-header-form input, #patient-header-form textarea, main input, main textarea').forEach(el => {
+        document.querySelectorAll('#patient-header-form input, #patient-header-form textarea, main input, main textarea, main select').forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+            else if (el.tagName.toLowerCase() === 'select') el.selectedIndex = 0; // Réinitialise les listes déroulantes
             else if (el.type !== 'file') el.value = '';
         });
         ['observations-list', 'transmissions-list-ide', 'prescription-tbody'].forEach(id => {
@@ -396,7 +416,8 @@
         document.getElementById('pancarte-tbody').innerHTML = '';
         
         initializeDynamicTables();
-
+        
+        updateAllergyWarning(); // MODIFIÉ : Ajout de l'appel
         calculateAndDisplayIMC();
         if (pancarteChartInstance) pancarteChartInstance.destroy();
     }
@@ -417,6 +438,9 @@
                 else { el.value = state[id]; }
             }
         });
+        
+        updateAllergyWarning(); // MODIFIÉ : Ajout de l'appel
+
         // Redimensionner les textareas après remplissage
         setTimeout(() => {
             document.querySelectorAll('textarea.info-value').forEach(autoResize);
@@ -515,7 +539,11 @@
                     dateOffset = utils.calculateDaysOffset(entryDateStr, oldStartDate);
                 }
                 
-                addPrescription({ ...pData, dateOffset: dateOffset }, true);
+                // Rétro-compatibilité pour l'ancien 'type'
+                if (pData.type === 'iv') pData.voie = 'IV';
+                if (pData.type === 'checkbox') pData.voie = 'Per Os';
+                
+                addPrescription({ ...pData, dateOffset: dateOffset, type: pData.voie }, true); // Le type est la voie
             });
         }
     }
@@ -1056,10 +1084,11 @@
         }
     }
 
+    // MODIFIÉ
     function readPrescriptionForm() {
         const name = document.getElementById('med-name').value.trim();
         const posologie = document.getElementById('med-posologie').value.trim();
-        const voie = document.getElementById('med-voie').value.trim();
+        const voie = document.getElementById('med-voie').value; // Lit la valeur du <select>
         const startDateValue = document.getElementById('med-start-date').value;
         const entryDateStr = document.getElementById('patient-entry-date').value;
         
@@ -1069,13 +1098,16 @@
         }
 
         const dateOffset = utils.calculateDaysOffset(entryDateStr, startDateValue);
-        const type = voie.trim().toUpperCase() === 'IV' ? 'iv' : 'checkbox';
+        
+        // Le 'type' est maintenant la 'voie' elle-même (ex: "IV", "Per Os", "Respiratoire")
+        const type = voie; 
         
         document.getElementById('new-prescription-form').reset();
         
         return { name, posologie, voie, type, bars: [], dateOffset };
     }
 
+    // MODIFIÉ
     function addPrescription(data, fromLoad = false) {
         let { name, posologie, voie, type, bars, dateOffset } = data;
         const entryDateStr = document.getElementById('patient-entry-date').value;
@@ -1087,7 +1119,7 @@
         
         const tbody = document.getElementById("prescription-tbody");
         const newRow = tbody.insertRow();
-        newRow.dataset.type = type;
+        newRow.dataset.type = type; // Sera "IV", "Per Os" ou "Respiratoire"
         newRow.dataset.dateOffset = dateOffset;
 
         newRow.innerHTML = `
@@ -1108,12 +1140,15 @@
         timelineCell.colSpan = 88; 
         timelineCell.className = 'iv-bar-container';
 
-        if (type !== 'iv') {
+        // Seul "Per Os" est un "marker-container" (losange)
+        if (type === 'Per Os') {
             timelineCell.classList.add('marker-container');
         }
         
-        // TODO: Gérer les permissions ici
-        timelineCell.addEventListener('mousedown', handleIVMouseDown);
+        // *** CORRECTION DU BUG DES DOUBLES ÉVÉNEMENTS ***
+        // La ligne ci-dessous a été SUPPRIMÉE car elle était redondante
+        // avec l'écouteur global défini dans app.js
+        // timelineCell.addEventListener('mousedown', handleIVMouseDown);
         
         const barsToCreate = (fromLoad && bars && Array.isArray(bars)) ? bars : [];
         
@@ -1121,8 +1156,15 @@
             if (barData && barData.left && (barData.width || barData.width === 0)) {
                 const bar = document.createElement('div');
                 bar.className = 'iv-bar';
-                if (type !== 'iv') bar.classList.add('marker-bar');
                 
+                // Ajoute la classe correcte en fonction du type
+                if (type === 'Per Os') {
+                    bar.classList.add('marker-bar');
+                } else if (type === 'Respiratoire') {
+                    bar.classList.add('iv-bar-respi'); // Nouvelle classe pour l'orange
+                }
+                // 'IV' garde la classe 'iv-bar' de base (bleue)
+
                 bar.style.left = barData.left;
                 bar.style.width = barData.width;
                 bar.title = barData.title || '';
@@ -1257,7 +1299,7 @@
     function handleIVDblClick(e) {
         // TODO: Vérifier permissions
         const bar = e.currentTarget;
-        showDeleteConfirmation("Effacer cette barre de perfusion IV ?", () => {
+        showDeleteConfirmation("Effacer cette administration ?", () => {
             const cell = bar.parentElement;
             if(cell) {
                 const barId = bar.dataset.barId;
@@ -1271,6 +1313,7 @@
         });
     }
 
+    // MODIFIÉ
     function handleIVMouseDown(e) {
         // TODO: Vérifier permissions
         
@@ -1289,9 +1332,14 @@
             const newBar = document.createElement('div');
             newBar.className = 'iv-bar';
             
-            if (cell.classList.contains('marker-container')) {
+            // Détermine la classe de la barre (losange, orange, ou bleu)
+            const rowType = cell.closest('tr').dataset.type;
+            if (rowType === 'Per Os') {
                 newBar.classList.add('marker-bar');
+            } else if (rowType === 'Respiratoire') {
+                newBar.classList.add('iv-bar-respi');
             }
+            // 'IV' garde la classe par défaut
             
             newBar.style.left = `${(startX / rect.width) * 100}%`;
             newBar.style.width = '0px';
@@ -1387,8 +1435,8 @@
         const { targetBar, targetCell } = ivInteraction;
         if (targetBar && targetCell) {
             const cellRect = targetCell.getBoundingClientRect();
-            const totalIntervals = 11 * 24 * 4;
-            const intervalWidthPx = cellRect.width / totalIntervals;
+            const totalTimelineMinutes = 11 * 24 * 4;
+            const intervalWidthPx = cellRect.width / totalTimelineMinutes;
 
             const rawLeftPx = targetBar.offsetLeft;
             const snappedLeftInterval = Math.round(rawLeftPx / intervalWidthPx);
@@ -1565,6 +1613,7 @@
         { element: '#import-json-btn', text: "Ce bouton vous permet d'importer un fichier JSON.", position: 'bottom-left' },
         { element: '#export-json-btn', text: "Et celui-ci vous permet d'exporter le dossier actuel en fichier .json.", position: 'bottom-left' },
         { element: '#clear-current-patient-btn', text: "Ce bouton efface les données de la chambre actuelle.", position: 'bottom-left' },
+        { element: '#account-management-btn', text: "C'est ici que le formateur gère son compte, peut créer des comptes étudiants et définir leurs permissions.", position: 'top' },
         { element: 'button[id="clear-all-data-btn"]', text: "ATTENTION : Ce bouton réinitialise les 10 chambres du service.", position: 'top' },
         { element: 'button[id="start-tutorial-btn"]', text: "Vous avez terminé ! Vous pouvez relancer ce tutoriel à tout moment.", position: 'top' }
     ];
@@ -1706,6 +1755,7 @@
         setupSync,
         updateDynamicDates,
         refreshAllRelativeDates,
+        updateAllergyWarning, // MODIFIÉ : Ajout de l'export
         
         // Navigation & Modales
         changeTab,

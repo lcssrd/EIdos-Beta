@@ -38,12 +38,13 @@
      * Configure les écouteurs de base (toujours actifs, même si l'init échoue).
      */
     function setupBaseEventListeners() {
+        
+        // --- MODIFIÉ ---
+        // Appelle la nouvelle fonction de déconnexion centralisée
         document.getElementById('logout-btn')?.addEventListener('click', () => {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('activePatientId');
-            localStorage.removeItem('activeTab');
-            window.location.href = 'auth.html';
+            patientService.logout();
         });
+        // --- FIN MODIFICATION ---
 
         document.getElementById('account-management-btn')?.addEventListener('click', (e) => {
             if (patientService.getUserPermissions().isStudent) {
@@ -121,6 +122,9 @@
         document.getElementById('admin-dob').addEventListener('input', uiService.updateAgeDisplay);
         document.getElementById('vie-poids').addEventListener('input', uiService.calculateAndDisplayIMC);
         document.getElementById('vie-taille').addEventListener('input', uiService.calculateAndDisplayIMC);
+        
+        document.getElementById('atcd-allergies').addEventListener('input', uiService.updateAllergyWarning);
+
 
         // --- Ajout d'entrées (Observations, Transmissions, etc.) ---
         document.getElementById('add-observation-btn').addEventListener('click', () => {
@@ -208,7 +212,6 @@
         document.addEventListener('mousemove', uiService.handleIVMouseMove);
         document.addEventListener('mouseup', uiService.handleIVMouseUp);
         
-        // Écouteur personnalisé pour déclencher une sauvegarde (utilisé par les barres IV)
         document.addEventListener('uiNeedsSave', patientService.debouncedSave);
 
         // --- Tutoriel ---
@@ -224,7 +227,7 @@
 
             if (loadBtn) {
                 const id = loadBtn.dataset.patientId;
-                const name = loadBtn.closest('.flex').querySelector('.font-medium').textContent;
+                const name = loadBtn.closest('.flex').querySelector('p').textContent.trim(); // Modifié pour marcher avec les icônes
                 patientService.loadCaseIntoCurrentPatient(id, name);
             }
             if (deleteBtn) {
