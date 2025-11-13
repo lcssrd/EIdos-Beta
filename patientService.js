@@ -154,8 +154,6 @@
     function handleDossierUpdate(dossierData) {
         console.log("Mise à jour du dossier reçue, application à l'UI...");
         
-        // --- CORRECTION BUG BOUCLE : DÉBUT ---
-        // On signale que l'UI est en train d'être mise à jour "de force"
         isLoadingData = true; 
         
         currentPatientState = dossierData;
@@ -171,13 +169,9 @@
         
         uiService.updateSaveStatus('saved');
 
-        // On signale que la mise à jour est terminée
-        // Il y a un petit délai pour s'assurer que tous les événements 'change'
-        // se sont terminés avant de ré-autoriser la sauvegarde.
         setTimeout(() => {
             isLoadingData = false;
         }, 100); 
-        // --- CORRECTION BUG BOUCLE : FIN ---
     }
 
     // --- Fonctions de Service (exposées) ---
@@ -190,6 +184,7 @@
         try {
             const userData = await apiService.fetchUserPermissions();
             
+            // L'abonnement est 'free' par défaut pour un étudiant, ou son plan perso
             userPermissions.subscription = userData.subscription || 'free';
             userPermissions.allowedRooms = userData.allowedRooms || []; 
 
@@ -199,14 +194,19 @@
                     .map(roomId => ({ id: roomId, room: roomId.split('_')[1] }))
                     .sort((a, b) => a.room.localeCompare(b.room));
             } else {
+                // C'est un formateur (ou user standard)
                 let effectivePlan = userData.subscription || 'free';
                 let role = userData.role || 'user';
                 if ((role === 'formateur' || role === 'owner') && userData.organisation) {
                     effectivePlan = userData.organisation.plan;
                 }
                 
+                // Mettre à jour la subscription pour le formateur
+                userPermissions.subscription = effectivePlan;
+                
                 userPermissions = { 
-                    isStudent: false, role: role, subscription: effectivePlan,
+                    ...userPermissions, // Garde la subscription mise à jour
+                    isStudent: false, role: role,
                     header: true, admin: true, vie: true, observations: true, 
                     prescriptions_add: true, prescriptions_delete: true, prescriptions_validate: true,
                     transmissions: true, pancarte: true, diagramme: true, biologie: true,
@@ -232,10 +232,10 @@
             document.getElementById('main-content-wrapper').innerHTML = '<div class="p-8 text-center text-gray-600">Aucune chambre ne vous a été assignée. Veuillez contacter votre formateur.</div>';
             document.querySelectorAll('#main-header button').forEach(btn => btn.disabled = true);
             
-            if (userPermissions.subscription !== 'free') {
-                 apiService.connectWebSocket();
-                 apiService.onDossierUpdated(handleDossierUpdate);
-            }
+            // --- CORRECTION 1 (A) : L'étudiant doit se connecter au WS même s'il n'a pas de chambre ---
+            apiService.connectWebSocket();
+            apiService.onDossierUpdated(handleDossierUpdate);
+            // --- FIN CORRECTION 1 (A) ---
             
             return; 
         }
@@ -251,10 +251,12 @@
         // 5. Charger la liste des patients dans la sidebar
         await loadPatientList();
         
-        if (userPermissions.subscription !== 'free') {
+        // --- CORRECTION 1 (B) : La condition est maintenant (NON-FREE) OU (ÉTUDIANT) ---
+        if (userPermissions.subscription !== 'free' || userPermissions.isStudent) {
             apiService.connectWebSocket();
             apiService.onDossierUpdated(handleDossierUpdate);
         }
+        // --- FIN CORRECTION 1 (B) ---
 
         // 6. Charger le patient actif
         await switchPatient(activePatientId, true); // true = skipSave
@@ -267,7 +269,8 @@
      */
     async function loadPatientList() {
         let patientMap = new Map();
-        if (userPermissions.subscription !== 'free') {
+        // MODIFIÉ : On charge la map si on n'est pas 'free' OU si on est étudiant
+        if (userPermissions.subscription !== 'free' || userPermissions.isStudent) {
             try {
                 const allPatients = await apiService.fetchPatientList();
                 allPatients.forEach(p => {
@@ -292,12 +295,14 @@
             forceSave();
         }
         
-        if (userPermissions.subscription !== 'free') {
+        // --- CORRECTION 2 : La condition est (NON-FREE) OU (ÉTUDIANT) ---
+        if (userPermissions.subscription !== 'free' || userPermissions.isStudent) {
             if (activePatientId) {
                 apiService.leaveDossier(activePatientId);
             }
             apiService.joinDossier(newPatientId);
         }
+        // --- FIN CORRECTION 2 ---
         
         isLoadingData = true;
         activePatientId = newPatientId;
@@ -329,7 +334,8 @@
      * Collecte l'état de l'UI et le sauvegarde sur le serveur (pour la chambre active).
      */
     async function saveCurrentPatientData() {
-        if (isLoadingData || !activePatientId || userPermissions.subscription === 'free') {
+        // MODIFIÉ : On vérifie si on est étudiant (qui a le droit de save même si 'free')
+        if (isLoadingData || !activePatientId || (userPermissions.subscription === 'free' && !userPermissions.isStudent)) {
             return;
         }
 
@@ -354,13 +360,9 @@
      * Déclenche une sauvegarde automatique avec un délai (debounce).
      */
     function debouncedSave() {
-        // --- CORRECTION BUG BOUCLE : DÉBUT ---
-        // Si les données sont en train d'être chargées (par ex: via WebSocket),
-        // on ignore cet appel à la sauvegarde.
         if (isLoadingData) {
             return;
         }
-        // --- CORRECTION BUG BOUCLE : FIN ---
         
         uiService.updateSaveStatus('pending');
         
@@ -374,7 +376,8 @@
      * Force une sauvegarde immédiate.
      */
     function forceSave() {
-        if (userPermissions.subscription === 'free' || isLoadingData) return;
+        // MODIFIÉ : L'étudiant peut forcer la sauvegarde
+        if ((userPermissions.subscription === 'free' && !userPermissions.isStudent) || isLoadingData) return;
         
         clearTimeout(saveTimeout);
         
@@ -592,7 +595,8 @@
      * Gère la déconnexion de l'utilisateur.
      */
     function logout() {
-        if (userPermissions.subscription !== 'free') {
+        // MODIFIÉ : On vérifie (NON-FREE) OU (ÉTUDIANT)
+        if (userPermissions.subscription !== 'free' || userPermissions.isStudent) {
             apiService.disconnectWebSocket();
         }
         
