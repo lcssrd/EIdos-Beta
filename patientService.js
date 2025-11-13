@@ -154,6 +154,8 @@
     function handleDossierUpdate(dossierData) {
         console.log("Mise à jour du dossier reçue, application à l'UI...");
         
+        // --- CORRECTION BUG BOUCLE : DÉBUT ---
+        // On signale que l'UI est en train d'être mise à jour "de force"
         isLoadingData = true; 
         
         currentPatientState = dossierData;
@@ -167,10 +169,15 @@
         }
         uiService.updateSidebarEntryName(activePatientId, patientName);
         
-        // MODIFIÉ : Puisque les données sont synchronisées, marquer comme 'Enregistré'
         uiService.updateSaveStatus('saved');
 
-        isLoadingData = false;
+        // On signale que la mise à jour est terminée
+        // Il y a un petit délai pour s'assurer que tous les événements 'change'
+        // se sont terminés avant de ré-autoriser la sauvegarde.
+        setTimeout(() => {
+            isLoadingData = false;
+        }, 100); 
+        // --- CORRECTION BUG BOUCLE : FIN ---
     }
 
     // --- Fonctions de Service (exposées) ---
@@ -282,7 +289,6 @@
      */
     async function switchPatient(newPatientId, skipSave = false) {
         if (!skipSave && activePatientId) {
-            // Pas besoin d'attendre la sauvegarde, on change de page
             forceSave();
         }
         
@@ -297,14 +303,14 @@
         activePatientId = newPatientId;
         localStorage.setItem('activePatientId', newPatientId); 
         
-        uiService.resetForm(); // Réinitialise le bouton à 'saved'
+        uiService.resetForm(); 
         
         try {
             currentPatientState = await apiService.fetchPatientData(newPatientId);
         } catch (error) {
             console.error(`Échec du chargement du patient ${newPatientId}`, error);
             currentPatientState = {};
-            uiService.updateSaveStatus('error'); // Affiche une erreur si le chargement échoue
+            uiService.updateSaveStatus('error'); 
         }
         
         loadPatientDataIntoUI(currentPatientState);
@@ -316,7 +322,6 @@
         
         isLoadingData = false;
         
-        // MODIFIÉ : S'assurer que le statut est 'saved' après le chargement
         uiService.updateSaveStatus('saved');
     }
     
@@ -328,22 +333,19 @@
             return;
         }
 
-        // MODIFIÉ : Gère les états du bouton
         uiService.updateSaveStatus('saving');
 
         const state = collectPatientStateFromUI();
-        currentPatientState = state; // Met à jour l'état local
+        currentPatientState = state; 
         
         try {
             await apiService.saveChamberData(activePatientId, state, state.sidebar_patient_name);
             uiService.updateSidebarEntryName(activePatientId, state.sidebar_patient_name);
             
-            // MODIFIÉ : Succès
             uiService.updateSaveStatus('saved');
             
         } catch (error) {
             console.error("Échec de la sauvegarde :", error);
-            // MODIFIÉ : Échec
             uiService.updateSaveStatus('error');
         }
     }
@@ -352,25 +354,30 @@
      * Déclenche une sauvegarde automatique avec un délai (debounce).
      */
     function debouncedSave() {
-        // MODIFIÉ : Affiche "Modifications..." dès que l'utilisateur tape
+        // --- CORRECTION BUG BOUCLE : DÉBUT ---
+        // Si les données sont en train d'être chargées (par ex: via WebSocket),
+        // on ignore cet appel à la sauvegarde.
+        if (isLoadingData) {
+            return;
+        }
+        // --- CORRECTION BUG BOUCLE : FIN ---
+        
         uiService.updateSaveStatus('pending');
         
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
-            saveCurrentPatientData(); // Cette fonction gère 'saving' et 'saved'/'error'
-        }, 1500); // Augmenté à 1.5s pour une meilleure UX
+            saveCurrentPatientData(); 
+        }, 1500); 
     }
 
     /**
-     * NOUVEAU : Force une sauvegarde immédiate.
+     * Force une sauvegarde immédiate.
      */
     function forceSave() {
-        if (userPermissions.subscription === 'free') return;
+        if (userPermissions.subscription === 'free' || isLoadingData) return;
         
-        // Annule toute sauvegarde auto en attente
         clearTimeout(saveTimeout);
         
-        // Lance la sauvegarde manuellement
         return saveCurrentPatientData();
     }
     
@@ -382,10 +389,9 @@
             return;
         }
         
-        // Force la sauvegarde de l'état actuel avant de créer l'archive
         await forceSave();
 
-        const state = currentPatientState; // Utilise l'état local (qui vient d'être sauvegardé)
+        const state = currentPatientState; 
         const patientName = state.sidebar_patient_name;
 
         if (!patientName || patientName.startsWith('Chambre ')) {
@@ -430,12 +436,12 @@
         const message = `Êtes-vous sûr de vouloir écraser le dossier de la chambre ${roomToLoadInto} avec les données de "${patientName}" ?`;
 
         uiService.showDeleteConfirmation(message, async () => {
-            uiService.updateSaveStatus('saving'); // Affiche "Enregistrement..."
+            uiService.updateSaveStatus('saving'); 
             try {
                 const dossierToLoad = await apiService.fetchPatientData(patientIdToLoadFrom);
                 if (!dossierToLoad || Object.keys(dossierToLoad).length === 0) {
                     uiService.showCustomAlert("Erreur", "Le dossier que vous essayez de charger est vide.");
-                    uiService.updateSaveStatus('saved'); // Revient à 'saved' car rien n'a changé
+                    uiService.updateSaveStatus('saved'); 
                     return;
                 }
 
@@ -443,13 +449,12 @@
                 await apiService.saveChamberData(activePatientId, dossierToLoad, patientName);
 
                 uiService.hideLoadPatientModal();
-                await switchPatient(activePatientId, true); // true = skipSave
+                await switchPatient(activePatientId, true); 
                 await loadPatientList(); 
                 uiService.showCustomAlert("Chargement réussi", `Le dossier de "${patientName}" a été chargé dans la chambre ${roomToLoadInto}.`);
-                // switchPatient s'occupe de remettre le statut à 'saved'
 
             } catch (err) {
-                uiService.updateSaveStatus('error'); // Affiche "Échec"
+                uiService.updateSaveStatus('error'); 
                 uiService.showCustomAlert("Erreur", `Une erreur est survenue pendant le chargement: ${err.message}`);
             }
         });
@@ -478,7 +483,7 @@
             return;
         }
         
-        uiService.updateSaveStatus('saving'); // Affiche "Enregistrement..."
+        uiService.updateSaveStatus('saving'); 
         try {
             const patientName = jsonData.sidebar_patient_name || `Chambre ${activePatientId.split('_')[1]}`;
             
@@ -487,10 +492,9 @@
             await switchPatient(activePatientId, true); 
             await loadPatientList();
             uiService.showCustomAlert("Importation réussie", `Le fichier a été importé dans la chambre ${activePatientId.split('_')[1]}.`);
-            // switchPatient s'occupe de remettre le statut à 'saved'
 
         } catch (error) {
-            uiService.updateSaveStatus('error'); // Affiche "Échec"
+            uiService.updateSaveStatus('error'); 
             uiService.showCustomAlert("Erreur d'importation", error.message);
         }
     }
@@ -542,13 +546,13 @@
                 return;
             }
             
-            uiService.updateSaveStatus('saving'); // Affiche "Enregistrement..."
+            uiService.updateSaveStatus('saving'); 
             try {
                 await apiService.saveChamberData(activePatientId, {}, `Chambre ${activePatientId.split('_')[1]}`);
                 uiService.updateSidebarEntryName(activePatientId, `Chambre ${activePatientId.split('_')[1]}`);
-                uiService.updateSaveStatus('saved'); // Affiche "Enregistré"
+                uiService.updateSaveStatus('saved'); 
             } catch (err) {
-                uiService.updateSaveStatus('error'); // Affiche "Échec"
+                uiService.updateSaveStatus('error'); 
                 uiService.showCustomAlert("Erreur", "Impossible de réinitialiser la chambre sur le serveur.");
             }
         });
@@ -570,15 +574,15 @@
                 return;
             }
             
-            uiService.updateSaveStatus('saving'); // Affiche "Enregistrement..."
+            uiService.updateSaveStatus('saving'); 
             try {
                 const allChamberIds = patientList.map(p => p.id);
                 await apiService.clearAllChamberData(allChamberIds);
                 await loadPatientList();
                 uiService.showCustomAlert("Opération réussie", "Toutes les chambres ont été réinitialisées.");
-                uiService.updateSaveStatus('saved'); // Affiche "Enregistré"
+                uiService.updateSaveStatus('saved'); 
             } catch (err) {
-                uiService.updateSaveStatus('error'); // Affiche "Échec"
+                uiService.updateSaveStatus('error'); 
                  uiService.showCustomAlert("Erreur", "Une erreur est survenue lors de la réinitialisation.");
             }
         });
@@ -636,7 +640,7 @@
         
         // Actions de sauvegarde/chargement
         debouncedSave,
-        forceSave, // NOUVEAU
+        forceSave, 
         saveCurrentPatientAsCase,
         openLoadPatientModal,
         loadCaseIntoCurrentPatient,
