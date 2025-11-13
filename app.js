@@ -68,6 +68,9 @@
         document.getElementById('export-json-btn').addEventListener('click', patientService.exportPatientData);
         document.getElementById('clear-current-patient-btn').addEventListener('click', patientService.clearCurrentPatient);
 
+        // --- AJOUT : Bouton de sauvegarde manuelle ---
+        document.getElementById('save-status-button').addEventListener('click', patientService.forceSave);
+
         // --- Importation de fichier ---
         document.getElementById('import-json-btn').addEventListener('click', () => {
             if (!patientService.getUserPermissions().isStudent && patientService.getUserPermissions().subscription !== 'free') {
@@ -110,14 +113,11 @@
         mainContent.addEventListener('input', patientService.debouncedSave);
         mainContent.addEventListener('change', patientService.debouncedSave);
 
-        // --- CORRECTION AJOUTÉE ---
-        // Attache aussi les écouteurs à l'en-tête, qui est en dehors de <main>
         const headerContent = document.getElementById('patient-header-form');
         if (headerContent) {
             headerContent.addEventListener('input', patientService.debouncedSave);
             headerContent.addEventListener('change', patientService.debouncedSave);
         }
-        // --- FIN CORRECTION ---
 
         // --- Mises à jour auto de l'UI (Header & Vie) ---
         document.getElementById('patient-entry-date').addEventListener('input', () => {

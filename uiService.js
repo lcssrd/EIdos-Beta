@@ -9,6 +9,9 @@
     let confirmModal, confirmModalBox, confirmTitle, confirmMessage, confirmCancelBtn, confirmOkBtn;
     let crModal, crModalBox, crModalTitle, crModalTextarea, crModalSaveBtn, crModalCloseBtn, crModalActiveIdInput;
 
+    // AJOUT : Références pour le bouton de statut de sauvegarde
+    let saveStatusButton, saveStatusIcon, saveStatusText;
+
     let confirmCallback = null; // Pour la modale de confirmation
     
     // Références pour le tutoriel
@@ -70,6 +73,11 @@
         crModalSaveBtn = document.getElementById('cr-modal-save-btn');
         crModalCloseBtn = document.getElementById('cr-modal-close-btn');
         crModalActiveIdInput = document.getElementById('cr-modal-active-id');
+
+        // AJOUT : Trouver les éléments du statut de sauvegarde
+        saveStatusButton = document.getElementById('save-status-button');
+        saveStatusIcon = document.getElementById('save-status-icon');
+        saveStatusText = document.getElementById('save-status-text');
 
         // Tutoriel
         tutorialOverlay = document.getElementById('tutorial-overlay');
@@ -216,15 +224,12 @@
         const careDiagramThead = document.getElementById('care-diagram-thead');
         if (careDiagramThead) {
             html = '<tr><th class="p-2 text-left min-w-[220px]">Soin / Surveillance</th>';
-            // MODIFIÉ : colspan="3" au lieu de "8"
             for(let i=0; i<11; i++) { html += `<th colspan="3" class="border-l">Jour ${i}</th>`;}
             html += '</tr><tr><th class="min-w-[220px]"></th>';
-            // MODIFIÉ : "Matin", "Soir", "Nuit" au lieu des heures
             const msn = ['Matin', 'Soir', 'Nuit'];
             for(let i=0; i<11; i++) { 
-                for (let j = 0; j < msn.length; j++) { // MODIFIÉ : boucle 3 fois
+                for (let j = 0; j < msn.length; j++) {
                     const borderClass = (j === 0) ? 'border-l' : '';
-                    // MODIFIÉ : Suppression de "small-col" et ajout d'un style pour centrer
                     html += `<th class="${borderClass} p-1 text-center" style="min-width: 70px;">${msn[j]}</th>`;
                 }
             }
@@ -254,6 +259,50 @@
         crModalCloseBtn.addEventListener('click', closeCrModal);
     }
 
+    // --- NOUVEAU : Fonction de gestion du bouton de sauvegarde ---
+    
+    /**
+     * Met à jour l'apparence du bouton de statut de sauvegarde.
+     * @param {string} status - 'saved' (vert), 'pending' (jaune), 'saving' (bleu), 'error' (rouge)
+     */
+    function updateSaveStatus(status) {
+        if (!saveStatusButton || !saveStatusIcon || !saveStatusText) {
+            // Tente de les retrouver si l'initialisation a été retardée
+            initUIComponents();
+            if (!saveStatusButton) return; // Si toujours pas trouvé, abandonne
+        }
+    
+        // Réinitialiser les classes
+        saveStatusButton.classList.remove('status-saved', 'status-pending', 'status-saving', 'status-error');
+        saveStatusIcon.classList.remove('fa-check', 'fa-ellipsis-h', 'fa-spinner', 'fa-exclamation-triangle', 'animate-spin');
+        saveStatusButton.disabled = false; // Réactive le bouton par défaut
+    
+        switch (status) {
+            case 'pending':
+                saveStatusButton.classList.add('status-pending');
+                saveStatusIcon.classList.add('fa-ellipsis-h');
+                saveStatusText.textContent = 'Modifications...';
+                break;
+            case 'saving':
+                saveStatusButton.classList.add('status-saving');
+                saveStatusIcon.classList.add('fa-spinner', 'animate-spin');
+                saveStatusText.textContent = 'Enregistrement...';
+                saveStatusButton.disabled = true; // Désactive le clic pendant la sauvegarde
+                break;
+            case 'error':
+                saveStatusButton.classList.add('status-error');
+                saveStatusIcon.classList.add('fa-exclamation-triangle');
+                saveStatusText.textContent = 'Échec';
+                break;
+            case 'saved':
+            default:
+                saveStatusButton.classList.add('status-saved');
+                saveStatusIcon.classList.add('fa-check');
+                saveStatusText.textContent = 'Enregistré';
+                break;
+        }
+    }
+
 
     // --- Fonctions de Gestion de l'UI (Permissions) ---
 
@@ -274,11 +323,16 @@
         if (userPermissions.subscription === 'free' && !userPermissions.isStudent) {
             const saveBtn = document.getElementById('save-patient-btn');
             if (saveBtn) saveBtn.style.display = 'none';
+            // Affiche le bouton de statut mais le désactive
+            if (saveStatusButton) {
+                saveStatusButton.innerHTML = '<i class="fas fa-save"></i> Plan Free';
+                saveStatusButton.title = 'Passez à un plan payant pour sauvegarder';
+                saveStatusButton.disabled = true;
+            }
         }
 
         // Si ce n'est pas un étudiant, on n'applique aucune restriction (tout est visible)
         if (!userPermissions.isStudent) {
-            // S'assure que le bouton d'enregistrement de CR est visible pour les non-étudiants
             crModalSaveBtn.style.display = 'inline-flex';
             return;
         }
@@ -308,7 +362,6 @@
             if (form) form.style.display = 'none';
         }
         if (!userPermissions.comptesRendus) {
-            // Cache le bouton d'enregistrement dans la modale
             crModalSaveBtn.style.display = 'none';
         }
         if (!userPermissions.prescriptions_add) {
@@ -365,10 +418,6 @@
 
     // --- Fonctions de Gestion de l'UI (Formulaires & Données) ---
     
-    // --- NOUVEAU : Fonction pour styliser la case allergie ---
-    /**
-     * Vérifie le contenu de la case "Allergies" et applique/retire le style orange.
-     */
     function updateAllergyWarning() {
         const allergyInput = document.getElementById('atcd-allergies');
         if (!allergyInput) return;
@@ -382,7 +431,6 @@
             infoItem.classList.remove('allergy-warning');
         }
     }
-    // --- FIN NOUVEAU ---
 
     /**
      * Réinitialise l'ensemble du formulaire principal.
@@ -390,7 +438,7 @@
     function resetForm() {
         document.querySelectorAll('#patient-header-form input, #patient-header-form textarea, main input, main textarea, main select').forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-            else if (el.tagName.toLowerCase() === 'select') el.selectedIndex = 0; // Réinitialise les listes déroulantes
+            else if (el.tagName.toLowerCase() === 'select') el.selectedIndex = 0;
             else if (el.type !== 'file') el.value = '';
         });
         ['observations-list', 'transmissions-list-ide', 'prescription-tbody'].forEach(id => {
@@ -398,7 +446,6 @@
             if (el) el.innerHTML = '';
         });
         
-        // Vider les coches des cartes CR
         document.querySelectorAll('#cr-card-grid .cr-check-icon').forEach(icon => {
             icon.classList.add('hidden');
         });
@@ -417,9 +464,12 @@
         
         initializeDynamicTables();
         
-        updateAllergyWarning(); // MODIFIÉ : Ajout de l'appel
+        updateAllergyWarning();
         calculateAndDisplayIMC();
         if (pancarteChartInstance) pancarteChartInstance.destroy();
+        
+        // Réinitialise le bouton de sauvegarde à "Enregistré"
+        updateSaveStatus('saved');
     }
 
     /**
@@ -428,7 +478,6 @@
      */
     function fillFormFromState(state) {
         Object.keys(state).forEach(id => {
-            // Exclure les données structurées
             if (['observations', 'transmissions', 'comptesRendus', 'biologie', 'pancarte', 'glycemie', 'prescriptions', 'lockButtonStates', 'careDiagramCheckboxes'].includes(id) || id.endsWith('_html')) {
                 return;
             }
@@ -439,21 +488,16 @@
             }
         });
         
-        updateAllergyWarning(); // MODIFIÉ : Ajout de l'appel
+        updateAllergyWarning();
 
-        // Redimensionner les textareas après remplissage
         setTimeout(() => {
             document.querySelectorAll('textarea.info-value').forEach(autoResize);
         }, 0);
     }
 
-    /**
-     * Remplit les listes (Observations, Transmissions).
-     * @param {Object} state - L'objet dossierData.
-     * @param {string} entryDateStr - La date d'entrée (YYYY-MM-DD).
-     */
+    // ... [Le reste des fonctions fillListsFromState, fillCareDiagramFromState, etc. reste INCHANGÉ] ...
+    
     function fillListsFromState(state, entryDateStr) {
-        // --- Observations ---
         const obsList = document.getElementById('observations-list');
         obsList.innerHTML = ''; 
         if (state.observations) {
@@ -474,7 +518,6 @@
             applySort('observations');
         }
 
-        // --- Transmissions ---
         const transList = document.getElementById('transmissions-list-ide');
         transList.innerHTML = ''; 
         if (state.transmissions) {
@@ -496,10 +539,6 @@
         }
     }
 
-    /**
-     * Remplit le diagramme de soins.
-     * @param {Object} state - L'objet dossierData.
-     */
     function fillCareDiagramFromState(state) {
         const careDiagramTbody = document.getElementById('care-diagram-tbody');
         if (careDiagramTbody && state['care-diagram-tbody_html']) {
@@ -516,11 +555,6 @@
         }
     }
 
-    /**
-     * Remplit la table des prescriptions.
-     * @param {Object} state - L'objet dossierData.
-     * @param {string} entryDateStr - La date d'entrée (YYYY-MM-DD).
-     */
     function fillPrescriptionsFromState(state, entryDateStr) {
         const prescrTbody = document.getElementById('prescription-tbody');
         prescrTbody.innerHTML = ''; 
@@ -528,7 +562,7 @@
             state.prescriptions.forEach(pData => {
                 let dateOffset = pData.dateOffset;
 
-                if (dateOffset === undefined && pData.startDate) { // Rétro-compatibilité
+                if (dateOffset === undefined && pData.startDate) { 
                      let oldStartDate = pData.startDate;
                      if (oldStartDate.includes('/')) {
                          const parts = oldStartDate.split('/');
@@ -539,20 +573,14 @@
                     dateOffset = utils.calculateDaysOffset(entryDateStr, oldStartDate);
                 }
                 
-                // Rétro-compatibilité pour l'ancien 'type'
                 if (pData.type === 'iv') pData.voie = 'IV';
                 if (pData.type === 'checkbox') pData.voie = 'Per Os';
                 
-                addPrescription({ ...pData, dateOffset: dateOffset, type: pData.voie }, true); // Le type est la voie
+                addPrescription({ ...pData, dateOffset: dateOffset, type: pData.voie }, true);
             });
         }
     }
 
-    /**
-     * Remplit la table de biologie.
-     * @param {Object} state - L'objet dossierData.
-     * @param {string} entryDateStr - La date d'entrée (YYYY-MM-DD).
-     */
     function fillBioFromState(state, entryDateStr) {
         if (state.biologie) {
             document.querySelectorAll('#bio-table thead input[type="date"]').forEach((input, index) => {
@@ -588,10 +616,6 @@
         }
     }
     
-    /**
-     * Remplit les tables Pancarte et Glycémie.
-     * @param {Object} state - L'objet dossierData.
-     */
     function fillPancarteFromState(state) {
         if (state.pancarte) {
             document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
@@ -611,19 +635,13 @@
         }
     }
     
-    /**
-     * Met à jour les coches vertes sur les cartes de comptes rendus.
-     * @param {Object} crData - L'objet state.comptesRendus.
-     */
     function fillCrCardsFromState(crData) {
-        // Réinitialiser toutes les coches
         document.querySelectorAll('#cr-card-grid .cr-check-icon').forEach(icon => {
             icon.classList.add('hidden');
         });
         
         if (!crData) return;
 
-        // Allumer les coches pour les données existantes
         for (const crId in crData) {
             const card = document.querySelector(`.cr-card[data-cr-id="${crId}"]`);
             if (card && crData[crId] && crData[crId].trim() !== '') {
@@ -635,9 +653,8 @@
         }
     }
 
-    /**
-     * Met à jour l'affichage de l'âge (Header & Admin).
-     */
+    // ... [Les fonctions updateAgeDisplay, updateJourHosp, etc. restent INCHANGÉES] ...
+
     function updateAgeDisplay() {
         const dobHeader = document.getElementById('patient-dob').value;
         document.getElementById('patient-age').textContent = utils.calculateAge(dobHeader);
@@ -645,18 +662,12 @@
         document.getElementById('admin-age').textContent = utils.calculateAge(dobAdmin);
     }
     
-    /**
-     * Met à jour l'affichage du jour d'hospitalisation (Header).
-     */
     function updateJourHosp() {
         const entryDateEl = document.getElementById('patient-entry-date');
         const jourHospEl = document.getElementById('patient-jour-hosp');
         jourHospEl.textContent = utils.calculateJourHosp(entryDateEl.value);
     }
     
-    /**
-     * Calcule et affiche l'IMC (onglet Vie).
-     */
     function calculateAndDisplayIMC() {
         const poidsEl = document.getElementById('vie-poids');
         const tailleEl = document.getElementById('vie-taille');
@@ -667,9 +678,6 @@
         autoResize(imcEl);
     }
 
-    /**
-     * Synchronise les champs (ex: Nom Header et Nom Admin).
-     */
     function setupSync() {
         const syncMap = [
             ['patient-nom-usage', 'admin-nom-usage'],
@@ -698,10 +706,6 @@
         });
     }
 
-    /**
-     * Met à jour les dates dans les en-têtes des tables (Pancarte, Prescriptions, etc.)
-     * @param {Date} startDate - La date d'entrée du patient.
-     */
     function updateDynamicDates(startDate) {
         const updateHeaders = (selector) => {
             document.querySelectorAll(selector).forEach((th, index) => {
@@ -721,15 +725,10 @@
         if (pancarteChartInstance) updatePancarteChart();
     }
     
-    /**
-     * Rafraîchit toutes les dates relatives (dans les listes, tables)
-     * lorsque la date d'entrée change.
-     */
     function refreshAllRelativeDates() {
         const entryDateStr = document.getElementById('patient-entry-date').value;
         if (!entryDateStr) return; 
         
-        // --- Observations ---
         document.querySelectorAll('#observations-list .timeline-item').forEach(item => {
             const offset = parseInt(item.dataset.dateOffset, 10);
             if (!isNaN(offset)) {
@@ -739,7 +738,6 @@
             }
         });
         
-        // --- Transmissions ---
         document.querySelectorAll('#transmissions-list-ide .timeline-item').forEach(item => {
             const offset = parseInt(item.dataset.dateOffset, 10);
             if (!isNaN(offset)) {
@@ -749,7 +747,6 @@
             }
         });
         
-        // --- Prescriptions ---
         document.querySelectorAll('#prescription-tbody tr').forEach(row => {
             const offset = parseInt(row.dataset.dateOffset, 10);
             if (!isNaN(offset)) {
@@ -759,7 +756,6 @@
             }
         });
 
-        // --- Biologie ---
         document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
             const offset = parseInt(input.dataset.dateOffset, 10);
              if (!isNaN(offset)) {
@@ -768,12 +764,10 @@
             }
         });
         
-        // --- Barres IV ---
         document.querySelectorAll('#prescription-tbody .iv-bar').forEach(bar => {
             updateIVBarDetails(bar, bar.closest('.iv-bar-container'));
         });
 
-        // --- Dates Pancarte ---
         const entryDate = new Date(entryDateStr);
         if (!isNaN(entryDate.getTime())) {
             updateDynamicDates(entryDate);
@@ -783,10 +777,6 @@
 
     // --- Fonctions de Gestion de l'UI (Navigation & Modales) ---
     
-    /**
-     * Change l'onglet actif.
-     * @param {string} tabId - L'ID de l'onglet à activer.
-     */
     function changeTab(tabId) {
         const clickedTab = document.querySelector(`nav button[data-tab-id="${tabId}"]`);
         if (!clickedTab) return;
@@ -927,7 +917,6 @@
         const listIdMap = {
             'observations': 'observations-list',
             'transmissions': 'transmissions-list-ide'
-            // 'comptes-rendus' n'est plus trié
         };
         const listId = listIdMap[type];
         if (!listId) return;
@@ -1084,11 +1073,10 @@
         }
     }
 
-    // MODIFIÉ
     function readPrescriptionForm() {
         const name = document.getElementById('med-name').value.trim();
         const posologie = document.getElementById('med-posologie').value.trim();
-        const voie = document.getElementById('med-voie').value; // Lit la valeur du <select>
+        const voie = document.getElementById('med-voie').value;
         const startDateValue = document.getElementById('med-start-date').value;
         const entryDateStr = document.getElementById('patient-entry-date').value;
         
@@ -1099,7 +1087,6 @@
 
         const dateOffset = utils.calculateDaysOffset(entryDateStr, startDateValue);
         
-        // Le 'type' est maintenant la 'voie' elle-même (ex: "IV", "Per Os", "Respiratoire")
         const type = voie; 
         
         document.getElementById('new-prescription-form').reset();
@@ -1107,7 +1094,6 @@
         return { name, posologie, voie, type, bars: [], dateOffset };
     }
 
-    // MODIFIÉ
     function addPrescription(data, fromLoad = false) {
         let { name, posologie, voie, type, bars, dateOffset } = data;
         const entryDateStr = document.getElementById('patient-entry-date').value;
@@ -1115,11 +1101,11 @@
         if (isNaN(parseInt(dateOffset, 10))) dateOffset = 0;
 
         const targetDate = utils.calculateDateFromOffset(entryDateStr, dateOffset);
-        const formattedStartDate = utils.formatDate(targetDate).slice(0, 8); // JJ/MM/AA
+        const formattedStartDate = utils.formatDate(targetDate).slice(0, 8);
         
         const tbody = document.getElementById("prescription-tbody");
         const newRow = tbody.insertRow();
-        newRow.dataset.type = type; // Sera "IV", "Per Os" ou "Respiratoire"
+        newRow.dataset.type = type;
         newRow.dataset.dateOffset = dateOffset;
 
         newRow.innerHTML = `
@@ -1140,15 +1126,9 @@
         timelineCell.colSpan = 88; 
         timelineCell.className = 'iv-bar-container';
 
-        // Seul "Per Os" est un "marker-container" (losange)
         if (type === 'Per Os') {
             timelineCell.classList.add('marker-container');
         }
-        
-        // *** CORRECTION DU BUG DES DOUBLES ÉVÉNEMENTS ***
-        // La ligne ci-dessous a été SUPPRIMÉE car elle était redondante
-        // avec l'écouteur global défini dans app.js
-        // timelineCell.addEventListener('mousedown', handleIVMouseDown);
         
         const barsToCreate = (fromLoad && bars && Array.isArray(bars)) ? bars : [];
         
@@ -1157,13 +1137,11 @@
                 const bar = document.createElement('div');
                 bar.className = 'iv-bar';
                 
-                // Ajoute la classe correcte en fonction du type
                 if (type === 'Per Os') {
                     bar.classList.add('marker-bar');
                 } else if (type === 'Respiratoire') {
-                    bar.classList.add('iv-bar-respi'); // Nouvelle classe pour l'orange
+                    bar.classList.add('iv-bar-respi');
                 }
-                // 'IV' garde la classe 'iv-bar' de base (bleue)
 
                 bar.style.left = barData.left;
                 bar.style.width = barData.width;
@@ -1203,12 +1181,9 @@
             </td>
         `;
         
-        // MODIFIÉ : 11 jours
         for(let i=0; i<11; i++) {
-            // MODIFIÉ : 3 colonnes (Matin, Soir, Nuit)
             for (let j = 0; j < 3; j++) {
                 const borderClass = (j === 0) ? 'border-l' : '';
-                // MODIFIÉ : Suppression de "small-col" et ajout de classes pour centrer la checkbox
                 cellsHTML += `<td class="${borderClass} p-0" style="min-width: 70px;">
                                 <input type="checkbox" class="block mx-auto">
                             </td>`;
@@ -1221,7 +1196,7 @@
         const entry = button.closest('.timeline-item');
         if (entry) {
             entry.remove();
-            return true; // Succès
+            return true;
         }
         return false;
     }
@@ -1229,7 +1204,7 @@
         const row = button.closest('tr');
         if (row) {
             row.remove();
-            return true; // Succès
+            return true;
         }
         return false;
     }
@@ -1237,19 +1212,13 @@
         const row = button.closest('tr');
         if (row) {
             row.remove();
-            return true; // Succès
+            return true;
         }
         return false;
     }
 
-    // --- Fonctions UI : Logique des Comptes Rendus (NOUVEAU) ---
+    // --- Fonctions UI : Logique des Comptes Rendus (CR) ---
 
-    /**
-     * Ouvre la modale des comptes rendus
-     * @param {string} crId - L'ID du compte rendu (ex: 'cr-consultation').
-     * @param {string} crTitle - Le titre à afficher dans la modale.
-     * @param {string} crText - Le texte actuel du compte rendu.
-     */
     function openCrModal(crId, crTitle, crText) {
         crModalTitle.textContent = crTitle;
         crModalActiveIdInput.value = crId;
@@ -1262,9 +1231,6 @@
         }, 10);
     }
     
-    /**
-     * Ferme la modale des comptes rendus.
-     */
     function closeCrModal() {
         crModalBox.classList.add('scale-95', 'opacity-0');
         setTimeout(() => {
@@ -1274,11 +1240,6 @@
         }, 200);
     }
     
-    /**
-     * Met à jour la coche verte sur une carte de compte rendu.
-     * @param {string} crId - L'ID de la carte.
-     * @param {boolean} hasData - True si la carte doit avoir une coche.
-     */
     function updateCrCardCheckmark(crId, hasData) {
         const card = document.querySelector(`.cr-card[data-cr-id="${crId}"]`);
         if (!card) return;
@@ -1297,7 +1258,6 @@
     // --- Fonctions UI : Logique IV (Barres de prescription) ---
 
     function handleIVDblClick(e) {
-        // TODO: Vérifier permissions
         const bar = e.currentTarget;
         showDeleteConfirmation("Effacer cette administration ?", () => {
             const cell = bar.parentElement;
@@ -1308,15 +1268,11 @@
                 }
             }
             bar.remove();
-            // Demander une sauvegarde via un événement
             document.dispatchEvent(new CustomEvent('uiNeedsSave'));
         });
     }
 
-    // MODIFIÉ
     function handleIVMouseDown(e) {
-        // TODO: Vérifier permissions
-        
         if (e.target.classList.contains('iv-bar-container')) {
             ivInteraction.mode = 'draw';
             const cell = e.target;
@@ -1332,14 +1288,12 @@
             const newBar = document.createElement('div');
             newBar.className = 'iv-bar';
             
-            // Détermine la classe de la barre (losange, orange, ou bleu)
             const rowType = cell.closest('tr').dataset.type;
             if (rowType === 'Per Os') {
                 newBar.classList.add('marker-bar');
             } else if (rowType === 'Respiratoire') {
                 newBar.classList.add('iv-bar-respi');
             }
-            // 'IV' garde la classe par défaut
             
             newBar.style.left = `${(startX / rect.width) * 100}%`;
             newBar.style.width = '0px';
@@ -1462,7 +1416,6 @@
         }
         document.body.className = document.body.className.replace(/is-(drawing|resizing|moving)-iv/g, '').trim().trim();
         ivInteraction = { active: false, mode: null, targetBar: null, targetCell: null, startX: 0, startLeft: 0, startWidth: 0, startLeftPx: 0 };
-        // Demander une sauvegarde via un événement
         document.dispatchEvent(new CustomEvent('uiNeedsSave'));
     }
     
@@ -1621,7 +1574,6 @@
     function startTutorial() {
         currentStepIndex = 0;
         
-        // Ajustement dynamique si la liste est vide
         const firstPatientButton = document.querySelector('#patient-list li:first-child button');
         if (!firstPatientButton) {
             tutorialSteps[0].element = '#sidebar';
@@ -1666,7 +1618,6 @@
         const element = document.querySelector(step.element);
 
         if (!element) {
-            // Si un élément n'est pas trouvé (ex: pas de patient), sauter l'étape
             currentStepIndex++;
             showTutorialStep(currentStepIndex);
             return;
@@ -1683,7 +1634,6 @@
             element.style.setProperty('position', 'relative', 'important');
         }
 
-        // Calcul de la position
         const rect = element.getBoundingClientRect();
         const boxRect = tutorialStepBox.getBoundingClientRect();
         const margin = 15;
@@ -1711,7 +1661,6 @@
                 left = rect.left + (rect.width / 2) - (boxRect.width / 2);
         }
 
-        // Ajustement pour ne pas sortir de l'écran
         if (top < margin) top = margin;
         if (left < margin) left = margin;
         if (top + boxRect.height > window.innerHeight - margin) top = window.innerHeight - boxRect.height - margin;
@@ -1729,6 +1678,9 @@
         initUIComponents,
         initializeDynamicTables,
         setupModalListeners,
+        
+        // NOUVEAU
+        updateSaveStatus,
         
         // Permissions
         applyPermissions,
@@ -1755,7 +1707,7 @@
         setupSync,
         updateDynamicDates,
         refreshAllRelativeDates,
-        updateAllergyWarning, // MODIFIÉ : Ajout de l'export
+        updateAllergyWarning,
         
         // Navigation & Modales
         changeTab,
