@@ -11,6 +11,7 @@
         uiService.setupModalListeners(); // Configure les boutons "OK/Annuler" des modales
 
         // 2. Initialiser le service patient (permissions, liste des patients, patient actif)
+        // MODIFIÉ : patientService.initialize() gère maintenant aussi l'init de Socket.io
         const initialized = await patientService.initialize();
         
         // 3. Si l'initialisation échoue (ex: étudiant sans chambre), arrêter ici.
@@ -38,9 +39,11 @@
      * Configure les écouteurs de base (toujours actifs, même si l'init échoue).
      */
     function setupBaseEventListeners() {
-        
         document.getElementById('logout-btn')?.addEventListener('click', () => {
-            patientService.logout();
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('activePatientId');
+            localStorage.removeItem('activeTab');
+            window.location.href = 'auth.html';
         });
 
         document.getElementById('account-management-btn')?.addEventListener('click', (e) => {
@@ -51,6 +54,24 @@
 
         document.getElementById('toggle-fullscreen-btn')?.addEventListener('click', uiService.toggleFullscreen);
     }
+    
+    // AJOUTÉ : Nouvelle fonction pour gérer le feedback instantané
+    /**
+     * Gère les événements d'input pour un retour visuel immédiat.
+     */
+    function handleImmediateInput(e) {
+        // Ne fait rien si le plan est 'free'
+        if (patientService.getUserPermissions().subscription === 'free') {
+            return;
+        }
+        
+        // Met le statut à "Modifications..."
+        uiService.setSaveStatus('editing');
+        
+        // Appelle la sauvegarde différée (debounced)
+        patientService.debouncedSave();
+    }
+
 
     /**
      * Configure tous les écouteurs d'événements pour l'application principale.
@@ -67,9 +88,6 @@
         document.getElementById('load-patient-btn').addEventListener('click', patientService.openLoadPatientModal);
         document.getElementById('export-json-btn').addEventListener('click', patientService.exportPatientData);
         document.getElementById('clear-current-patient-btn').addEventListener('click', patientService.clearCurrentPatient);
-
-        // --- AJOUT : Bouton de sauvegarde manuelle ---
-        document.getElementById('save-status-button').addEventListener('click', patientService.forceSave);
 
         // --- Importation de fichier ---
         document.getElementById('import-json-btn').addEventListener('click', () => {
@@ -109,15 +127,10 @@
         });
         
         // --- Sauvegarde automatique (Debounce) ---
+        // MODIFIÉ : Utilise 'handleImmediateInput' au lieu de 'patientService.debouncedSave' directement
         const mainContent = document.querySelector('main');
-        mainContent.addEventListener('input', patientService.debouncedSave);
-        mainContent.addEventListener('change', patientService.debouncedSave);
-
-        const headerContent = document.getElementById('patient-header-form');
-        if (headerContent) {
-            headerContent.addEventListener('input', patientService.debouncedSave);
-            headerContent.addEventListener('change', patientService.debouncedSave);
-        }
+        mainContent.addEventListener('input', handleImmediateInput);
+        mainContent.addEventListener('change', handleImmediateInput);
 
         // --- Mises à jour auto de l'UI (Header & Vie) ---
         document.getElementById('patient-entry-date').addEventListener('input', () => {
@@ -129,6 +142,7 @@
         document.getElementById('vie-poids').addEventListener('input', uiService.calculateAndDisplayIMC);
         document.getElementById('vie-taille').addEventListener('input', uiService.calculateAndDisplayIMC);
         
+        // --- NOUVEAU : Écouteur pour la case Allergies ---
         document.getElementById('atcd-allergies').addEventListener('input', uiService.updateAllergyWarning);
 
 
@@ -159,7 +173,7 @@
             const deleteBtn = e.target.closest('button[title*="Supprimer"]');
             if (deleteBtn && !patientService.getUserPermissions().isStudent) { // TODO: Gérer perm
                 uiService.showDeleteConfirmation("Êtes-vous sûr de vouloir supprimer cette entrée ?", () => {
-                    if (uiService.deleteEntry(deleteBtn)) patientService.debouncedSave();
+                    if (uiService.deleteEntry(deleteBtn)) patientService.debouncedSave(); // La suppression déclenche une sauvegarde
                 });
             }
         });
@@ -218,7 +232,9 @@
         document.addEventListener('mousemove', uiService.handleIVMouseMove);
         document.addEventListener('mouseup', uiService.handleIVMouseUp);
         
-        document.addEventListener('uiNeedsSave', patientService.debouncedSave);
+        // Écouteur personnalisé pour déclencher une sauvegarde (utilisé par les barres IV)
+        // MODIFIÉ : Appelle 'handleImmediateInput' pour un retour visuel instantané
+        document.addEventListener('uiNeedsSave', handleImmediateInput);
 
         // --- Tutoriel ---
         document.getElementById('tutorial-overlay').addEventListener('click', () => uiService.endTutorial(true));
@@ -233,7 +249,7 @@
 
             if (loadBtn) {
                 const id = loadBtn.dataset.patientId;
-                const name = loadBtn.closest('.flex').querySelector('p').textContent.trim();
+                const name = loadBtn.closest('.flex').querySelector('.font-medium').textContent;
                 patientService.loadCaseIntoCurrentPatient(id, name);
             }
             if (deleteBtn) {

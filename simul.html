@@ -13,6 +13,8 @@
 
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a33bd886-5e06-4a52-b1d6-1c3181d1214f"></script>
 
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
 </head>
 <body class="flex h-screen bg-gray-100">
     <aside id="sidebar" class="w-64 bg-white shadow-xl flex flex-col flex-shrink-0 m-4 rounded-2xl h-[calc(100vh-2rem)] transition-all duration-300 ease-in-out">
@@ -57,40 +59,43 @@
 
         <div class="p-0 md:p-0 lg:p-0 pb-0">
             <div class="max-w-screen-xl mx-auto">
-                
                 <header id="main-header" class="mb-4 p-4 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-400 text-white shadow-lg flex justify-between items-center">
-                    <div class="flex items-center"> <h1 class="text-xl lg:text-2xl font-bold">Service de soins</h1>
-                        
-                        <button type="button" id="save-status-button" class="status-saved ml-4" title="Statut de l'enregistrement">
-                            <i id="save-status-icon" class="fas fa-check"></i>
-                            <span id="save-status-text">Enregistré</span>
-                        </button>
-                    </div>
-                    
+                    <h1 class="text-xl lg:text-2xl font-bold">Service de soins</h1>
                     <div id="header-buttons" class="flex items-center space-x-2">
+                        
                         <button id="save-patient-btn" type="button" title="Sauvegarder le dossier actuel sur le serveur" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-save text-white"></i>
                         </button>
+                        
                         <button id="load-patient-btn" type="button" title="Charger un dossier sauvegardé" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-folder-open text-white"></i>
                         </button>
+
                         <button id="import-json-btn" type="button" title="Importer un fichier .json" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-file-import text-white"></i>
                         </button>
+                        
                         <button id="export-json-btn" type="button" title="Exporter en .json" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-file-export text-white"></i>
                         </button>
+                        
                         <input type="file" id="import-file" accept=".json" class="hidden"> 
+                        
                         <button id="clear-current-patient-btn" type="button" title="Effacer le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-trash text-white"></i>
                         </button>
+                        
+                        <div id="save-status-indicator" class="flex items-center px-3 py-1 rounded-full text-xs font-medium" style="display: none;">
+                            <span id="save-status-icon"><i class="fas fa-cloud"></i></span>
+                            <span id="save-status-text" class="ml-2"></span>
+                        </div>
+                        
                         <span class="font-light text-sm mr-4">EIdos - 2025</span>
                         <button id="toggle-fullscreen-btn" type="button" title="Plein écran" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i id="fullscreen-icon" class="fas fa-expand text-white"></i>
                         </button>
                     </div>
                 </header>
-
 
                 <header id="patient-header-form" class="mb-4">
                     <div class="card p-2">
@@ -459,7 +464,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="apiService.js"></script>
     <script src="utils.js"></script>
     <script src="uiService.js"></script>
