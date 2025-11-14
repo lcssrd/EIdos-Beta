@@ -658,18 +658,17 @@
             const el2 = document.getElementById(id2);
             if (el1 && el2) {
                 el1.addEventListener('input', () => {
-                    if (!el2.disabled) {
-                        el2.value = el1.value;
-                        if (el2.tagName.toLowerCase() === 'textarea') autoResize(el2);
-                        if(id1.includes('dob')) updateAgeDisplay();
-                    }
+                    // MODIFICATION : La vérification 'disabled' est supprimée
+                    // pour forcer la synchronisation même si le champ admin est verrouillé
+                    el2.value = el1.value;
+                    if (el2.tagName.toLowerCase() === 'textarea') autoResize(el2);
+                    if(id1.includes('dob')) updateAgeDisplay();
                 });
                 el2.addEventListener('input', () => {
-                    if (!el1.disabled) {
-                        el1.value = el2.value; 
-                        if (el1.tagName.toLowerCase() === 'textarea') autoResize(el1);
-                        if(id2.includes('dob')) updateAgeDisplay();
-                    }
+                    // MODIFICATION : La vérification 'disabled' est supprimée
+                    el1.value = el2.value; 
+                    if (el1.tagName.toLowerCase() === 'textarea') autoResize(el1);
+                    if(id2.includes('dob')) updateAgeDisplay();
                 });
             }
         });
