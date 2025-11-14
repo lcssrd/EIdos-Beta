@@ -20,10 +20,6 @@
     
     // Pour la sauvegarde automatique
     let saveTimeout;
-    
-    // AJOUTÉ: Drapeau pour ignorer le prochain 'debouncedSave' si les données viennent d'être chargées
-    let blockNextSave = false;
-
 
     /**
      * Lit TOUS les champs de l'interface utilisateur et les assemble
@@ -165,39 +161,13 @@
     }
 
 
-    // AJOUTÉ: Nouvelle fonction pour gérer les mises à jour distantes
-    /**
-     * Gère les données patient reçues du serveur (mises à jour par un autre client).
-     * @param {Object} state - Le nouvel objet dossierData.
-     */
-    function handleRemoteUpdate(state) {
-        console.log("[Socket] Données distantes reçues.");
-        
-        // Mettre à jour l'état local
-        currentPatientState = state;
-        
-        // Mettre un drapeau pour éviter de re-sauvegarder immédiatement
-        // ce qu'on vient de charger
-        blockNextSave = true; 
-        
-        // Re-charger l'UI avec les nouvelles données
-        loadPatientDataIntoUI(state);
-        
-        // Indiquer que les données sont à jour
-        uiService.setSaveStatus('saved');
-        
-        // Réinitialiser le drapeau (important)
-        setTimeout(() => { blockNextSave = false; }, 100); 
-    }
-
-
     // --- Fonctions de Service (exposées) ---
 
     /**
      * Initialise le service, récupère les permissions et la liste des patients.
      */
     async function initialize() {
-        // 1. Récupérer les permissions (inchangé)
+        // 1. Récupérer les permissions
         try {
             const userData = await apiService.fetchUserPermissions();
             
@@ -238,24 +208,10 @@
             return;
         }
 
-        // AJOUTÉ : 2. Initialiser Socket.io et s'abonner aux événements
-        // Ne pas initialiser les sockets pour le plan 'free'
-        if (userPermissions.subscription !== 'free') {
-            try {
-                await apiService.socketInit();
-                apiService.socketOnPatientUpdated(handleRemoteUpdate);
-            } catch (err) {
-                console.error("Impossible d'initialiser Socket.io", err);
-                uiService.showCustomAlert("Erreur de Connexion", "Impossible d'établir la connexion en temps réel. La sauvegarde automatique est désactivée.");
-                // Désactive la sauvegarde si la connexion échoue
-                userPermissions.subscription = 'free'; 
-            }
-        }
-
-        // 3. Appliquer les permissions à l'UI (inchangé)
+        // 2. Appliquer les permissions à l'UI
         uiService.applyPermissions(userPermissions);
 
-        // 4. Gérer l'état "étudiant sans chambre" (inchangé)
+        // 3. Gérer l'état "étudiant sans chambre"
         if (userPermissions.isStudent && patientList.length === 0) {
             document.getElementById('patient-list').innerHTML = '<li class="p-2 text-sm text-gray-500">Aucune chambre ne vous a été assignée.</li>';
             document.getElementById('main-content-wrapper').innerHTML = '<div class="p-8 text-center text-gray-600">Aucune chambre ne vous a été assignée. Veuillez contacter votre formateur.</div>';
@@ -263,7 +219,7 @@
             return; // Bloquer l'initialisation
         }
 
-        // 5. Déterminer l'ID du patient actif (inchangé)
+        // 4. Déterminer l'ID du patient actif
         const storedPatientId = localStorage.getItem('activePatientId');
         if (storedPatientId && patientList.find(p => p.id === storedPatientId)) {
             activePatientId = storedPatientId;
@@ -271,11 +227,10 @@
             activePatientId = patientList[0].id;
         }
 
-        // 6. Charger la liste des patients dans la sidebar (inchangé)
+        // 5. Charger la liste des patients dans la sidebar
         await loadPatientList();
 
-        // 7. Charger le patient actif
-        // La fonction switchPatient s'occupera de rejoindre la room socket
+        // 6. Charger le patient actif
         await switchPatient(activePatientId, true); // true = skipSave
         
         return true; // Succès
@@ -307,36 +262,23 @@
      * @param {boolean} [skipSave=false] - Si true, ne sauvegarde pas le patient actuel.
      */
     async function switchPatient(newPatientId, skipSave = false) {
-        
-        // MODIFIÉ : La sauvegarde (saveCurrentPatientData) se fait maintenant via socket
-        // La logique reste la même : sauvegarder avant de changer.
-        if (!skipSave && activePatientId && userPermissions.subscription !== 'free') {
-            // On n'attend pas la fin de la sauvegarde pour changer de page,
-            // on envoie juste la dernière version avant de partir.
-            saveCurrentPatientData(); 
+        if (!skipSave && activePatientId) {
+            await saveCurrentPatientData();
         }
         
         isLoadingData = true;
         activePatientId = newPatientId;
         localStorage.setItem('activePatientId', newPatientId); 
         
-        // AJOUTÉ : Rejoindre la room Socket.io pour le nouveau patient
-        if(userPermissions.subscription !== 'free') {
-            apiService.socketJoinPatientRoom(activePatientId);
-        }
-        
         uiService.resetForm(); 
         
-        // Charger les données depuis l'API (inchangé)
+        // Charger les données depuis l'API
         try {
             currentPatientState = await apiService.fetchPatientData(newPatientId);
         } catch (error) {
             console.error(`Échec du chargement du patient ${newPatientId}`, error);
             currentPatientState = {}; // Revenir à un état vide en cas d'erreur
         }
-        
-        // Mettre le drapeau pour que le 'load' ne déclenche pas un 'save'
-        blockNextSave = true;
         
         // Remplir l'UI avec les nouvelles données
         loadPatientDataIntoUI(currentPatientState);
@@ -348,55 +290,25 @@
         uiService.applyPermissions(userPermissions);
         
         isLoadingData = false;
-        
-        // AJOUTÉ : Mettre le statut à "Enregistré" après chargement
-        if(userPermissions.subscription !== 'free') {
-            uiService.setSaveStatus('saved');
-        }
-        
-        // Réinitialiser le drapeau (important)
-        setTimeout(() => { blockNextSave = false; }, 100);
     }
     
     /**
-     * Collecte l'état de l'UI et le sauvegarde sur le serveur (via Socket.io).
+     * Collecte l'état de l'UI et le sauvegarde sur le serveur (pour la chambre active).
      */
     async function saveCurrentPatientData() {
         if (isLoadingData || !activePatientId || userPermissions.subscription === 'free') {
             return;
         }
 
-        // Si on vient de charger, on ne sauvegarde pas
-        if (blockNextSave) {
-            console.log("Sauvegarde bloquée (chargement en cours)");
-            blockNextSave = false; // consomme le drapeau
-            return;
-        }
-
-        // 1. Mettre le statut à "Enregistrement..."
-        uiService.setSaveStatus('saving');
-        
         const state = collectPatientStateFromUI();
         currentPatientState = state; // Met à jour l'état local
-
+        
         try {
-            // 2. Utiliser la nouvelle fonction socketEmitPatientUpdate
-            await apiService.socketEmitPatientUpdate(
-                activePatientId, 
-                state, 
-                state.sidebar_patient_name
-            );
-            
-            // 3. Mettre à jour le statut à "Enregistré"
-            uiService.setSaveStatus('saved');
-            
-            // Mettre à jour la sidebar (logique existante)
+            await apiService.saveChamberData(activePatientId, state, state.sidebar_patient_name);
             uiService.updateSidebarEntryName(activePatientId, state.sidebar_patient_name);
-
         } catch (error) {
-            console.error("Échec de la sauvegarde (Socket.io):", error);
-            // 4. Mettre à jour le statut à "Erreur"
-            uiService.setSaveStatus('error');
+            console.error("Échec de la sauvegarde automatique :", error);
+            // Ne pas montrer d'alerte pour ne pas déranger l'utilisateur
         }
     }
     
@@ -404,26 +316,14 @@
      * Déclenche une sauvegarde automatique avec un délai (debounce).
      */
     function debouncedSave() {
-        // Si on vient de charger, on réinitialise juste le drapeau
-        if (blockNextSave) {
-            blockNextSave = false;
-            return;
-        }
-        
-        // Affiche "Modification..." immédiatement (si on n'est pas 'free')
-        if(userPermissions.subscription !== 'free') {
-            uiService.setSaveStatus('editing');
-        }
-        
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
             saveCurrentPatientData();
-        }, 1000); // 1 seconde de debounce
+        }, 500);
     }
     
     /**
      * Gère la création d'une sauvegarde de cas (archive).
-     * (Inchangé, utilise l'API REST)
      */
     async function saveCurrentPatientAsCase() {
         if (userPermissions.isStudent || userPermissions.subscription === 'free') {
@@ -448,7 +348,6 @@
     
     /**
      * Ouvre la modale de chargement de cas.
-     * (Inchangé)
      */
     async function openLoadPatientModal() {
         if (userPermissions.isStudent || userPermissions.subscription === 'free') {
@@ -468,7 +367,8 @@
     
     /**
      * Gère le clic sur "Charger" dans la modale de chargement.
-     * (Inchangé, utilise l'API REST)
+     * @param {string} patientIdToLoadFrom - L'ID 'save_...' à charger.
+     * @param {string} patientName - Le nom du dossier à charger (pour l'alerte).
      */
     async function loadCaseIntoCurrentPatient(patientIdToLoadFrom, patientName) {
         const roomToLoadInto = activePatientId.split('_')[1];
@@ -483,7 +383,7 @@
                     return;
                 }
 
-                // 2. Écraser la chambre active avec ces données (via REST)
+                // 2. Écraser la chambre active avec ces données
                 const patientName = dossierToLoad.sidebar_patient_name;
                 await apiService.saveChamberData(activePatientId, dossierToLoad, patientName);
 
@@ -501,7 +401,8 @@
 
     /**
      * Gère le clic sur "Supprimer" dans la modale de chargement.
-     * (Inchangé, utilise l'API REST)
+     * @param {string} patientIdToDelete - L'ID 'save_...' à supprimer.
+     * @param {string} patientName - Le nom du dossier (pour l'alerte).
      */
     async function deleteCase(patientIdToDelete, patientName) {
         uiService.showDeleteConfirmation(`Êtes-vous sûr de vouloir supprimer la sauvegarde "${patientName}" ? Cette action est irréversible.`, async () => {
@@ -516,7 +417,7 @@
 
     /**
      * Gère l'importation d'un fichier JSON.
-     * (Inchangé, utilise l'API REST)
+     * @param {Object} jsonData - Les données parsées du fichier.
      */
     async function importPatientData(jsonData) {
         if (userPermissions.isStudent || userPermissions.subscription === 'free') {
@@ -526,7 +427,7 @@
         try {
             const patientName = jsonData.sidebar_patient_name || `Chambre ${activePatientId.split('_')[1]}`;
             
-            // Sauvegarde les nouvelles données dans la chambre active (via REST)
+            // Sauvegarde les nouvelles données dans la chambre active
             await apiService.saveChamberData(activePatientId, jsonData, patientName);
             
             // Recharge l'interface
@@ -541,7 +442,6 @@
     
     /**
      * Exporte le patient actuel en fichier JSON.
-     * (Inchangé)
      */
     function exportPatientData() {
         if (userPermissions.isStudent || userPermissions.subscription === 'free') {
@@ -574,7 +474,6 @@
     
     /**
      * Efface les données de la chambre active.
-     * (Inchangé, utilise l'API REST)
      */
     function clearCurrentPatient() {
         if (userPermissions.isStudent) return;
@@ -599,7 +498,6 @@
 
     /**
      * Efface les données de TOUTES les chambres.
-     * (Inchangé, utilise l'API REST)
      */
     function clearAllPatients() {
         if (userPermissions.isStudent) return;
@@ -629,7 +527,8 @@
 
     /**
      * Récupère le texte pour une carte CR spécifique depuis l'état.
-     * (Inchangé)
+     * @param {string} crId - L'ID de la carte (ex: 'cr-consultation').
+     * @returns {string} Le texte du compte rendu.
      */
     function getCrText(crId) {
         if (currentPatientState.comptesRendus && currentPatientState.comptesRendus[crId]) {
@@ -640,7 +539,8 @@
 
     /**
      * Gère le clic sur "Enregistrer" dans la modale CR.
-     * (Inchangé, appelle debouncedSave)
+     * @param {string} crId - L'ID de la carte.
+     * @param {string} crText - Le nouveau texte.
      */
     function handleCrModalSave(crId, crText) {
         if (!currentPatientState.comptesRendus) {

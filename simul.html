@@ -13,8 +13,6 @@
 
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a33bd886-5e06-4a52-b1d6-1c3181d1214f"></script>
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
 </head>
 <body class="flex h-screen bg-gray-100">
     <aside id="sidebar" class="w-64 bg-white shadow-xl flex flex-col flex-shrink-0 m-4 rounded-2xl h-[calc(100vh-2rem)] transition-all duration-300 ease-in-out">
@@ -84,12 +82,6 @@
                         <button id="clear-current-patient-btn" type="button" title="Effacer le dossier actuel" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i class="fas fa-trash text-white"></i>
                         </button>
-                        
-                        <div id="save-status-indicator" class="flex items-center px-3 py-1 rounded-full text-xs font-medium" style="display: none;">
-                            <span id="save-status-icon"><i class="fas fa-cloud"></i></span>
-                            <span id="save-status-text" class="ml-2"></span>
-                        </div>
-                        
                         <span class="font-light text-sm mr-4">EIdos - 2025</span>
                         <button id="toggle-fullscreen-btn" type="button" title="Plein écran" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                             <i id="fullscreen-icon" class="fas fa-expand text-white"></i>

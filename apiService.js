@@ -3,9 +3,6 @@
 
     // La seule constante de ce fichier
     const API_URL = 'https://eidos-api.onrender.com';
-    
-    // AJOUTÉ : Variable pour l'instance Socket.io
-    let socket;
 
     // --- Fonctions d'authentification "privées" ---
     // (Elles ne sont pas exposées sur window.apiService, 
@@ -42,98 +39,22 @@
         return false;
     }
 
-    // --- NOUVEAU : Fonctions de l'API Socket.io ---
+    // --- Fonctions API "publiques" ---
+    // (Celles-ci seront exposées sur window.apiService)
 
     /**
-     * Initialise la connexion Socket.io avec le serveur.
+     * Récupère les permissions et les données de l'utilisateur connecté.
+     * @returns {Promise<Object>} Les données de l'utilisateur.
      */
-    async function socketInit() {
-        const token = getAuthToken();
-        if (!token) return;
-
-        // Se connecte au serveur en passant le token pour l'authentification
-        socket = io(API_URL, {
-            auth: {
-                token: token
-            }
-        });
-
-        socket.on('connect', () => {
-            console.log(`✅ [Socket] Connecté au serveur avec l'ID: ${socket.id}`);
-        });
-
-        socket.on('connect_error', (err) => {
-            console.error(`❌ [Socket] Erreur de connexion: ${err.message}`);
-            // Gérer les erreurs d'authentification socket
-            if (err.message.includes("Non autorisé")) {
-                handleAuthError({ status: 401 });
-            }
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log(`🔌 [Socket] Déconnecté: ${reason}`);
-        });
-    }
-
-    /**
-     * Rejoint une room spécifique pour un patient.
-     * @param {string} patientId - L'ID du patient (ex: 'chambre_101')
-     */
-    function socketJoinPatientRoom(patientId) {
-        if (!socket) return console.error("[Socket] Socket non initialisé.");
-        socket.emit('client:joinRoom', patientId);
-    }
-
-    /**
-     * S'abonne à l'événement de mise à jour du patient (déclenché par un autre utilisateur).
-     * @param {function} callback - La fonction à appeler avec les nouvelles données du dossier.
-     */
-    function socketOnPatientUpdated(callback) {
-        if (!socket) return console.error("[Socket] Socket non initialisé.");
-        socket.on('server:patientUpdated', callback);
-    }
-
-    /**
-     * Envoie les données du patient au serveur via WebSocket pour sauvegarde.
-     * Renvoie une promesse qui résout ou rejette en fonction du callback du serveur.
-     * @param {string} patientId - L'ID de la chambre (ex: 'chambre_101')
-     * @param {Object} dossierData - L'objet complet contenant l'état du dossier.
-     * @param {string} patientName - Le nom du patient pour la sidebar.
-     * @returns {Promise<Object>} Une promesse qui résout avec { success: true } ou rejette avec une erreur.
-     */
-    function socketEmitPatientUpdate(patientId, dossierData, patientName) {
-        return new Promise((resolve, reject) => {
-            if (!socket) {
-                return reject(new Error("Socket non initialisé."));
-            }
-
-            const payload = {
-                patientId: patientId,
-                dossierData: dossierData,
-                sidebar_patient_name: patientName || `Chambre ${patientId.split('_')[1]}`
-            };
-            
-            // Émet l'événement avec un callback pour la confirmation
-            socket.emit('client:updatePatient', payload, (response) => {
-                if (response && response.success) {
-                    resolve(response);
-                } else {
-                    reject(new Error(response.error || "Erreur de sauvegarde Socket.io inconnue."));
-                }
-            });
-        });
-    }
-
-
-    // --- Fonctions API "publiques" (REST - Inchangées) ---
-
     async function fetchUserPermissions() {
         try {
-            const token = getAuthToken();
+            const token = getAuthToken(); // On a besoin du token mais pas de 'Content-Type'
             if (!token) return;
+
             const response = await fetch(`${API_URL}/api/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
             if (handleAuthError(response)) return;
             if (!response.ok) {
                 throw new Error("Impossible de récupérer les informations utilisateur.");
@@ -141,19 +62,26 @@
             return await response.json();
         } catch (err) {
             console.error(err);
+            // Redirige en cas d'erreur grave
             if (err.message.includes("Token non trouvé")) {
                 window.location.href = 'auth.html';
             }
-            throw err;
+            throw err; // Propage l'erreur pour que le code appelant puisse réagir
         }
     }
 
+    /**
+     * Récupère la liste de tous les patients (chambres et sauvegardes) de l'utilisateur.
+     * @returns {Promise<Array>} La liste des patients.
+     */
     async function fetchPatientList() {
         try {
             const headers = getAuthHeaders();
-            delete headers['Content-Type']; 
+            delete headers['Content-Type']; // Pas de body
+
             const response = await fetch(`${API_URL}/api/patients`, { headers });
             if (handleAuthError(response)) return;
+            
             return await response.json();
         } catch (err) {
             console.error("Erreur de chargement de la liste des patients:", err);
@@ -164,42 +92,57 @@
         }
     }
 
+    /**
+     * Récupère les données complètes d'un dossier patient (chambre ou sauvegarde).
+     * @param {string} patientId - L'ID du patient (ex: 'chambre_101' ou 'save_...')
+     * @returns {Promise<Object>} Les données du dossier (dossierData).
+     */
     async function fetchPatientData(patientId) {
         try {
             const headers = getAuthHeaders();
-            delete headers['Content-Type']; 
+            delete headers['Content-Type']; // Pas de body
+
             const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
                 headers: headers
             });
+
             if (handleAuthError(response)) return;
+
             if (!response.ok) {
                 if (response.status === 404) {
                     console.log(`Dossier ${patientId} non trouvé sur le serveur, initialisation.`);
-                    return {}; 
+                    return {}; // Retourne un état vide si 404
                 } else {
                     throw new Error('Erreur réseau lors du chargement des données.');
                 }
             }
-            return await response.json();
+            return await response.json(); // Retourne le 'dossierData'
         } catch (err) {
             console.error("Erreur de chargement des données:", err);
             if (err.message.includes("Token non trouvé")) {
                 window.location.href = 'auth.html';
             }
-            return {};
+            return {}; // Retourne un état vide en cas d'erreur
         }
     }
 
-    // OBSOLÈTE : Cette fonction est maintenant remplacée par socketEmitPatientUpdate
-    // Nous la gardons pour la compatibilité (ex: import, clear all) mais elle ne sera plus utilisée pour la sauvegarde en temps réel.
+    /**
+     * Enregistre les données d'une chambre (PAS une sauvegarde de cas).
+     * @param {string} patientId - L'ID de la chambre (ex: 'chambre_101')
+     * @param {Object} dossierData - L'objet complet contenant l'état du dossier.
+     * @param {string} patientName - Le nom du patient pour la sidebar.
+     * @returns {Promise<Object>} La réponse du serveur.
+     */
     async function saveChamberData(patientId, dossierData, patientName) {
         if (!patientId || !patientId.startsWith('chambre_')) {
             console.warn('saveChamberData ne doit être utilisé que pour les chambres.');
             return;
         }
+        
         try {
             const headers = getAuthHeaders(); 
             if (!headers) return;
+
             const response = await fetch(`${API_URL}/api/patients/${patientId}`, {
                 method: 'POST',
                 headers: headers,
@@ -208,7 +151,9 @@
                     sidebar_patient_name: patientName || `Chambre ${patientId.split('_')[1]}`
                 })
             });
+
             if (handleAuthError(response)) return;
+            
             return await response.json();
         } catch (err) {
             console.error("Erreur lors de la sauvegarde sur le serveur:", err);
@@ -219,10 +164,17 @@
         }
     }
 
+    /**
+     * Crée ou met à jour une sauvegarde de cas (dossier archivé).
+     * @param {Object} dossierData - L'objet complet contenant l'état du dossier.
+     * @param {string} patientName - Le nom du patient (obligatoire pour la sauvegarde).
+     * @returns {Promise<Object>} La réponse du serveur.
+     */
     async function saveCaseData(dossierData, patientName) {
         try {
             const headers = getAuthHeaders();
             if (!headers) return;
+
             const response = await fetch(`${API_URL}/api/patients/save`, {
                 method: 'POST',
                 headers: headers,
@@ -231,12 +183,15 @@
                     sidebar_patient_name: patientName
                 })
             });
+
             if (handleAuthError(response)) return;
+            
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.error || 'Erreur lors de la sauvegarde');
             }
             return data;
+
         } catch (err) {
             console.error("Erreur lors de la sauvegarde du cas:", err);
             if (err.message.includes("Token non trouvé")) {
@@ -246,20 +201,30 @@
         }
     }
     
+    /**
+     * Supprime une sauvegarde de cas (dossier archivé).
+     * @param {string} patientId - L'ID de la sauvegarde (ex: 'save_...')
+     * @returns {Promise<Object>} La réponse du serveur.
+     */
     async function deleteSavedCase(patientId) {
         if (!patientId || !patientId.startsWith('save_')) {
              throw new Error("Cette fonction ne peut supprimer que des sauvegardes.");
         }
+        
         try {
             const headers = getAuthHeaders();
-            delete headers['Content-Type'];
+            delete headers['Content-Type']; // Pas de body
             if (!headers) return;
+
             const response = await fetch(`${API_URL}/api/patients/${patientId}`, { 
                 method: 'DELETE',
                 headers: headers
             });
+
             if (handleAuthError(response)) return;
+            
             return await response.json();
+
         } catch (err) {
             console.error("Erreur lors de la suppression:", err);
             if (err.message.includes("Token non trouvé")) {
@@ -269,10 +234,17 @@
         }
     }
 
+    /**
+     * Envoie une requête pour effacer toutes les chambres (pas les sauvegardes).
+     * @param {Array<string>} allChamberIds - Liste des ID de chambres.
+     * @returns {Promise<Array>} Réponse de Promise.all
+     */
     async function clearAllChamberData(allChamberIds) {
         const headers = getAuthHeaders();
         if (!headers) return;
+        
         const clearPromises = [];
+
         for (const patientId of allChamberIds) {
             const promise = fetch(`${API_URL}/api/patients/${patientId}`, {
                 method: 'POST',
@@ -284,6 +256,7 @@
             });
             clearPromises.push(promise);
         }
+
         try {
             return await Promise.all(clearPromises);
         } catch (err) {
@@ -296,20 +269,13 @@
     // --- Exposition du service ---
     
     window.apiService = {
-        // API REST (existante)
         fetchUserPermissions,
         fetchPatientList,
         fetchPatientData,
-        saveChamberData, // Gardé pour import, clear all
+        saveChamberData,
         saveCaseData,
         deleteSavedCase,
-        clearAllChamberData,
-
-        // NOUVELLE API SOCKET.IO
-        socketInit,
-        socketJoinPatientRoom,
-        socketOnPatientUpdated,
-        socketEmitPatientUpdate
+        clearAllChamberData
     };
 
 })();

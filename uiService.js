@@ -22,10 +22,6 @@
         startX: 0, startLeft: 0, startWidth: 0,
         startLeftPx: 0,
     };
-    
-    // AJOUTÉ : Références pour l'indicateur de statut
-    let saveStatusIndicator, saveStatusIcon, saveStatusText;
-
 
     // --- Données Statiques pour les Tableaux (UI) ---
     const nfsData = { "Hématies (T/L)": "4.5-5.5", "Hémoglobine (g/dL)": "13-17", "Hématocrite (%)": "40-52", "VGM (fL)": "80-100", "Leucocytes (G/L)": "4-10", "Plaquettes (G/L)": "150-400" };
@@ -81,11 +77,6 @@
         tutorialText = document.getElementById('tutorial-text');
         tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
         tutorialNextBtn = document.getElementById('tutorial-next-btn');
-        
-        // AJOUTÉ : Indicateur de statut
-        saveStatusIndicator = document.getElementById('save-status-indicator');
-        saveStatusIcon = document.getElementById('save-status-icon');
-        saveStatusText = document.getElementById('save-status-text');
     }
 
     /**
@@ -373,25 +364,6 @@
     }
 
     // --- Fonctions de Gestion de l'UI (Formulaires & Données) ---
-    
-    // --- NOUVEAU : Fonction pour styliser la case allergie ---
-    /**
-     * Vérifie le contenu de la case "Allergies" et applique/retire le style orange.
-     */
-    function updateAllergyWarning() {
-        const allergyInput = document.getElementById('atcd-allergies');
-        if (!allergyInput) return;
-        
-        const infoItem = allergyInput.closest('.info-item');
-        if (!infoItem) return;
-
-        if (allergyInput.value && allergyInput.value.trim() !== '') {
-            infoItem.classList.add('allergy-warning');
-        } else {
-            infoItem.classList.remove('allergy-warning');
-        }
-    }
-    // --- FIN NOUVEAU ---
 
     /**
      * Réinitialise l'ensemble du formulaire principal.
@@ -425,13 +397,9 @@
         document.getElementById('pancarte-tbody').innerHTML = '';
         
         initializeDynamicTables();
-        
-        updateAllergyWarning(); // MODIFIÉ : Ajout de l'appel
+
         calculateAndDisplayIMC();
         if (pancarteChartInstance) pancarteChartInstance.destroy();
-        
-        // AJOUTÉ : Cacher l'indicateur de statut lors du reset
-        if(saveStatusIndicator) saveStatusIndicator.style.display = 'none';
     }
 
     /**
@@ -450,9 +418,6 @@
                 else { el.value = state[id]; }
             }
         });
-        
-        updateAllergyWarning(); // MODIFIÉ : Ajout de l'appel
-
         // Redimensionner les textareas après remplissage
         setTimeout(() => {
             document.querySelectorAll('textarea.info-value').forEach(autoResize);
@@ -1447,8 +1412,8 @@
         const { targetBar, targetCell } = ivInteraction;
         if (targetBar && targetCell) {
             const cellRect = targetCell.getBoundingClientRect();
-            const totalTimelineMinutes = 11 * 24 * 4;
-            const intervalWidthPx = cellRect.width / totalTimelineMinutes;
+            const totalIntervals = 11 * 24 * 4;
+            const intervalWidthPx = cellRect.width / totalIntervals;
 
             const rawLeftPx = targetBar.offsetLeft;
             const snappedLeftInterval = Math.round(rawLeftPx / intervalWidthPx);
@@ -1733,63 +1698,6 @@
         tutorialStepBox.style.left = `${left}px`;
     }
 
-    
-    // --- AJOUTÉ : Fonction de gestion de l'indicateur de statut ---
-    let saveStatusTimer;
-    /**
-     * Met à jour l'indicateur de statut d'enregistrement.
-     * @param {'editing' | 'saving' | 'saved' | 'error'} status - Le statut à afficher.
-     */
-    function setSaveStatus(status) {
-        if (!saveStatusIndicator) return;
-        
-        // Annuler tout minuteur de masquage précédent
-        clearTimeout(saveStatusTimer);
-        
-        // Réinitialiser les classes
-        saveStatusIndicator.classList.remove('status-saved', 'status-editing', 'status-saving', 'status-error');
-        saveStatusIcon.innerHTML = '';
-        
-        switch (status) {
-            case 'editing':
-                saveStatusIndicator.classList.add('status-editing');
-                saveStatusIcon.innerHTML = '<i class="fas fa-pencil-alt"></i>';
-                saveStatusText.textContent = 'Modifications...';
-                break;
-            case 'saving':
-                saveStatusIndicator.classList.add('status-saving');
-                saveStatusIcon.innerHTML = '<i class="fas fa-spinner"></i>';
-                saveStatusText.textContent = 'Enregistrement...';
-                break;
-            case 'saved':
-                saveStatusIndicator.classList.add('status-saved');
-                saveStatusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
-                saveStatusText.textContent = 'Enregistré';
-                
-                // Masquer automatiquement après 2 secondes
-                saveStatusTimer = setTimeout(() => {
-                    saveStatusIndicator.style.display = 'none';
-                }, 2000);
-                break;
-            case 'error':
-                saveStatusIndicator.classList.add('status-error');
-                saveStatusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-                saveStatusText.textContent = 'Erreur';
-                
-                // Masquer automatiquement après 3 secondes
-                saveStatusTimer = setTimeout(() => {
-                    saveStatusIndicator.style.display = 'none';
-                }, 3000);
-                break;
-            default:
-                saveStatusIndicator.style.display = 'none';
-                return;
-        }
-        
-        // Assurer que l'indicateur est visible
-        saveStatusIndicator.style.display = 'flex';
-    }
-
 
     // --- Exposition du service ---
     
@@ -1824,7 +1732,6 @@
         setupSync,
         updateDynamicDates,
         refreshAllRelativeDates,
-        updateAllergyWarning,
         
         // Navigation & Modales
         changeTab,
@@ -1871,10 +1778,7 @@
         startTutorial,
         endTutorial,
         showTutorialStep,
-        incrementTutorialStep: () => { currentStepIndex++; showTutorialStep(currentStepIndex); },
-        
-        // AJOUTÉ : Gestion du statut
-        setSaveStatus
+        incrementTutorialStep: () => { currentStepIndex++; showTutorialStep(currentStepIndex); }
     };
 
 })();

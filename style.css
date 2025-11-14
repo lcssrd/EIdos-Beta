@@ -71,17 +71,6 @@ body {
 .info-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 4px; }
 .info-value { font-size: 1rem; font-weight: 500; color: #1f2937; }
 
-/* --- NOUVEAU : Style pour la case Allergies lorsque remplie --- */
-.info-item.allergy-warning {
-    background-color: #fffaf0; /* Tailwind 'orange-50' */
-    border-color: #fdba74; /* Tailwind 'orange-300' */
-}
-.info-item.allergy-warning .info-label {
-    color: #c2410c; /* Tailwind 'orange-700' */
-    font-weight: 600;
-}
-/* --- FIN NOUVEAU --- */
-
 .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #e5e7eb; }
 .timeline-dot { position: absolute; left: -0.6rem; top: 0.25rem; height: 1rem; width: 1rem; border-radius: 9999px; border: 3px solid white; }
 .timeline-dot.dot-rose { background-color: #f43f5e; }
@@ -569,41 +558,4 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
 /* Pour masquer la coche si elle a la classe .hidden */
 .cr-check-icon.hidden {
     display: none;
-}
-
-/* --- AJOUTÉ : Styles pour l'indicateur de statut d'enregistrement --- */
-#save-status-indicator {
-    transition: all 0.3s ease-in-out;
-}
-/* Statut : Enregistré */
-#save-status-indicator.status-saved {
-    background-color: #dcfce7; /* green-100 */
-    color: #166534; /* green-800 */
-    display: flex;
-}
-/* Statut : Modification (non enregistré) */
-#save-status-indicator.status-editing {
-    background-color: #feefc7; /* yellow-200 */
-    color: #854d0e; /* yellow-800 */
-    display: flex;
-}
-/* Statut : Enregistrement en cours... */
-#save-status-indicator.status-saving {
-    background-color: #dbeafe; /* blue-100 */
-    color: #1e40af; /* blue-800 */
-    display: flex;
-}
-/* Statut : Erreur */
-#save-status-indicator.status-error {
-    background-color: #fee2e2; /* red-100 */
-    color: #991b1b; /* red-800 */
-    display: flex;
-}
-/* Icône qui tourne pour "Enregistrement en cours" */
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-#save-status-indicator.status-saving #save-status-icon {
-    animation: spin 1s linear infinite;
 }

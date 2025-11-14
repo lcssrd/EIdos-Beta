@@ -11,7 +11,6 @@
         uiService.setupModalListeners(); // Configure les boutons "OK/Annuler" des modales
 
         // 2. Initialiser le service patient (permissions, liste des patients, patient actif)
-        // MODIFIÉ : patientService.initialize() gère maintenant aussi l'init de Socket.io
         const initialized = await patientService.initialize();
         
         // 3. Si l'initialisation échoue (ex: étudiant sans chambre), arrêter ici.
@@ -54,24 +53,6 @@
 
         document.getElementById('toggle-fullscreen-btn')?.addEventListener('click', uiService.toggleFullscreen);
     }
-    
-    // AJOUTÉ : Nouvelle fonction pour gérer le feedback instantané
-    /**
-     * Gère les événements d'input pour un retour visuel immédiat.
-     */
-    function handleImmediateInput(e) {
-        // Ne fait rien si le plan est 'free'
-        if (patientService.getUserPermissions().subscription === 'free') {
-            return;
-        }
-        
-        // Met le statut à "Modifications..."
-        uiService.setSaveStatus('editing');
-        
-        // Appelle la sauvegarde différée (debounced)
-        patientService.debouncedSave();
-    }
-
 
     /**
      * Configure tous les écouteurs d'événements pour l'application principale.
@@ -127,10 +108,9 @@
         });
         
         // --- Sauvegarde automatique (Debounce) ---
-        // MODIFIÉ : Utilise 'handleImmediateInput' au lieu de 'patientService.debouncedSave' directement
         const mainContent = document.querySelector('main');
-        mainContent.addEventListener('input', handleImmediateInput);
-        mainContent.addEventListener('change', handleImmediateInput);
+        mainContent.addEventListener('input', patientService.debouncedSave);
+        mainContent.addEventListener('change', patientService.debouncedSave);
 
         // --- Mises à jour auto de l'UI (Header & Vie) ---
         document.getElementById('patient-entry-date').addEventListener('input', () => {
@@ -141,10 +121,6 @@
         document.getElementById('admin-dob').addEventListener('input', uiService.updateAgeDisplay);
         document.getElementById('vie-poids').addEventListener('input', uiService.calculateAndDisplayIMC);
         document.getElementById('vie-taille').addEventListener('input', uiService.calculateAndDisplayIMC);
-        
-        // --- NOUVEAU : Écouteur pour la case Allergies ---
-        document.getElementById('atcd-allergies').addEventListener('input', uiService.updateAllergyWarning);
-
 
         // --- Ajout d'entrées (Observations, Transmissions, etc.) ---
         document.getElementById('add-observation-btn').addEventListener('click', () => {
@@ -173,7 +149,7 @@
             const deleteBtn = e.target.closest('button[title*="Supprimer"]');
             if (deleteBtn && !patientService.getUserPermissions().isStudent) { // TODO: Gérer perm
                 uiService.showDeleteConfirmation("Êtes-vous sûr de vouloir supprimer cette entrée ?", () => {
-                    if (uiService.deleteEntry(deleteBtn)) patientService.debouncedSave(); // La suppression déclenche une sauvegarde
+                    if (uiService.deleteEntry(deleteBtn)) patientService.debouncedSave();
                 });
             }
         });
@@ -233,8 +209,7 @@
         document.addEventListener('mouseup', uiService.handleIVMouseUp);
         
         // Écouteur personnalisé pour déclencher une sauvegarde (utilisé par les barres IV)
-        // MODIFIÉ : Appelle 'handleImmediateInput' pour un retour visuel instantané
-        document.addEventListener('uiNeedsSave', handleImmediateInput);
+        document.addEventListener('uiNeedsSave', patientService.debouncedSave);
 
         // --- Tutoriel ---
         document.getElementById('tutorial-overlay').addEventListener('click', () => uiService.endTutorial(true));
