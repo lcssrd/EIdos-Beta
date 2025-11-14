@@ -296,7 +296,12 @@
      * Collecte l'état de l'UI et le sauvegarde sur le serveur (pour la chambre active).
      */
     async function saveCurrentPatientData() {
-        if (isLoadingData || !activePatientId || userPermissions.subscription === 'free') {
+        if (isLoadingData || !activePatientId) {
+            return; // Garde les vérifications de base
+        }
+        
+        // NE BLOQUER que si l'utilisateur est sur le plan "free" ET n'est PAS un étudiant
+        if (userPermissions.subscription === 'free' && !userPermissions.isStudent) {
             return;
         }
 
@@ -585,5 +590,6 @@
         getCrText,
         handleCrModalSave
     };
+
 
 })();
