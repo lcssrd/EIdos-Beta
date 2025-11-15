@@ -1,5 +1,27 @@
-/* MODIFICATION : Import de la police Parkinsans en plus d'Inter */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Parkinsans:wght@600&display=swap');
+
+/* NOUVEAU : Keyframes pour les animations du bouton */
+@keyframes fadeInStatus {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* FIN NOUVEAU */
+
 html {
     scroll-behavior: smooth;
 }
@@ -8,7 +30,6 @@ body {
     color: #1f2937;
 }
 
-/* MODIFICATION : Ajout du style pour le titre EIdos */
 #sidebar h1 {
     font-family: 'Parkinsans', sans-serif;
     font-weight: 600;
@@ -98,20 +119,20 @@ input[type=number] {
 }
 .continuous-surveillance { background-image: linear-gradient(45deg, #fef3c7 25%, transparent 25%, transparent 50%, #fef3c7 50%, #fef3c7 75%, transparent 75%, transparent 100%); background-size: 20px 20px; }
 
-.styled-input, select.styled-input { /* AJOUT : 'select.styled-input' */
+.styled-input, select.styled-input { 
     background-color: #f9fafb; border: 1px solid #d1d5db; transition: all 0.2s ease-in-out;
     padding: 0.5rem 0.75rem; border-radius: 0.375rem;
     width: 100%;
-    -webkit-appearance: none; /* AJOUT : Pour normaliser le style des selects */
+    -webkit-appearance: none; 
     -moz-appearance: none;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* AJOUT : Flèche du select */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); 
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
     background-size: 1.5em 1.5em;
-    padding-right: 2.5rem; /* AJOUT : Espace pour la flèche */
+    padding-right: 2.5rem; 
 }
-.styled-input:focus, select.styled-input:focus { /* AJOUT : 'select.styled-input:focus' */
+.styled-input:focus, select.styled-input:focus { 
     outline: 2px solid #3b82f6; outline-offset: -1px;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); border-color: #3b82f6;
 }
@@ -154,7 +175,7 @@ textarea.info-value {
 }
 
 #custom-confirm-modal #custom-confirm-box,
-#cr-modal #cr-modal-box { /* AJOUTÉ : Appliquer la transition à la nouvelle modale */
+#cr-modal #cr-modal-box { 
     transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 }
 #sidebar {
@@ -202,7 +223,6 @@ textarea.info-value {
     height: 38px;
     padding: 0 !important;
     cursor: crosshair;
-    /* MODIFIÉ : overflow: hidden; EST SUPPRIMÉ pour voir les étiquettes */
 }
 .iv-bar {
     position: absolute;
@@ -229,32 +249,20 @@ body.is-drawing-iv, body.is-resizing-iv, body.is-moving-iv {
     user-select: none;
 }
 
-/* MODIFIÉ : Style des étiquettes d'heure IV pour un contraste MAXIMAL */
 .iv-bar-container .iv-time-label {
     position: absolute;
     font-family: monospace;
-    
-    /* === AMÉLIORATIONS DE CONTRASTE === */
     font-size: 11px;
-    font-weight: 700; /* Bold */
-    
-    /* Fond sombre, texte clair */
-    background-color: #1f2937; /* Fond très sombre (le gris-bleu du texte body) */
-    color: #ffffff; /* Texte blanc */
-    
-    padding: 2px 4px; /* Plus d'espace */
-    border-radius: 4px; /* Bords arrondis */
-    
-    /* Ombre plus marquée pour détacher l'étiquette */
+    font-weight: 700; 
+    background-color: #1f2937; 
+    color: #ffffff; 
+    padding: 2px 4px; 
+    border-radius: 4px; 
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); 
-    
-    /* Petite bordure pour la finition */
     border: 1px solid rgba(0, 0, 0, 0.3);
-    /* === FIN DES AMÉLIORATIONS === */
-    
     pointer-events: none;
     white-space: nowrap;
-    z-index: 12; /* Au-dessus de la barre bleue (z-index: 10) */
+    z-index: 12; 
     line-height: 1.2; 
 }
 .iv-time-label.start {
@@ -302,18 +310,22 @@ body.is-drawing-iv, body.is-resizing-iv, body.is-moving-iv {
     align-items: center;
     justify-content: center;
 }
-#header-buttons .tutorial-highlight i {
+#header-buttons .tutorial-highlight i,
+#save-status-button.tutorial-highlight i {
      color: white !important;
      z-index: 9997;
 }
 #sidebar .tutorial-highlight {
     background-color: white;
 }
+#save-status-button.tutorial-highlight {
+    border-radius: 9999px; 
+}
 
-/* MODIFICATION : Largeur des colonnes d'heure */
+
 .small-col {
-min-width: 48px;   /* MODIFIÉ: Rétabli à 36px. 88px était trop large et probablement une coquille. */
-width: 48px;       /* MODIFIÉ: Rétabli à 36px. */
+min-width: 48px;   
+width: 48px;       
 text-align: center;
 padding-left: 0.125rem; 
 padding-right: 0.125rem;
@@ -321,156 +333,111 @@ font-size: 0.75rem;
 }
 .small-col input[type="checkbox"] {
 display: block;
-margin: 0.35rem auto; /* centre la checkbox dans la cellule */
+margin: 0.35rem auto; 
 }
 
 
 /* --- NOUVEAU : STICKY PRESCRIPTION TABLE --- */
 
-/* 1. Set up the scrolling container and table */
 #prescriptions .overflow-x-auto {
-    overflow: auto; /* This is the scrolling context */
+    overflow: auto; 
 }
 #prescription-table {
-    border-collapse: separate; /* REQUIRED */
+    border-collapse: separate; 
     border-spacing: 0;
 }
 
-/* 2. Make the entire header block (2 rows) sticky to the top */
 #prescription-thead {
     position: -webkit-sticky;
     position: sticky;
     top: 0;
-    z-index: 10; /* Couche de base pour l'en-tête scrollable */
+    z-index: 10; 
 }
-/* MODIFIÉ : Assure que le fond de l'en-tête est opaque */
 #prescription-thead th {
-    background-color: #f9fafb; /* bg-gray-100 */
+    background-color: #f9fafb; 
 }
 
-
-/* 3. Make the first 4 header columns sticky to the left (le COIN) */
 #prescription-thead tr:first-child th:nth-child(-n+4) {
     position: -webkit-sticky;
     position: sticky;
-    left: 0; /* Sera surchargé */
-    z-index: 30; /* MODIFIÉ : La couche la plus haute (le coin) */
-    top: 0; /* Reste collé en haut */
+    left: 0; 
+    z-index: 30; 
+    top: 0; 
 }
 #prescription-thead tr:first-child th:nth-child(1) { left: 0px; }
-#prescription-thead tr:first-child th:nth-child(2) { left: 220px; } /* min-w-[220px] */
-#prescription-thead tr:first-child th:nth-child(3) { left: 364px; } /* MODIFIÉ : 220 + 144 */
-#prescription-thead tr:first-child th:nth-child(4) { left: 460px; } /* MODIFIÉ : 364 + 96 */
+#prescription-thead tr:first-child th:nth-child(2) { left: 220px; } 
+#prescription-thead tr:first-child th:nth-child(3) { left: 364px; } 
+#prescription-thead tr:first-child th:nth-child(4) { left: 460px; } 
 
-/* 4. Make the first 4 body columns sticky to the left */
 #prescription-tbody tr td:nth-child(-n+4) {
     position: -webkit-sticky;
     position: sticky;
-    z-index: 20; /* MODIFIÉ : Couche intermédiaire (au-dessus du header scrollable, en dessous du coin) */
-    background-color: white; /* Cache le contenu qui défile en dessous */
+    z-index: 20; 
+    background-color: white; 
 }
 #prescription-tbody tr td:nth-child(1) { left: 0px; }
 #prescription-tbody tr td:nth-child(2) { left: 220px; }
-#prescription-tbody tr td:nth-child(3) { left: 364px; } /* MODIFIÉ */
-#prescription-tbody tr td:nth-child(4) { left: 460px; } /* MODIFIÉ */
+#prescription-tbody tr td:nth-child(3) { left: 364px; } 
+#prescription-tbody tr td:nth-child(4) { left: 460px; } 
 
-/* 5. Ensure scrolling cells are correctly layered */
 #prescription-tbody tr td:nth-child(n+5) {
      position: relative;
-     z-index: 1; /* Couche la plus basse */
+     z-index: 1; 
 }
 
-/* 6. Ensure IV bars are layered correctly */
 .iv-bar-container {
-    z-index: 2; /* Juste au-dessus des cellules de corps, mais en dessous de tout le reste */
-    position: relative; /* Nécessaire pour que z-index s'applique à la <td> */
+    z-index: 2; 
+    position: relative; 
 }
 .iv-bar {
-    z-index: 3; /* Au-dessus de la cellule, mais en dessous des étiquettes */
+    z-index: 3; 
 }
 .iv-bar-container .iv-time-label {
-    z-index: 4; /* Au-dessus de la barre */
+    z-index: 4; 
 }
 /* --- FIN STICKY PRESCRIPTION TABLE --- */
 
 /* --- AJOUTS POUR LES MARQUEURS PER OS --- */
 
-/* MODIFIÉ : Style pour le MARQUEUR (losange) non-IV */
 .iv-bar.marker-bar {
-    /* Le JS force la largeur (width) à 0. C'est parfait. */
-    
-    /* On rend la barre elle-même invisible. */
     background-color: transparent;
     border: none;
-    height: 0; /* Annule la hauteur de .iv-bar */
-    
-    /* On garde le 'cursor: move' hérité de .iv-bar */
+    height: 0; 
     cursor: move; 
 }
 
-/* NOUVEAU : On crée le losange avec un pseudo-élément ::before */
 .iv-bar.marker-bar::before {
     content: '';
     position: absolute;
-    
-    /* 1. Créer le carré */
     width: 14px;
     height: 14px;
-    background-color: #f97316; /* bg-orange-500 */
-    border: 1px solid #c2410c; /* border-orange-700 */
-
-    /* 2. Le centrer sur le point d'ancrage (le .iv-bar de 0px) */
-    /* (le .iv-bar est déjà centré verticalement sur la ligne) */
+    background-color: #f97316; 
+    border: 1px solid #c2410c; 
     top: 50%;
     left: 50%;
-    
-    /* 3. Centrer le carré sur lui-même ET le pivoter */
     transform: translate(-50%, -50%) rotate(45deg);
 }
 
-/* * NOUVEAU : STYLE POUR LES BARRES RESPIRATOIRES (ORANGE)
-*/
 .iv-bar.iv-bar-respi {
-    background-color: #f59e0b; /* bg-amber-500 */
-    border-color: #b45309; /* border-amber-700 */
+    background-color: #f59e0b; 
+    border-color: #b45309; 
 }
 
-
-/* NOUVEAU : Masquer le handle de redimensionnement pour les marqueurs PO */
 .iv-bar.marker-bar .resize-handle {
     display: none;
 }
 
-/* NOUVEAU : Masquer l'étiquette de FIN pour les marqueurs PO */
 .iv-bar-container.marker-container .iv-time-label.end {
     display: none;
 }
 
-/*
- * NOUVEAU : Correction visuelle pour l'alignement des heures
- * Cible TOUTES les colonnes d'heure dans les en-têtes des
- * tableaux de prescription et de diagramme de soins.
-*/
 #prescription-thead .small-col,
 #care-diagram-thead .small-col {
     position: relative; 
-    
-    /* * Décale le texte (qui est centré dans sa cellule) de 50% de 
-    * sa propre largeur vers la gauche.
-    * Cela l'aligne visuellement sur la ligne de démarcation
-    * de début de sa plage horaire.
-    */
     transform: translateX(-50%);
-    
-    /* Empêche que le texte décalé ne soit coupé */
     overflow: visible; 
 }
 
-/*
- * NOUVEAU : Colonne "sticky" (fixe) pour les tableaux de pancarte
- * S'applique à la première cellule (th et td) de chaque ligne
- * dans les tableaux #pancarte-table et #glycemie-table.
-*/
 #pancarte-table th:first-child,
 #pancarte-table td:first-child,
 #glycemie-table th:first-child,
@@ -481,21 +448,16 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
     z-index: 10;
 }
 
-/* Assure que l'en-tête sticky (Jour 1, Jour 2...) passe au-dessus 
-   de la colonne de paramètre sticky */
 #pancarte-table thead th,
 #glycemie-table thead th {
     z-index: 11;
 }
 
-/* Assure que la cellule du coin (Paramètres) est au-dessus de tout */
 #pancarte-table thead tr:first-child th:first-child,
 #glycemie-table thead tr:first-child th:first-child {
     z-index: 12;
 }
 
-/* Assure un fond opaque pour les cellules sticky pour 
-   cacher le contenu qui défile en dessous */
 #pancarte-table td:first-child,
 #glycemie-table td:first-child {
     background-color: white;
@@ -503,59 +465,130 @@ margin: 0.35rem auto; /* centre la checkbox dans la cellule */
 
 #pancarte-table thead th:first-child,
 #glycemie-table thead th:first-child {
-    background-color: #f9fafb; /* Correspond à bg-gray-100 */
+    background-color: #f9fafb; 
 }
 
-/* * MODIFICATION : STYLES POUR LES CARTES DE COMPTES RENDUS
-*/
 .cr-card {
     display: flex;
     align-items: center;
     padding: 1rem;
-    border: 1px solid #e5e7eb; /* border-gray-200 */
-    border-radius: 0.75rem; /* rounded-xl */
+    border: 1px solid #e5e7eb; 
+    border-radius: 0.75rem; 
     background-color: white;
-    /* MODIFICATION : Ombre par défaut supprimée */
     transition: all 0.2s ease-in-out;
     cursor: pointer;
     position: relative;
     overflow: hidden;
 }
 .cr-card:hover {
-    /* MODIFICATION : Ombre et soulèvement accentués */
     transform: translateY(-3px);
     box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-    border-color: #d1d5db; /* border-gray-300 */
+    border-color: #d1d5db; 
 }
 .cr-card:focus {
-    outline: 2px solid #be123c; /* focus:ring-rose-700 (couleur de l'onglet) */
+    outline: 2px solid #be123c; 
     outline-offset: 2px;
 }
 .cr-card-icon {
     flex-shrink: 0;
-    width: 2.5rem; /* w-10 */
-    height: 2.5rem; /* h-10 */
-    border-radius: 9999px; /* rounded-full */
+    width: 2.5rem; 
+    height: 2.5rem; 
+    border-radius: 9999px; 
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.125rem; /* text-lg */
-    margin-right: 0.75rem; /* mr-3 */
+    font-size: 1.125rem; 
+    margin-right: 0.75rem; 
 }
 .cr-card-title {
-    font-weight: 600; /* font-semibold */
-    color: #1f2937; /* text-gray-900 */
+    font-weight: 600; 
+    color: #1f2937; 
     text-align: left;
     flex-grow: 1;
 }
 .cr-check-icon {
     position: absolute;
-    top: 0.5rem; /* top-2 */
-    right: 0.5rem; /* right-2 */
-    font-size: 1.25rem; /* text-xl */
-    color: #16a34a; /* text-green-600 */
+    top: 0.5rem; 
+    right: 0.5rem; 
+    font-size: 1.25rem; 
+    color: #16a34a; 
 }
-/* Pour masquer la coche si elle a la classe .hidden */
 .cr-check-icon.hidden {
     display: none;
 }
+
+/* --- STYLES POUR LE BOUTON DE STATUT --- */
+
+#save-status-button {
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+}
+
+#save-status-button i,
+#save-status-button span {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    animation: fadeInStatus 0.4s ease forwards;
+}
+
+.status-saved {
+    background-color: #10b981; 
+    color: white;
+}
+.status-saved:hover {
+    background-color: #059669; 
+    transform: scale(1.05); 
+}
+.status-saved:active {
+    transform: scale(0.98); 
+}
+
+.status-dirty {
+    background-color: #f97316; 
+    color: white;
+    animation: pulse-orange 2s infinite; 
+}
+.status-dirty:hover {
+    background-color: #ea580c; 
+    animation-play-state: paused; 
+    transform: scale(1.05);
+}
+.status-dirty:active {
+    transform: scale(0.98);
+}
+
+.status-saving {
+    background-color: #3b82f6; 
+    color: white;
+    /* ***** MODIFICATION : Ligne supprimée ***** */
+    /* cursor: not-allowed; */
+}
+.status-saving #save-status-icon {
+    animation: spin 1s linear infinite;
+}
+
+
+@keyframes pulse-orange {
+    0% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    }
+}
+
+/* --- NOUVEAU : STYLES POUR LE TOAST --- */
+#toast-notification {
+    /* Positionné par 'fixed' dans simul.html */
+    z-index: 9999;
+    /* L'état 'caché' par défaut. La classe 'show' sera ajoutée par JS */
+    transform: translateX(calc(100% + 1rem)); /* 1rem = right-4 */
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+#toast-notification.show {
+    /* L'état 'visible' */
+    transform: translateX(0);
+}
+/* --- FIN DES NOUVEAUX STYLES --- */

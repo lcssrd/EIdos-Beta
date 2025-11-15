@@ -9,6 +9,13 @@
     let confirmModal, confirmModalBox, confirmTitle, confirmMessage, confirmCancelBtn, confirmOkBtn;
     let crModal, crModalBox, crModalTitle, crModalTextarea, crModalSaveBtn, crModalCloseBtn, crModalActiveIdInput;
 
+    // Références pour le bouton de statut
+    let saveStatusButton, saveStatusIcon, saveStatusText;
+
+    // NOUVEAU : Références pour le Toast
+    let toastElement, toastIcon, toastText;
+    let toastTimeout = null;
+
     let confirmCallback = null; // Pour la modale de confirmation
     
     // Références pour le tutoriel
@@ -77,6 +84,16 @@
         tutorialText = document.getElementById('tutorial-text');
         tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
         tutorialNextBtn = document.getElementById('tutorial-next-btn');
+
+        // Bouton de statut de sauvegarde
+        saveStatusButton = document.getElementById('save-status-button');
+        saveStatusIcon = document.getElementById('save-status-icon');
+        saveStatusText = document.getElementById('save-status-text');
+
+        // NOUVEAU : Toast
+        toastElement = document.getElementById('toast-notification');
+        toastIcon = document.getElementById('toast-icon');
+        toastText = document.getElementById('toast-text');
     }
 
     /**
@@ -216,15 +233,12 @@
         const careDiagramThead = document.getElementById('care-diagram-thead');
         if (careDiagramThead) {
             html = '<tr><th class="p-2 text-left min-w-[220px]">Soin / Surveillance</th>';
-            // MODIFIÉ : colspan="3" au lieu de "8"
             for(let i=0; i<11; i++) { html += `<th colspan="3" class="border-l">Jour ${i}</th>`;}
             html += '</tr><tr><th class="min-w-[220px]"></th>';
-            // MODIFIÉ : "Matin", "Soir", "Nuit" au lieu des heures
             const msn = ['Matin', 'Soir', 'Nuit'];
             for(let i=0; i<11; i++) { 
-                for (let j = 0; j < msn.length; j++) { // MODIFIÉ : boucle 3 fois
+                for (let j = 0; j < msn.length; j++) { 
                     const borderClass = (j === 0) ? 'border-l' : '';
-                    // MODIFIÉ : Suppression de "small-col" et ajout d'un style pour centrer
                     html += `<th class="${borderClass} p-1 text-center" style="min-width: 70px;">${msn[j]}</th>`;
                 }
             }
@@ -274,16 +288,18 @@
         if (userPermissions.subscription === 'free' && !userPermissions.isStudent) {
             const saveBtn = document.getElementById('save-patient-btn');
             if (saveBtn) saveBtn.style.display = 'none';
+            if (saveStatusButton) saveStatusButton.style.display = 'none';
         }
 
-        // Si ce n'est pas un étudiant, on n'applique aucune restriction (tout est visible)
         if (!userPermissions.isStudent) {
-            // S'assure que le bouton d'enregistrement de CR est visible pour les non-étudiants
             crModalSaveBtn.style.display = 'inline-flex';
             return;
         }
 
         // --- Ce qui suit ne s'applique QU'AUX ÉTUDIANTS ---
+        
+        // ***** MODIFICATION : LIGNE SUPPRIMÉE *****
+        // if (saveStatusButton) saveStatusButton.style.display = 'none';
 
         const studentForbiddenButtons = [
             '#save-patient-btn', '#load-patient-btn', '#import-json-btn',
@@ -308,7 +324,6 @@
             if (form) form.style.display = 'none';
         }
         if (!userPermissions.comptesRendus) {
-            // Cache le bouton d'enregistrement dans la modale
             crModalSaveBtn.style.display = 'none';
         }
         if (!userPermissions.prescriptions_add) {
@@ -365,13 +380,10 @@
 
     // --- Fonctions de Gestion de l'UI (Formulaires & Données) ---
 
-    /**
-     * Réinitialise l'ensemble du formulaire principal.
-     */
     function resetForm() {
         document.querySelectorAll('#patient-header-form input, #patient-header-form textarea, main input, main textarea, main select').forEach(el => {
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-            else if (el.tagName.toLowerCase() === 'select') el.selectedIndex = 0; // Réinitialise les listes déroulantes
+            else if (el.tagName.toLowerCase() === 'select') el.selectedIndex = 0; 
             else if (el.type !== 'file') el.value = '';
         });
         ['observations-list', 'transmissions-list-ide', 'prescription-tbody'].forEach(id => {
@@ -379,7 +391,6 @@
             if (el) el.innerHTML = '';
         });
         
-        // Vider les coches des cartes CR
         document.querySelectorAll('#cr-card-grid .cr-check-icon').forEach(icon => {
             icon.classList.add('hidden');
         });
@@ -400,15 +411,11 @@
 
         calculateAndDisplayIMC();
         if (pancarteChartInstance) pancarteChartInstance.destroy();
+        updateSaveStatus('saved');
     }
 
-    /**
-     * Remplit les champs input/textarea simples à partir de l'état chargé.
-     * @param {Object} state - L'objet dossierData.
-     */
     function fillFormFromState(state) {
         Object.keys(state).forEach(id => {
-            // Exclure les données structurées
             if (['observations', 'transmissions', 'comptesRendus', 'biologie', 'pancarte', 'glycemie', 'prescriptions', 'lockButtonStates', 'careDiagramCheckboxes'].includes(id) || id.endsWith('_html')) {
                 return;
             }
@@ -418,19 +425,12 @@
                 else { el.value = state[id]; }
             }
         });
-        // Redimensionner les textareas après remplissage
         setTimeout(() => {
             document.querySelectorAll('textarea.info-value').forEach(autoResize);
         }, 0);
     }
 
-    /**
-     * Remplit les listes (Observations, Transmissions).
-     * @param {Object} state - L'objet dossierData.
-     * @param {string} entryDateStr - La date d'entrée (YYYY-MM-DD).
-     */
     function fillListsFromState(state, entryDateStr) {
-        // --- Observations ---
         const obsList = document.getElementById('observations-list');
         obsList.innerHTML = ''; 
         if (state.observations) {
@@ -451,7 +451,6 @@
             applySort('observations');
         }
 
-        // --- Transmissions ---
         const transList = document.getElementById('transmissions-list-ide');
         transList.innerHTML = ''; 
         if (state.transmissions) {
@@ -473,10 +472,6 @@
         }
     }
 
-    /**
-     * Remplit le diagramme de soins.
-     * @param {Object} state - L'objet dossierData.
-     */
     function fillCareDiagramFromState(state) {
         const careDiagramTbody = document.getElementById('care-diagram-tbody');
         if (careDiagramTbody && state['care-diagram-tbody_html']) {
@@ -493,11 +488,6 @@
         }
     }
 
-    /**
-     * Remplit la table des prescriptions.
-     * @param {Object} state - L'objet dossierData.
-     * @param {string} entryDateStr - La date d'entrée (YYYY-MM-DD).
-     */
     function fillPrescriptionsFromState(state, entryDateStr) {
         const prescrTbody = document.getElementById('prescription-tbody');
         prescrTbody.innerHTML = ''; 
@@ -505,7 +495,7 @@
             state.prescriptions.forEach(pData => {
                 let dateOffset = pData.dateOffset;
 
-                if (dateOffset === undefined && pData.startDate) { // Rétro-compatibilité
+                if (dateOffset === undefined && pData.startDate) { 
                      let oldStartDate = pData.startDate;
                      if (oldStartDate.includes('/')) {
                          const parts = oldStartDate.split('/');
@@ -516,20 +506,14 @@
                     dateOffset = utils.calculateDaysOffset(entryDateStr, oldStartDate);
                 }
                 
-                // Rétro-compatibilité pour l'ancien 'type'
                 if (pData.type === 'iv') pData.voie = 'IV';
                 if (pData.type === 'checkbox') pData.voie = 'Per Os';
                 
-                addPrescription({ ...pData, dateOffset: dateOffset, type: pData.voie }, true); // Le type est la voie
+                addPrescription({ ...pData, dateOffset: dateOffset, type: pData.voie }, true); 
             });
         }
     }
 
-    /**
-     * Remplit la table de biologie.
-     * @param {Object} state - L'objet dossierData.
-     * @param {string} entryDateStr - La date d'entrée (YYYY-MM-DD).
-     */
     function fillBioFromState(state, entryDateStr) {
         if (state.biologie) {
             document.querySelectorAll('#bio-table thead input[type="date"]').forEach((input, index) => {
@@ -565,10 +549,6 @@
         }
     }
     
-    /**
-     * Remplit les tables Pancarte et Glycémie.
-     * @param {Object} state - L'objet dossierData.
-     */
     function fillPancarteFromState(state) {
         if (state.pancarte) {
             document.querySelectorAll('#pancarte-table tbody tr').forEach(row => {
@@ -588,19 +568,13 @@
         }
     }
     
-    /**
-     * Met à jour les coches vertes sur les cartes de comptes rendus.
-     * @param {Object} crData - L'objet state.comptesRendus.
-     */
     function fillCrCardsFromState(crData) {
-        // Réinitialiser toutes les coches
         document.querySelectorAll('#cr-card-grid .cr-check-icon').forEach(icon => {
             icon.classList.add('hidden');
         });
         
         if (!crData) return;
 
-        // Allumer les coches pour les données existantes
         for (const crId in crData) {
             const card = document.querySelector(`.cr-card[data-cr-id="${crId}"]`);
             if (card && crData[crId] && crData[crId].trim() !== '') {
@@ -612,9 +586,85 @@
         }
     }
 
-    /**
-     * Met à jour l'affichage de l'âge (Header & Admin).
-     */
+    function updateSaveStatus(status) {
+        if (!saveStatusButton || !saveStatusIcon || !saveStatusText) return;
+
+        // Stocker l'ancien texte et l'ancienne icône pour l'animation
+        const oldText = saveStatusText.textContent;
+        const oldIconClasses = Array.from(saveStatusIcon.classList);
+        
+        let newText, newIconClasses, newButtonClasses;
+
+        switch (status) {
+            case 'dirty': 
+                newText = 'Modifications';
+                newIconClasses = ['fas', 'fa-exclamation-triangle'];
+                newButtonClasses = 'status-dirty';
+                break;
+                
+            case 'saving': 
+                newText = 'Enregistrement...';
+                newIconClasses = ['fas', 'fa-spinner'];
+                newButtonClasses = 'status-saving';
+                break;
+                
+            case 'saved': 
+            default:
+                newText = 'Enregistré';
+                newIconClasses = ['fas', 'fa-check-circle'];
+                newButtonClasses = 'status-saved';
+                break;
+        }
+
+        // Ne rien faire si l'état est déjà le bon (évite les animations inutiles)
+        if (saveStatusButton.classList.contains(newButtonClasses)) {
+             // Sauf si on force un "Enregistré" (pour le feedback visuel après sauvegarde)
+             if (status !== 'saved') {
+                return;
+             }
+        }
+
+        // Gérer l'animation de fondu pour le texte et l'icône
+        if (oldText !== newText) {
+            saveStatusIcon.style.opacity = '0';
+            saveStatusText.style.opacity = '0';
+            
+            setTimeout(() => {
+                saveStatusButton.classList.remove('status-saved', 'status-dirty', 'status-saving');
+                saveStatusIcon.classList.remove(...oldIconClasses);
+                
+                saveStatusButton.classList.add(newButtonClasses);
+                saveStatusIcon.classList.add(...newIconClasses);
+                saveStatusText.textContent = newText;
+                
+                saveStatusIcon.style.opacity = '1';
+                saveStatusText.style.opacity = '1';
+
+                // Gérer l'animation de spin pour l'état 'saving'
+                if (status === 'saving') {
+                    saveStatusIcon.classList.add('fa-spin');
+                } else {
+                    saveStatusIcon.classList.remove('fa-spin');
+                }
+
+                // ***** MODIFICATION : Le bouton n'est JAMAIS désactivé *****
+                saveStatusButton.disabled = false;
+
+            }, 200); // Correspond à la moitié de la transition/animation
+        } else {
+             // Si le texte est le même, juste mettre à jour la classe
+             saveStatusButton.classList.remove('status-saved', 'status-dirty', 'status-saving');
+             saveStatusButton.classList.add(newButtonClasses);
+             // ***** MODIFICATION : Le bouton n'est JAMAIS désactivé *****
+             saveStatusButton.disabled = false;
+             if (status === 'saving') {
+                saveStatusIcon.classList.add('fa-spin');
+             } else {
+                saveStatusIcon.classList.remove('fa-spin');
+             }
+        }
+    }
+
     function updateAgeDisplay() {
         const dobHeader = document.getElementById('patient-dob').value;
         document.getElementById('patient-age').textContent = utils.calculateAge(dobHeader);
@@ -622,18 +672,12 @@
         document.getElementById('admin-age').textContent = utils.calculateAge(dobAdmin);
     }
     
-    /**
-     * Met à jour l'affichage du jour d'hospitalisation (Header).
-     */
     function updateJourHosp() {
         const entryDateEl = document.getElementById('patient-entry-date');
         const jourHospEl = document.getElementById('patient-jour-hosp');
         jourHospEl.textContent = utils.calculateJourHosp(entryDateEl.value);
     }
     
-    /**
-     * Calcule et affiche l'IMC (onglet Vie).
-     */
     function calculateAndDisplayIMC() {
         const poidsEl = document.getElementById('vie-poids');
         const tailleEl = document.getElementById('vie-taille');
@@ -644,9 +688,6 @@
         autoResize(imcEl);
     }
 
-    /**
-     * Synchronise les champs (ex: Nom Header et Nom Admin).
-     */
     function setupSync() {
         const syncMap = [
             ['patient-nom-usage', 'admin-nom-usage'],
@@ -658,26 +699,23 @@
             const el2 = document.getElementById(id2);
             if (el1 && el2) {
                 el1.addEventListener('input', () => {
-                    // MODIFICATION : La vérification 'disabled' est supprimée
-                    // pour forcer la synchronisation même si le champ admin est verrouillé
-                    el2.value = el1.value;
-                    if (el2.tagName.toLowerCase() === 'textarea') autoResize(el2);
-                    if(id1.includes('dob')) updateAgeDisplay();
+                    if (!el2.disabled) {
+                        el2.value = el1.value;
+                        if (el2.tagName.toLowerCase() === 'textarea') autoResize(el2);
+                        if(id1.includes('dob')) updateAgeDisplay();
+                    }
                 });
                 el2.addEventListener('input', () => {
-                    // MODIFICATION : La vérification 'disabled' est supprimée
-                    el1.value = el2.value; 
-                    if (el1.tagName.toLowerCase() === 'textarea') autoResize(el1);
-                    if(id2.includes('dob')) updateAgeDisplay();
+                    if (!el1.disabled) {
+                        el1.value = el2.value; 
+                        if (el1.tagName.toLowerCase() === 'textarea') autoResize(el1);
+                        if(id2.includes('dob')) updateAgeDisplay();
+                    }
                 });
             }
         });
     }
 
-    /**
-     * Met à jour les dates dans les en-têtes des tables (Pancarte, Prescriptions, etc.)
-     * @param {Date} startDate - La date d'entrée du patient.
-     */
     function updateDynamicDates(startDate) {
         const updateHeaders = (selector) => {
             document.querySelectorAll(selector).forEach((th, index) => {
@@ -697,15 +735,10 @@
         if (pancarteChartInstance) updatePancarteChart();
     }
     
-    /**
-     * Rafraîchit toutes les dates relatives (dans les listes, tables)
-     * lorsque la date d'entrée change.
-     */
     function refreshAllRelativeDates() {
         const entryDateStr = document.getElementById('patient-entry-date').value;
         if (!entryDateStr) return; 
         
-        // --- Observations ---
         document.querySelectorAll('#observations-list .timeline-item').forEach(item => {
             const offset = parseInt(item.dataset.dateOffset, 10);
             if (!isNaN(offset)) {
@@ -715,7 +748,6 @@
             }
         });
         
-        // --- Transmissions ---
         document.querySelectorAll('#transmissions-list-ide .timeline-item').forEach(item => {
             const offset = parseInt(item.dataset.dateOffset, 10);
             if (!isNaN(offset)) {
@@ -725,7 +757,6 @@
             }
         });
         
-        // --- Prescriptions ---
         document.querySelectorAll('#prescription-tbody tr').forEach(row => {
             const offset = parseInt(row.dataset.dateOffset, 10);
             if (!isNaN(offset)) {
@@ -735,7 +766,6 @@
             }
         });
 
-        // --- Biologie ---
         document.querySelectorAll('#bio-table thead input[type="date"]').forEach(input => {
             const offset = parseInt(input.dataset.dateOffset, 10);
              if (!isNaN(offset)) {
@@ -744,12 +774,10 @@
             }
         });
         
-        // --- Barres IV ---
         document.querySelectorAll('#prescription-tbody .iv-bar').forEach(bar => {
             updateIVBarDetails(bar, bar.closest('.iv-bar-container'));
         });
 
-        // --- Dates Pancarte ---
         const entryDate = new Date(entryDateStr);
         if (!isNaN(entryDate.getTime())) {
             updateDynamicDates(entryDate);
@@ -759,10 +787,6 @@
 
     // --- Fonctions de Gestion de l'UI (Navigation & Modales) ---
     
-    /**
-     * Change l'onglet actif.
-     * @param {string} tabId - L'ID de l'onglet à activer.
-     */
     function changeTab(tabId) {
         const clickedTab = document.querySelector(`nav button[data-tab-id="${tabId}"]`);
         if (!clickedTab) return;
@@ -816,6 +840,41 @@
         }
     }
 
+    // --- MODIFICATION : showToast ---
+    /**
+     * Affiche une notification toast non bloquante.
+     * @param {string} message - Le message à afficher.
+     * @param {string} [type='success'] - Le type ('success' ou 'error').
+     */
+    function showToast(message, type = 'success') {
+        if (!toastElement) return;
+
+        // Annuler le timer de disparition précédent s'il existe
+        if (toastTimeout) {
+            clearTimeout(toastTimeout);
+        }
+
+        // Configurer le style du toast
+        toastIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle', 'text-green-500', 'text-red-500');
+        if (type === 'error') {
+            toastIcon.classList.add('fa-exclamation-triangle', 'text-red-500');
+        } else {
+            toastIcon.classList.add('fa-check-circle', 'text-green-500');
+        }
+        toastText.textContent = message;
+
+        // Afficher le toast
+        toastElement.classList.add('show');
+
+        // Programmer la disparition
+        toastTimeout = setTimeout(() => {
+            toastElement.classList.remove('show');
+            toastTimeout = null;
+        }, 3000); // Le toast disparaît après 3 secondes
+    }
+    // --- FIN MODIFICATION ---
+
+
     function showDeleteConfirmation(message, callback) {
         confirmTitle.textContent = 'Confirmation requise';
         confirmMessage.textContent = message;
@@ -842,6 +901,7 @@
     }
     
     function showCustomAlert(title, message) {
+        // Cette fonction reste pour les alertes bloquantes (erreurs critiques, etc.)
         confirmTitle.textContent = title;
         confirmMessage.textContent = message;
 
@@ -903,7 +963,6 @@
         const listIdMap = {
             'observations': 'observations-list',
             'transmissions': 'transmissions-list-ide'
-            // 'comptes-rendus' n'est plus trié
         };
         const listId = listIdMap[type];
         if (!listId) return;
@@ -1060,11 +1119,10 @@
         }
     }
 
-    // MODIFIÉ
     function readPrescriptionForm() {
         const name = document.getElementById('med-name').value.trim();
         const posologie = document.getElementById('med-posologie').value.trim();
-        const voie = document.getElementById('med-voie').value; // Lit la valeur du <select>
+        const voie = document.getElementById('med-voie').value; 
         const startDateValue = document.getElementById('med-start-date').value;
         const entryDateStr = document.getElementById('patient-entry-date').value;
         
@@ -1074,8 +1132,6 @@
         }
 
         const dateOffset = utils.calculateDaysOffset(entryDateStr, startDateValue);
-        
-        // Le 'type' est maintenant la 'voie' elle-même (ex: "IV", "Per Os", "Respiratoire")
         const type = voie; 
         
         document.getElementById('new-prescription-form').reset();
@@ -1083,7 +1139,6 @@
         return { name, posologie, voie, type, bars: [], dateOffset };
     }
 
-    // MODIFIÉ
     function addPrescription(data, fromLoad = false) {
         let { name, posologie, voie, type, bars, dateOffset } = data;
         const entryDateStr = document.getElementById('patient-entry-date').value;
@@ -1091,11 +1146,11 @@
         if (isNaN(parseInt(dateOffset, 10))) dateOffset = 0;
 
         const targetDate = utils.calculateDateFromOffset(entryDateStr, dateOffset);
-        const formattedStartDate = utils.formatDate(targetDate).slice(0, 8); // JJ/MM/AA
+        const formattedStartDate = utils.formatDate(targetDate).slice(0, 8); 
         
         const tbody = document.getElementById("prescription-tbody");
         const newRow = tbody.insertRow();
-        newRow.dataset.type = type; // Sera "IV", "Per Os" ou "Respiratoire"
+        newRow.dataset.type = type; 
         newRow.dataset.dateOffset = dateOffset;
 
         newRow.innerHTML = `
@@ -1116,15 +1171,9 @@
         timelineCell.colSpan = 88; 
         timelineCell.className = 'iv-bar-container';
 
-        // Seul "Per Os" est un "marker-container" (losange)
         if (type === 'Per Os') {
             timelineCell.classList.add('marker-container');
         }
-        
-        // *** CORRECTION DU BUG DES DOUBLES ÉVÉNEMENTS ***
-        // La ligne ci-dessous a été SUPPRIMÉE car elle était redondante
-        // avec l'écouteur global défini dans app.js
-        // timelineCell.addEventListener('mousedown', handleIVMouseDown);
         
         const barsToCreate = (fromLoad && bars && Array.isArray(bars)) ? bars : [];
         
@@ -1133,13 +1182,11 @@
                 const bar = document.createElement('div');
                 bar.className = 'iv-bar';
                 
-                // Ajoute la classe correcte en fonction du type
                 if (type === 'Per Os') {
                     bar.classList.add('marker-bar');
                 } else if (type === 'Respiratoire') {
-                    bar.classList.add('iv-bar-respi'); // Nouvelle classe pour l'orange
+                    bar.classList.add('iv-bar-respi'); 
                 }
-                // 'IV' garde la classe 'iv-bar' de base (bleue)
 
                 bar.style.left = barData.left;
                 bar.style.width = barData.width;
@@ -1179,12 +1226,9 @@
             </td>
         `;
         
-        // MODIFIÉ : 11 jours
         for(let i=0; i<11; i++) {
-            // MODIFIÉ : 3 colonnes (Matin, Soir, Nuit)
             for (let j = 0; j < 3; j++) {
                 const borderClass = (j === 0) ? 'border-l' : '';
-                // MODIFIÉ : Suppression de "small-col" et ajout de classes pour centrer la checkbox
                 cellsHTML += `<td class="${borderClass} p-0" style="min-width: 70px;">
                                 <input type="checkbox" class="block mx-auto">
                             </td>`;
@@ -1197,7 +1241,7 @@
         const entry = button.closest('.timeline-item');
         if (entry) {
             entry.remove();
-            return true; // Succès
+            return true; 
         }
         return false;
     }
@@ -1205,7 +1249,7 @@
         const row = button.closest('tr');
         if (row) {
             row.remove();
-            return true; // Succès
+            return true; 
         }
         return false;
     }
@@ -1213,19 +1257,13 @@
         const row = button.closest('tr');
         if (row) {
             row.remove();
-            return true; // Succès
+            return true; 
         }
         return false;
     }
 
     // --- Fonctions UI : Logique des Comptes Rendus (NOUVEAU) ---
 
-    /**
-     * Ouvre la modale des comptes rendus
-     * @param {string} crId - L'ID du compte rendu (ex: 'cr-consultation').
-     * @param {string} crTitle - Le titre à afficher dans la modale.
-     * @param {string} crText - Le texte actuel du compte rendu.
-     */
     function openCrModal(crId, crTitle, crText) {
         crModalTitle.textContent = crTitle;
         crModalActiveIdInput.value = crId;
@@ -1238,9 +1276,6 @@
         }, 10);
     }
     
-    /**
-     * Ferme la modale des comptes rendus.
-     */
     function closeCrModal() {
         crModalBox.classList.add('scale-95', 'opacity-0');
         setTimeout(() => {
@@ -1250,11 +1285,6 @@
         }, 200);
     }
     
-    /**
-     * Met à jour la coche verte sur une carte de compte rendu.
-     * @param {string} crId - L'ID de la carte.
-     * @param {boolean} hasData - True si la carte doit avoir une coche.
-     */
     function updateCrCardCheckmark(crId, hasData) {
         const card = document.querySelector(`.cr-card[data-cr-id="${crId}"]`);
         if (!card) return;
@@ -1273,7 +1303,6 @@
     // --- Fonctions UI : Logique IV (Barres de prescription) ---
 
     function handleIVDblClick(e) {
-        // TODO: Vérifier permissions
         const bar = e.currentTarget;
         showDeleteConfirmation("Effacer cette administration ?", () => {
             const cell = bar.parentElement;
@@ -1284,15 +1313,11 @@
                 }
             }
             bar.remove();
-            // Demander une sauvegarde via un événement
             document.dispatchEvent(new CustomEvent('uiNeedsSave'));
         });
     }
 
-    // MODIFIÉ
     function handleIVMouseDown(e) {
-        // TODO: Vérifier permissions
-        
         if (e.target.classList.contains('iv-bar-container')) {
             ivInteraction.mode = 'draw';
             const cell = e.target;
@@ -1308,14 +1333,12 @@
             const newBar = document.createElement('div');
             newBar.className = 'iv-bar';
             
-            // Détermine la classe de la barre (losange, orange, ou bleu)
             const rowType = cell.closest('tr').dataset.type;
             if (rowType === 'Per Os') {
                 newBar.classList.add('marker-bar');
             } else if (rowType === 'Respiratoire') {
                 newBar.classList.add('iv-bar-respi');
             }
-            // 'IV' garde la classe par défaut
             
             newBar.style.left = `${(startX / rect.width) * 100}%`;
             newBar.style.width = '0px';
@@ -1438,7 +1461,6 @@
         }
         document.body.className = document.body.className.replace(/is-(drawing|resizing|moving)-iv/g, '').trim().trim();
         ivInteraction = { active: false, mode: null, targetBar: null, targetCell: null, startX: 0, startLeft: 0, startWidth: 0, startLeftPx: 0 };
-        // Demander une sauvegarde via un événement
         document.dispatchEvent(new CustomEvent('uiNeedsSave'));
     }
     
@@ -1580,10 +1602,12 @@
 
     // --- Fonctions UI : Tutoriel ---
     
+    // MODIFICATION : Mise à jour du texte du tutoriel
     const tutorialSteps = [
         { element: '#patient-list li:first-child button', text: "Bienvenue ! Voici la liste des patients. Cliquez sur un patient pour ouvrir son dossier.", position: 'right' },
         { element: '#patient-header-form', text: "Cet en-tête contient les informations principales. La 'Date d'entrée' est cruciale : toutes les autres dates du dossier seront recalculées à partir de celle-ci.", position: 'bottom' },
         { element: '#tabs-nav-container', text: "Utilisez ces onglets pour naviguer entre les différentes sections du dossier.", position: 'bottom' },
+        { element: '#save-status-button', text: "Cet indicateur vous montre l'état de vos données. Vert = 'Enregistré', Orange = 'Modifications non sauvegardées'. Cliquez dessus à tout moment pour forcer une sauvegarde et synchroniser vos données.", position: 'bottom' },
         { element: '#save-patient-btn', text: "Ce bouton crée une 'Sauvegarde' du dossier actuel que vous pouvez recharger plus tard.", position: 'bottom-left' },
         { element: '#load-patient-btn', text: "Utilisez ce bouton pour charger une sauvegarde dans la chambre actuelle.", position: 'bottom-left' },
         { element: '#import-json-btn', text: "Ce bouton vous permet d'importer un fichier JSON.", position: 'bottom-left' },
@@ -1593,11 +1617,11 @@
         { element: 'button[id="clear-all-data-btn"]', text: "ATTENTION : Ce bouton réinitialise les 10 chambres du service.", position: 'top' },
         { element: 'button[id="start-tutorial-btn"]', text: "Vous avez terminé ! Vous pouvez relancer ce tutoriel à tout moment.", position: 'top' }
     ];
+    // FIN MODIFICATION
 
     function startTutorial() {
         currentStepIndex = 0;
         
-        // Ajustement dynamique si la liste est vide
         const firstPatientButton = document.querySelector('#patient-list li:first-child button');
         if (!firstPatientButton) {
             tutorialSteps[0].element = '#sidebar';
@@ -1615,7 +1639,7 @@
         tutorialOverlay.classList.add('hidden');
         if (highlightedElement) {
             highlightedElement.classList.remove('tutorial-highlight');
-            if (highlightedElement.closest('#header-buttons')) {
+            if (highlightedElement.closest('#header-buttons') || highlightedElement.id === 'save-status-button') { 
                 highlightedElement.style = '';
             }
             highlightedElement = null;
@@ -1628,7 +1652,7 @@
     function showTutorialStep(index) {
         if (highlightedElement) {
             highlightedElement.classList.remove('tutorial-highlight');
-            if (highlightedElement.closest('#header-buttons')) {
+            if (highlightedElement.closest('#header-buttons') || highlightedElement.id === 'save-status-button') { 
                 highlightedElement.style = '';
             }
         }
@@ -1642,7 +1666,6 @@
         const element = document.querySelector(step.element);
 
         if (!element) {
-            // Si un élément n'est pas trouvé (ex: pas de patient), sauter l'étape
             currentStepIndex++;
             showTutorialStep(currentStepIndex);
             return;
@@ -1654,12 +1677,11 @@
         element.classList.add('tutorial-highlight');
         highlightedElement = element;
 
-        if (element.closest('#header-buttons')) {
+        if (element.closest('#header-buttons') || element.id === 'save-status-button') { 
             element.style.setProperty('z-index', '9997', 'important');
             element.style.setProperty('position', 'relative', 'important');
         }
 
-        // Calcul de la position
         const rect = element.getBoundingClientRect();
         const boxRect = tutorialStepBox.getBoundingClientRect();
         const margin = 15;
@@ -1687,7 +1709,6 @@
                 left = rect.left + (rect.width / 2) - (boxRect.width / 2);
         }
 
-        // Ajustement pour ne pas sortir de l'écran
         if (top < margin) top = margin;
         if (left < margin) left = margin;
         if (top + boxRect.height > window.innerHeight - margin) top = window.innerHeight - boxRect.height - margin;
@@ -1731,13 +1752,15 @@
         setupSync,
         updateDynamicDates,
         refreshAllRelativeDates,
+        updateSaveStatus, 
         
         // Navigation & Modales
         changeTab,
         autoResize,
         toggleFullscreen,
+        showToast, // NOUVEAU : Exposer le toast
         showDeleteConfirmation,
-        showCustomAlert,
+        showCustomAlert, // Gardé pour les alertes bloquantes
         hideConfirmation,
         openLoadPatientModal,
         hideLoadPatientModal,

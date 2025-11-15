@@ -58,7 +58,16 @@
         <div class="p-0 md:p-0 lg:p-0 pb-0">
             <div class="max-w-screen-xl mx-auto">
                 <header id="main-header" class="mb-4 p-4 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-400 text-white shadow-lg flex justify-between items-center">
-                    <h1 class="text-xl lg:text-2xl font-bold">Service de soins</h1>
+                    
+                    <div class="flex items-center gap-x-4">
+                        <h1 class="text-xl lg:text-2xl font-bold">Service de soins</h1>
+                        
+                        <button id="save-status-button" type="button" title="Cliquez pour forcer la synchronisation" class="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ease-in-out shadow-md flex items-center space-x-2 status-saved">
+                            <i id="save-status-icon" class="fas fa-check-circle"></i>
+                            <span id="save-status-text">Enregistré</span>
+                        </button>
+                    </div>
+
                     <div id="header-buttons" class="flex items-center space-x-2">
                         
                         <button id="save-patient-btn" type="button" title="Sauvegarder le dossier actuel sur le serveur" class="p-2 rounded-full hover:bg-white/20 transition-colors">
@@ -455,6 +464,13 @@
             </div>
         </div>
     </div>
+
+    <div id="toast-notification" class="fixed top-24 right-4 w-full max-w-xs p-4 rounded-lg shadow-lg bg-white border border-gray-200 flex items-center space-x-3" style="z-index: 9999; transition: transform 0.4s ease-in-out;">
+        <i id="toast-icon" class="fas fa-check-circle text-green-500 text-xl"></i>
+        <p id="toast-text" class="text-sm font-medium text-gray-700">Action réussie !</p>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <script src="apiService.js"></script>
     <script src="utils.js"></script>

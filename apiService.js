@@ -1,8 +1,11 @@
 (function() {
     "use strict";
 
-    // La seule constante de ce fichier
+    // MODIFIÉ : La constante API_URL est maintenant l'URL de base
     const API_URL = 'https://eidos-api.onrender.com';
+    
+    // NOUVEAU : Variable pour stocker la connexion socket
+    let socket = null;
 
     // --- Fonctions d'authentification "privées" ---
     // (Elles ne sont pas exposées sur window.apiService, 
@@ -18,15 +21,24 @@
         return token;
     }
 
+    // MODIFIÉ : Ajoute l'ID du socket aux en-têtes
     function getAuthHeaders() {
         const token = getAuthToken();
         if (!token) {
             throw new Error("Token non trouvé, impossible de créer les headers.");
         }
-        return {
+        
+        const headers = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         };
+
+        // NOUVEAU : Ajoute l'ID du socket si la connexion est établie
+        if (socket && socket.id) {
+            headers['x-socket-id'] = socket.id;
+        }
+
+        return headers;
     }
 
     function handleAuthError(response) {
@@ -41,6 +53,43 @@
 
     // --- Fonctions API "publiques" ---
     // (Celles-ci seront exposées sur window.apiService)
+
+    // NOUVEAU : Fonction pour initialiser la connexion Socket.io
+    /**
+     * Initialise la connexion Socket.io avec le serveur.
+     * @returns {Socket} L'instance du socket connecté.
+     */
+    function connectSocket() {
+        const token = getAuthToken();
+        if (!token) return null;
+
+        // Se connecte à la racine du serveur où Socket.io écoute
+        socket = io(API_URL, {
+            auth: {
+                token: token
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('Socket connecté avec succès :', socket.id);
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('Erreur de connexion socket :', err.message);
+            if (err.message.includes('Authentification')) {
+                // Si l'authentification socket échoue (ex: token expiré), on redirige
+                handleAuthError({ status: 401 });
+            }
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Socket déconnecté.');
+        });
+        
+        // La fonction retourne l'instance pour que patientService puisse l'écouter
+        return socket;
+    }
+
 
     /**
      * Récupère les permissions et les données de l'utilisateur connecté.
@@ -140,6 +189,7 @@
         }
         
         try {
+            // MODIFIÉ : getAuthHeaders() inclut maintenant le x-socket-id
             const headers = getAuthHeaders(); 
             if (!headers) return;
 
@@ -269,6 +319,7 @@
     // --- Exposition du service ---
     
     window.apiService = {
+        connectSocket, // NOUVEAU
         fetchUserPermissions,
         fetchPatientList,
         fetchPatientData,

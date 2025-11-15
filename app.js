@@ -70,6 +70,9 @@
         document.getElementById('export-json-btn').addEventListener('click', patientService.exportPatientData);
         document.getElementById('clear-current-patient-btn').addEventListener('click', patientService.clearCurrentPatient);
 
+        // NOUVEAU : Écouteur pour le bouton de statut/sauvegarde
+        document.getElementById('save-status-button').addEventListener('click', patientService.forceSaveAndRefresh);
+
         // --- Importation de fichier ---
         document.getElementById('import-json-btn').addEventListener('click', () => {
             if (!patientService.getUserPermissions().isStudent && patientService.getUserPermissions().subscription !== 'free') {
